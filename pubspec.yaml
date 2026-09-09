@@ -1,0 +1,47 @@
+name: maboko_mobile
+description: Application Maboko Mobile - Les mains qui font le Congo
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Librairie HTTP pour les appels API Laravel
+  http: ^1.2.0
+
+  # Génération de données fictives (utile pour tests)
+  faker: ^2.1.0
+
+  # Stockage local (ex: SharedPreferences)
+  shared_preferences: ^2.2.2
+
+  # Icônes Material Design
+  cupertino_icons: ^1.0.8
+
+  # Gestion des notifications locales
+  flutter_local_notifications: ^17.0.0
+  image_picker: ^1.2.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Déclaration explicite de toutes les images de ton application
+  assets:
+    - assets/images/Maboko.jpeg
+    - assets/images/message.png
+    - assets/images/photo.png
+    - assets/images/recherche.png
+    - assets/images/bricolage.png
+    - assets/images/voiture.png
+    - assets/images/emojiF.jpg
+    - assets/images/emojiG.jpg
