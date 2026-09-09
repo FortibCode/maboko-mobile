@@ -6,6 +6,7 @@ class StorageService {
   static const String _emailKey = "user_email";
   static const String _nameKey = "user_name";
   static const String _roleKey = "user_role";
+  static const String _telephoneKey = "user_telephone";
   static const String _avatarIndexKey = "avatar_index";
   static const String _profileCompletedKey = "profile_completed_";
   static const String _onboardingDoneKey = "onboarding_completed";
@@ -54,6 +55,23 @@ class StorageService {
   static Future<String?> getUserName() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_nameKey);
+  }
+
+  // ----------------------------------------------------
+  // NUMÉRO DE TÉLÉPHONE
+  //
+  // Prérempli dans la feuille de paiement Mobile Money : l'artisan
+  // débite le plus souvent le numéro de son compte.
+  // ----------------------------------------------------
+
+  static Future<bool> saveUserTelephone(String telephone) async {
+    final prefs = await SharedPreferences.getInstance();
+    return await prefs.setString(_telephoneKey, telephone);
+  }
+
+  static Future<String?> getUserTelephone() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_telephoneKey);
   }
 
   // ----------------------------------------------------
@@ -163,6 +181,7 @@ class StorageService {
     await prefs.remove(_emailKey); 
     await prefs.remove(_nameKey);
     await prefs.remove(_roleKey);
+    await prefs.remove(_telephoneKey);
     await prefs.remove(_avatarIndexKey);
     return await prefs.remove(_tokenKey);
   }

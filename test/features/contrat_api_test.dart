@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maboko_mobile/features/abonnement/models/plan.dart';
 import 'package:maboko_mobile/features/artisans/models/artisan.dart';
 import 'package:maboko_mobile/features/demandes/models/demande.dart';
 import 'package:maboko_mobile/features/fil/models/publication.dart';
+import 'package:maboko_mobile/features/messagerie/models/conversation.dart';
 import 'package:maboko_mobile/features/metiers/models/metier.dart';
 import 'package:maboko_mobile/features/tableau_bord/models/tableau_bord.dart';
 
@@ -111,6 +113,71 @@ void main() {
 
       expect(commentaires.single.auteurNom, 'Jean Makaya');
       expect(commentaires.single.contenu, 'Magnifique travail, bravo !');
+    });
+  });
+
+  group('Abonnements', () {
+    test('les quatre formules se convertissent', () {
+      final donnees = lire('plans')['data'] as List;
+      final plans = donnees.map((p) => Plan.depuisJson(p as Map<String, dynamic>)).toList();
+
+      expect(plans.length, 4);
+      expect(plans.map((p) => p.slug), ['gratuit', 'pro', 'premium', 'entreprise']);
+
+      final gratuit = plans.first;
+      expect(gratuit.estGratuit, isTrue);
+      expect(gratuit.prixMensuel, 0);
+
+      // Le multiplicateur de visibilité croît avec la formule (§4.5).
+      final boosts = plans.map((p) => p.boostClassement).toList();
+      expect(boosts, List<double>.from(boosts)..sort());
+    });
+
+    test('l’économie annuelle est calculée', () {
+      final donnees = lire('plans')['data'] as List;
+      final pro = donnees
+          .map((p) => Plan.depuisJson(p as Map<String, dynamic>))
+          .firstWhere((p) => p.slug == 'pro');
+
+      expect(pro.economieAnnuelle, pro.prixMensuel * 12 - pro.prixAnnuel);
+      expect(pro.economieAnnuelle, greaterThan(0));
+    });
+
+    test('la formule en cours porte sa date de fin', () {
+      final abonnement = AbonnementActuel.depuisJson(lire('abonnement'));
+
+      expect(abonnement.plan.slug, 'premium');
+      expect(abonnement.finLe, isNotNull);
+      expect(abonnement.renouvellementAuto, isTrue);
+    });
+  });
+
+  group('Messagerie', () {
+    test('la liste montre l’interlocuteur et les non-lus', () {
+      final donnees = lire('conversations')['data'] as List;
+      final conversations = donnees
+          .map((c) => Conversation.depuisJson(c as Map<String, dynamic>))
+          .toList();
+
+      final fil = conversations.single;
+      expect(fil.interlocuteur.nomComplet, 'Pascal Nkodia');
+      expect(fil.estSupport, isFalse);
+      // Une réponse reçue dans la même seconde que son propre envoi doit
+      // bien compter comme non lue.
+      expect(fil.nonLus, 1);
+      expect(fil.dernierMessage, contains('jeudi matin'));
+    });
+
+    test('les messages distinguent l’expéditeur', () {
+      final donnees = lire('messages')['data'] as List;
+      final messages = donnees
+          .map((m) => MessageChat.depuisJson(m as Map<String, dynamic>))
+          .toList();
+
+      expect(messages.length, 2);
+      // L'API renvoie du plus récent au plus ancien.
+      expect(messages.first.deMoi, isFalse);
+      expect(messages.last.deMoi, isTrue);
     });
   });
 

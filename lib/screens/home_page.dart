@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/maboko_theme.dart';
 import '../core/network/api_exception.dart';
+import '../features/abonnement/ui/abonnement_screen.dart';
 import '../features/demandes/ui/demandes_screen.dart';
+import '../features/courses/ui/reservation_course_screen.dart';
 import '../features/fil/ui/fil_screen.dart';
+import '../features/identite/ui/verification_identite_screen.dart';
+import '../features/messagerie/ui/conversations_screen.dart';
 import '../features/metiers/ui/explorer_screen.dart';
 import '../features/tableau_bord/data/tableau_bord_repository.dart';
 import '../features/tableau_bord/models/tableau_bord.dart';
 import '../features/tableau_bord/ui/tableau_bord_artisan_screen.dart';
 import 'portfolio_screen.dart';
-import 'subscription_screen.dart';
 import 'settings_screen.dart';
 import '../services/storage_service.dart';
 
@@ -128,9 +131,11 @@ class _HomePageState extends State<HomePage> {
             // Les publications viennent de l'API. Elles étaient auparavant
             // écrites en dur dans ce fichier.
             FilScreen(
-              enTete: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                child: Row(
+              enTete: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     RichText(
@@ -142,15 +147,60 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.search, color: Colors.black87),
-                      tooltip: 'Rechercher un métier ou un artisan',
-                      // La recherche vit dans l'onglet Découvrir, qui interroge
-                      // le référentiel complet plutôt que le fil affiché.
-                      onPressed: () => setState(() => _currentIndex = 1),
+                        IconButton(
+                          icon: const Icon(Icons.search, color: Colors.black87),
+                          tooltip: 'Rechercher un métier ou un artisan',
+                          // La recherche vit dans l'onglet Découvrir, qui
+                          // interroge le référentiel complet plutôt que le
+                          // fil affiché.
+                          onPressed: () => setState(() => _currentIndex = 1),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  // Bandeau Allô Chauffeur : réserver une course en un clic
+                  // depuis l'accueil (§5.1.4).
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+                    child: Material(
+                      color: MabokoCouleurs.accent.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(14),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(14),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ReservationCourseScreen()),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: MabokoCouleurs.accent.withValues(alpha: 0.5)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.local_taxi_rounded, color: MabokoCouleurs.accent),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Allô Chauffeur',
+                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5)),
+                                    Text('Moto ou voiture, près de chez vous',
+                                        style: TextStyle(
+                                            fontSize: 12, color: MabokoCouleurs.texteSecondaire)),
+                                  ],
+                                ),
+                              ),
+                              Icon(Icons.arrow_forward_ios, size: 14),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
@@ -158,13 +208,8 @@ class _HomePageState extends State<HomePage> {
             // --- ONGLET 1 : DÉCOUVRIR (§5.1.5) ---
             const ExplorerScreen(),
 
-            // --- ONGLET 2 : MESSAGES ---
-            const Center(
-              child: Text(
-                "Page Messages",
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            ),
+            // --- ONGLET 2 : MESSAGERIE (§5.1.9) ---
+            const ConversationsScreen(),
 
             // --- ONGLET 3 : PROFIL ---
             SingleChildScrollView(
@@ -350,7 +395,20 @@ class _HomePageState extends State<HomePage> {
           leading: const Icon(Icons.star_rounded, color: Color(0xFFB35B28)),
           title: const Text("Mon Abonnement"),
           trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SubscriptionScreen())),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AbonnementScreen()),
+          ),
+        ),
+        const Divider(height: 1),
+        ListTile(
+          leading: const Icon(Icons.verified_user_outlined, color: MabokoCouleurs.secondaire),
+          title: const Text("Vérifier mon identité"),
+          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const VerificationIdentiteScreen()),
+          ),
         ),
         const Divider(height: 1),
         ListTile(

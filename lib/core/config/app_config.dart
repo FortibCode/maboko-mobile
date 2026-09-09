@@ -19,6 +19,22 @@ class AppConfig {
     defaultValue: 'http://10.0.2.2:8000/api/v1',
   );
 
+  /// Serveur WebSocket Reverb, pour la messagerie en temps réel (§7.2).
+  ///
+  ///   flutter run --dart-define=REVERB_HOST=10.0.2.2 --dart-define=REVERB_KEY=...
+  static const String reverbHost = String.fromEnvironment('REVERB_HOST', defaultValue: '10.0.2.2');
+  static const int reverbPort = int.fromEnvironment('REVERB_PORT', defaultValue: 8080);
+  static const String reverbKey = String.fromEnvironment('REVERB_KEY');
+  static const bool reverbTls = bool.fromEnvironment('REVERB_TLS');
+
+  /// Le temps réel n'est tenté que si une clé a été fournie à la compilation.
+  /// Sans elle, l'application se rabat sur l'interrogation périodique.
+  static bool get tempsReelDisponible => reverbKey.isNotEmpty;
+
+  static String get reverbUrl =>
+      '${reverbTls ? 'wss' : 'ws'}://$reverbHost:$reverbPort/app/$reverbKey'
+      '?protocol=7&client=flutter&version=1.0';
+
   /// Duree maximale d'attente d'une reponse. Volontairement genereuse :
   /// le cahier de charges vise un usage en 3G degradee a Brazzaville.
   static const Duration timeout = Duration(seconds: 30);

@@ -50,6 +50,9 @@ class _LoginPageState extends State<LoginPage> {
       final int avatarIndex = await StorageService.getAvatarIndex() ?? 0;
 
       await StorageService.saveToken(data['token'] as String? ?? '');
+      if (user['telephone'] is String) {
+        await StorageService.saveUserTelephone(user['telephone'] as String);
+      }
       await StorageService.saveUserData(
         name: name,
         role: role,

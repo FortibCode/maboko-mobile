@@ -23,6 +23,24 @@ dependencies:
   # Icônes Material Design
   cupertino_icons: ^1.0.8
 
+  # Position de l'appareil : appariement des courses et suivi du trajet.
+  geolocator: ^13.0.2
+
+  # Carte OpenStreetMap. Le cahier de charges laisse le choix entre Google
+  # Maps et OSM (§6.2) : OSM évite une facture d'API que le budget ne
+  # supporterait pas, et suffit à l'affichage.
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
+  # Ouverture du guidage vocal dans Google Maps ou Waze, déjà installés sur
+  # le téléphone du chauffeur — plutôt que de réimplémenter la navigation.
+  url_launcher: ^6.3.1
+
+  # Client WebSocket : messagerie temps réel (protocole Pusher / Reverb).
+  # Paquet Dart pur, donc compatible mobile et web, contrairement aux
+  # implémentations natives de Pusher.
+  web_socket_channel: ^3.0.1
+
   # Gestion des notifications locales
   flutter_local_notifications: ^17.0.0
   image_picker: ^1.2.3

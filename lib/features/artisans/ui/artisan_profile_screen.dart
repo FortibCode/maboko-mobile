@@ -4,6 +4,8 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/theme/maboko_theme.dart';
 import '../../../core/widgets/etats.dart';
 import '../../demandes/ui/demande_form_screen.dart';
+import '../../messagerie/data/messagerie_repository.dart';
+import '../../messagerie/ui/conversation_screen.dart';
 import '../data/artisan_repository.dart';
 import '../models/artisan.dart';
 
@@ -21,6 +23,9 @@ class ArtisanProfileScreen extends StatefulWidget {
 
 class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
   static const _repository = ArtisanRepository();
+  static const _messagerie = MessagerieRepository();
+
+  bool _ouvertureConversation = false;
 
   Artisan? _artisan;
   bool _chargement = true;
@@ -51,6 +56,31 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
         _erreur = e.message;
         _chargement = false;
       });
+    }
+  }
+
+  /// Ouvre le fil de discussion avec l'artisan, ou récupère l'existant.
+  Future<void> _contacter() async {
+    final artisan = _artisan;
+    if (artisan == null || _ouvertureConversation) return;
+
+    setState(() => _ouvertureConversation = true);
+
+    try {
+      final conversation = await _messagerie.ouvrir(interlocuteurId: artisan.utilisateurId);
+      if (!mounted) return;
+      setState(() => _ouvertureConversation = false);
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => ConversationScreen(conversation: conversation)),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _ouvertureConversation = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: MabokoCouleurs.danger),
+      );
     }
   }
 
@@ -90,19 +120,49 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
           : SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: SizedBox(
-                  height: 52,
-                  child: ElevatedButton.icon(
-                    onPressed: _demanderDevis,
-                    icon: const Icon(Icons.request_quote_outlined),
-                    label: const Text('Demander un devis'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: MabokoCouleurs.secondaire,
-                      foregroundColor: Colors.white,
-                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      height: 52,
+                      width: 56,
+                      child: OutlinedButton(
+                        onPressed: _ouvertureConversation ? null : _contacter,
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          foregroundColor: MabokoCouleurs.secondaire,
+                          side: const BorderSide(color: MabokoCouleurs.secondaire),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: _ouvertureConversation
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: MabokoCouleurs.secondaire,
+                                ),
+                              )
+                            : const Icon(Icons.chat_bubble_outline),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: SizedBox(
+                        height: 52,
+                        child: ElevatedButton.icon(
+                          onPressed: _demanderDevis,
+                          icon: const Icon(Icons.request_quote_outlined),
+                          label: const Text('Demander un devis'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: MabokoCouleurs.secondaire,
+                            foregroundColor: Colors.white,
+                            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

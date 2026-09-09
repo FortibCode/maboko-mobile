@@ -49,6 +49,7 @@ class Avis {
 class Artisan {
   const Artisan({
     required this.id,
+    required this.utilisateurId,
     required this.nomComplet,
     required this.specialite,
     this.bio,
@@ -66,7 +67,13 @@ class Artisan {
     this.distanceKm,
   });
 
+  /// Identifiant de la fiche artisan.
   final int id;
+
+  /// Identifiant du compte utilisateur derrière la fiche.
+  /// La messagerie s'adresse à un utilisateur, pas à une fiche.
+  final int utilisateurId;
+
   final String nomComplet;
   final String specialite;
   final String? bio;
@@ -90,6 +97,7 @@ class Artisan {
 
     return Artisan(
       id: json['id'] as int,
+      utilisateurId: utilisateur?['id'] as int? ?? 0,
       nomComplet: (utilisateur?['nomComplet'] as String?)?.trim().isNotEmpty == true
           ? utilisateur!['nomComplet'] as String
           : 'Artisan Maboko',
