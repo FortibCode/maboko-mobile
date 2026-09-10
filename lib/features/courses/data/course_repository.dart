@@ -1,4 +1,5 @@
 import '../../../core/network/api.dart';
+import '../../../core/network/api_exception.dart';
 import '../models/course.dart';
 
 class CourseRepository {
@@ -75,9 +76,46 @@ class CourseRepository {
   // ------------------------------------------------------------------
 
   Future<EtatChauffeur> etatChauffeur() async {
-    final reponse = await api.get('/chauffeur');
+    try {
+      final reponse = await api.get('/chauffeur');
+
+      return EtatChauffeur.depuisJson(reponse as Map<String, dynamic>);
+    } on ApiException catch (e) {
+      // Un chauffeur sans fiche reçoit un 404 porteur de « ficheManquante ».
+      // Sans ce rattrapage, l'écran l'annonçait comme une panne de chargement
+      // assortie d'un bouton « Réessayer » qui ne pouvait rien changer.
+      if (e.statusCode == 404) return const EtatChauffeur(ficheManquante: true);
+
+      rethrow;
+    }
+  }
+
+  /// Dépôt de la fiche véhicule du chauffeur connecté (§5.3.1).
+  ///
+  /// Sans elle, le compte reçoit un 404 sur tout l'espace chauffeur et ne peut
+  /// recevoir aucune course. La route existait, aucun écran ne l'appelait.
+  Future<EtatChauffeur> enregistrerFiche({
+    required String typeVehicule,
+    required String modele,
+    required String plaque,
+    required String permis,
+  }) async {
+    final reponse = await api.post('/chauffeur', corps: {
+      'type_vehicule': typeVehicule,
+      'vehicule_modele': modele,
+      'plaque_immatriculation': plaque,
+      'permis_conduire': permis,
+    });
 
     return EtatChauffeur.depuisJson(reponse as Map<String, dynamic>);
+  }
+
+  /// Refus d'une course proposée (§5.3.1).
+  ///
+  /// Elle sort des propositions de ce chauffeur sans être annulée : les
+  /// autres chauffeurs continuent de la voir.
+  Future<void> refuser(int courseId) async {
+    await api.post('/courses/$courseId/refuser');
   }
 
   Future<bool> basculerDisponibilite(bool enLigne) async {

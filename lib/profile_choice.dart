@@ -1,13 +1,15 @@
 // Fichier : lib/screens/profile_choice.dart
 import 'package:flutter/material.dart';
 
+import 'core/theme/maboko_theme.dart';
+
 class ProfileChoice extends StatelessWidget {
   const ProfileChoice({super.key});
 
   @override
   Widget build(BuildContext context) {
     const Color primaryBrown = Color(0xFFB35B28);
-    const Color backgroundColor = Color(0xFFFAF4E7);
+    final Color backgroundColor = context.fondMaboko;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -46,8 +48,8 @@ class ProfileChoice extends StatelessWidget {
                       letterSpacing: -0.5,
                     ),
                     children: [
-                      TextSpan(text: "maboko", style: TextStyle(color: primaryBrown)),
-                      TextSpan(text: ".com", style: TextStyle(color: Colors.black87)),
+                      TextSpan(text: "mabok", style: TextStyle(color: primaryBrown)),
+                      TextSpan(text: "o", style: TextStyle(color: Color(0xFFEAA023))),
                     ],
                   ),
                 ),
@@ -55,12 +57,12 @@ class ProfileChoice extends StatelessWidget {
               const SizedBox(height: 12),
 
               // Sous-titre
-              const Text(
+              Text(
                 "Comment souhaitez-vous utiliser l'application ?",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15,
-                  color: Colors.black54,
+                  color: context.texteSecondaireMaboko,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -68,6 +70,7 @@ class ProfileChoice extends StatelessWidget {
 
               // Option Client
               _buildCard(
+                context,
                 title: "Je suis à la recherche d'un artisan",
                 subtitle: "Je cherche des professionnels qualifiés pour mes projets",
                 icon: Icons.search_rounded,
@@ -80,12 +83,31 @@ class ProfileChoice extends StatelessWidget {
 
               // Option Artisan
               _buildCard(
+                context,
                 title: "Je suis un Artisan",
                 subtitle: "Je propose mes services et gère mon portfolio",
                 icon: Icons.handyman_rounded,
                 primaryColor: primaryBrown,
                 onTap: () {
                   Navigator.pushNamed(context, '/artisan-onboarding');
+                },
+              ),
+              const SizedBox(height: 18),
+
+              // Option Chauffeur — le rôle existait côté API et côté écrans,
+              // mais aucun parcours d'inscription n'y menait.
+              _buildCard(
+                context,
+                title: "Je suis Chauffeur",
+                subtitle: "Je transporte des passagers avec Allô Chauffeur",
+                icon: Icons.local_taxi_rounded,
+                primaryColor: primaryBrown,
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    '/register',
+                    arguments: const {'userRole': 'chauffeur'},
+                  );
                 },
               ),
             ],
@@ -95,7 +117,8 @@ class ProfileChoice extends StatelessWidget {
     );
   }
 
-  Widget _buildCard({
+  Widget _buildCard(
+    BuildContext context, {
     required String title,
     required String subtitle,
     required IconData icon,
@@ -104,7 +127,7 @@ class ProfileChoice extends StatelessWidget {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceMaboko,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -139,10 +162,10 @@ class ProfileChoice extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: Theme.of(context).textTheme.titleLarge?.color,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -164,10 +187,10 @@ class ProfileChoice extends StatelessWidget {
                     color: Colors.grey.shade100,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 14,
-                    color: Colors.black54,
+                    color: context.texteSecondaireMaboko,
                   ),
                 ),
               ],

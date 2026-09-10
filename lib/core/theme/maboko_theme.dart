@@ -58,3 +58,38 @@ String formaterFcfa(num? montant) {
 
   return '${tampon.toString()} FCFA';
 }
+
+/// Couleurs qui dépendent du thème actif.
+///
+/// La charte ci-dessus est figée en clair : « fond » est un crème, « bordure »
+/// un beige, « surface » du blanc. Posées telles quelles en mode sombre, elles
+/// repeignent des cartes en blanc sur un écran noir. Ces raccourcis renvoient
+/// l'équivalent du mode courant, et gardent la même intention visuelle.
+extension MabokoContexte on BuildContext {
+  bool get sombre => Theme.of(this).brightness == Brightness.dark;
+
+  /// Fond d'écran général.
+  Color get fondMaboko => Theme.of(this).scaffoldBackgroundColor;
+
+  /// Fond d'une carte posée sur ce fond.
+  Color get surfaceMaboko => Theme.of(this).cardColor;
+
+  /// Trait de séparation ou contour de carte.
+  Color get bordureMaboko => Theme.of(this).dividerColor;
+
+  /// Texte d'appoint : légendes, métadonnées, libellés de champs.
+  Color get texteSecondaireMaboko =>
+      sombre ? const Color(0xFFB3A499) : MabokoCouleurs.texteSecondaire;
+
+  /// Texte affirmé : titre de pastille, libellé de badge, corps d'un
+  /// commentaire. En clair c'est le marron de la charte ; en sombre ce
+  /// marron disparaît dans le fond, il faut son inverse.
+  Color get texteFortMaboko =>
+      sombre ? const Color(0xFFF0E4D8) : MabokoCouleurs.principale;
+
+  /// Aplat discret *à l'intérieur* d'une carte : pastille, tuile d'icône,
+  /// champ de saisie. En clair c'est le crème de la charte ; en sombre, un
+  /// cran au-dessus de la carte plutôt qu'un cran en dessous.
+  Color get teinteMaboko =>
+      sombre ? const Color(0xFF2E251F) : MabokoCouleurs.fond;
+}

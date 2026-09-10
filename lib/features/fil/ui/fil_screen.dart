@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/cache/cache_local.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/maboko_theme.dart';
 import '../../../core/widgets/etats.dart';
@@ -25,10 +26,16 @@ class FilScreen extends StatefulWidget {
 class _FilScreenState extends State<FilScreen> {
   static const _repository = FilRepository();
 
+  static const _cleCache = 'fil';
+
   List<Publication> _publications = const [];
   List<StoryItem> _stories = const [];
   bool _chargement = true;
   String? _erreur;
+
+  /// Renseignée lorsque le contenu affiché vient du cache : l'utilisateur
+  /// doit savoir qu'il ne regarde pas l'état actuel.
+  DateTime? _horsLigneDepuis;
 
   @override
   void initState() {
@@ -48,18 +55,72 @@ class _FilScreenState extends State<FilScreen> {
       ]);
 
       if (!mounted) return;
+
+      final publications = resultats[0] as List<Publication>;
+
       setState(() {
-        _publications = resultats[0] as List<Publication>;
+        _publications = publications;
         _stories = resultats[1] as List<StoryItem>;
         _chargement = false;
+        _horsLigneDepuis = null;
       });
+
+      await _mettreEnCache(publications);
     } on ApiException catch (e) {
       if (!mounted) return;
+
+      // Réseau indisponible : plutôt qu'une page d'erreur, on montre le
+      // dernier fil connu en le signalant (§7.2).
+      final secours = await _lireCache();
+
+      if (!mounted) return;
+
       setState(() {
-        _erreur = e.message;
+        if (secours != null && _publications.isEmpty) {
+          _publications = secours.publications;
+          _horsLigneDepuis = secours.date;
+          _erreur = null;
+        } else {
+          _erreur = e.message;
+        }
         _chargement = false;
       });
     }
+  }
+
+  Future<void> _mettreEnCache(List<Publication> publications) async {
+    await CacheLocal.ecrire(
+      _cleCache,
+      publications
+          .map((p) => {
+                'id': p.id,
+                'auteur': {
+                  'id': p.auteur.id,
+                  'nomComplet': p.auteur.nomComplet,
+                  'avatarUrl': p.auteur.avatarUrl,
+                  'metier': p.auteur.metier,
+                },
+                'medias': p.medias,
+                'description': p.description,
+                'likesCount': p.likesCount,
+                'commentsCount': p.commentsCount,
+                'isLiked': p.isLiked,
+                'publieLe': p.publieLe?.toIso8601String(),
+              })
+          .toList(),
+    );
+  }
+
+  Future<({List<Publication> publications, DateTime date})?> _lireCache() async {
+    final entree = await CacheLocal.lire(_cleCache);
+
+    if (entree == null || entree.contenu is! List) return null;
+
+    final publications = (entree.contenu as List)
+        .map((p) => Publication.depuisJson(p as Map<String, dynamic>))
+        .toList();
+
+    return publications.isEmpty ? null : (publications: publications, date: entree.enregistreLe);
   }
 
   /// Le like s'applique tout de suite à l'écran, puis se confirme au serveur.
@@ -119,6 +180,7 @@ class _FilScreenState extends State<FilScreen> {
         padding: const EdgeInsets.only(bottom: 24),
         children: [
           if (widget.enTete != null) widget.enTete!,
+          if (_horsLigneDepuis != null) _bandeauHorsLigne(),
           if (_stories.isNotEmpty) _bandeauStories(),
           const Divider(height: 20, thickness: 0.5),
           if (_publications.isEmpty)
@@ -133,6 +195,40 @@ class _FilScreenState extends State<FilScreen> {
             )
           else
             ..._publications.map(_cartePublication),
+        ],
+      ),
+    );
+  }
+
+  /// Signale que le contenu affiché n'est pas à jour.
+  Widget _bandeauHorsLigne() {
+    final ecart = DateTime.now().difference(_horsLigneDepuis!);
+    final quand = ecart.inMinutes < 60
+        ? 'il y a ${ecart.inMinutes} min'
+        : 'il y a ${ecart.inHours} h';
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: MabokoCouleurs.accent.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.cloud_off_rounded, size: 18, color: MabokoCouleurs.accent),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Hors connexion — fil enregistré $quand.',
+              style: TextStyle(fontSize: 12.5, color: context.texteFortMaboko),
+            ),
+          ),
+          TextButton(
+            onPressed: _charger,
+            style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+            child: const Text('Réessayer', style: TextStyle(fontSize: 12.5)),
+          ),
         ],
       ),
     );
@@ -163,7 +259,7 @@ class _FilScreenState extends State<FilScreen> {
                   ),
                   child: CircleAvatar(
                     radius: 27,
-                    backgroundColor: MabokoCouleurs.surface,
+                    backgroundColor: context.surfaceMaboko,
                     backgroundImage: story.mediaUrl.isNotEmpty ? NetworkImage(story.mediaUrl) : null,
                     child: story.mediaUrl.isEmpty
                         ? const Icon(Icons.person, color: MabokoCouleurs.secondaire)
@@ -188,13 +284,13 @@ class _FilScreenState extends State<FilScreen> {
   Widget _cartePublication(Publication publication) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      color: MabokoCouleurs.surface,
+      color: Theme.of(context).cardColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ListTile(
             leading: CircleAvatar(
-              backgroundColor: MabokoCouleurs.fond,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               backgroundImage: publication.auteur.avatarUrl?.isNotEmpty == true
                   ? NetworkImage(publication.auteur.avatarUrl!)
                   : null,
@@ -208,7 +304,7 @@ class _FilScreenState extends State<FilScreen> {
             ),
             subtitle: Text(
               publication.auteur.metier ?? '',
-              style: const TextStyle(fontSize: 12, color: MabokoCouleurs.texteSecondaire),
+              style: TextStyle(fontSize: 12, color: context.texteSecondaireMaboko),
             ),
           ),
           if (publication.premierMedia != null)
@@ -288,7 +384,7 @@ class _FilScreenState extends State<FilScreen> {
 
         return Container(
           height: 320,
-          color: MabokoCouleurs.fond,
+          color: context.teinteMaboko,
           child: const Center(
             child: CircularProgressIndicator(color: MabokoCouleurs.secondaire, strokeWidth: 2),
           ),
@@ -296,8 +392,8 @@ class _FilScreenState extends State<FilScreen> {
       },
       errorBuilder: (_, __, ___) => Container(
         height: 320,
-        color: MabokoCouleurs.fond,
-        child: const Icon(Icons.broken_image_outlined, size: 40, color: MabokoCouleurs.bordure),
+        color: context.teinteMaboko,
+        child: Icon(Icons.broken_image_outlined, size: 40, color: context.bordureMaboko),
       ),
     );
   }

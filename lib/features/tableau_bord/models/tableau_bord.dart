@@ -37,6 +37,7 @@ class TableauBord {
     this.montantEngage = 0,
     this.revenusTotal = 0,
     this.revenusMois = 0,
+    this.revenusParMois = const [],
     this.noteMoyenne = 0,
     this.nbAvis = 0,
     this.badges = const [],
@@ -57,6 +58,9 @@ class TableauBord {
   // Artisan
   final double revenusTotal;
   final double revenusMois;
+
+  /// Douze mois glissants, pour le suivi graphique (§5.2.4).
+  final List<({String mois, double total})> revenusParMois;
   final double noteMoyenne;
   final int nbAvis;
   final List<BadgeConfiance> badges;
@@ -81,6 +85,14 @@ class TableauBord {
       avisDeposes: json['avisDeposes'] as int? ?? 0,
       montantEngage: (json['montantEngage'] as num?)?.toDouble() ?? 0,
       revenusTotal: (revenus?['total'] as num?)?.toDouble() ?? 0,
+      revenusParMois: ((revenus?['parMois'] as List?) ?? []).map((m) {
+        final entree = m as Map<String, dynamic>;
+
+        return (
+          mois: entree['mois'] as String? ?? '',
+          total: (entree['total'] as num?)?.toDouble() ?? 0,
+        );
+      }).toList(),
       revenusMois: (revenus?['moisCourant'] as num?)?.toDouble() ?? 0,
       noteMoyenne: (json['noteMoyenne'] as num?)?.toDouble() ?? 0,
       nbAvis: json['nbAvis'] as int? ?? 0,

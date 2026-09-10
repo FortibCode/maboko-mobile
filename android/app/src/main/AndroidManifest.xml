@@ -1,4 +1,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- INTERNET n'etait declare que dans les manifestes debug et profile.
+         Une compilation release n'utilise que celui-ci : l'application publiee
+         n'aurait eu aucun acces reseau. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Position du chauffeur : sans ces declarations, geolocator refuse la
+         permission et l'appariement des courses ne peut pas fonctionner. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
+    <!-- Photos de profil, portfolio et pieces d'identite. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+
+    <!-- L'appareil photo est un confort, pas une condition d'installation :
+         un telephone sans camera doit pouvoir utiliser la galerie. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+
     <application
         android:label="maboko_app"
         android:name="${applicationName}"

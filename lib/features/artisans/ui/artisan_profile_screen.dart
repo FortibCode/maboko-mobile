@@ -7,6 +7,8 @@ import '../../demandes/ui/demande_form_screen.dart';
 import '../../messagerie/data/messagerie_repository.dart';
 import '../../messagerie/ui/conversation_screen.dart';
 import '../data/artisan_repository.dart';
+import '../../fil/data/fil_repository.dart';
+import '../../fil/models/publication.dart';
 import '../models/artisan.dart';
 
 /// Fiche complète de l'artisan consultée par un client potentiel (§5.1.6) :
@@ -28,6 +30,10 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
   bool _ouvertureConversation = false;
 
   Artisan? _artisan;
+
+  /// Réalisations de l'artisan (§5.1.6). Elles n'étaient nulle part sur la
+  /// fiche : un client ne pouvait pas juger son travail avant de le contacter.
+  List<Publication> _realisations = const [];
   bool _chargement = true;
   String? _erreur;
 
@@ -50,6 +56,15 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
         _artisan = artisan;
         _chargement = false;
       });
+
+      // Chargées après la fiche : le portfolio complète l'écran, il ne doit
+      // pas retarder son affichage ni le faire échouer.
+      try {
+        final realisations = await const FilRepository()
+            .publications(artisanId: artisan.utilisateurId);
+        if (!mounted) return;
+        setState(() => _realisations = realisations);
+      } catch (_) {}
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -108,7 +123,7 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
     final artisan = _artisan;
 
     return Scaffold(
-      backgroundColor: MabokoCouleurs.fond,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Profil artisan'),
         backgroundColor: MabokoCouleurs.secondaire,
@@ -197,6 +212,50 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
               ),
             ),
           ],
+          if (_realisations.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _section(
+              titre: 'Portfolio de réalisations',
+              enfant: SizedBox(
+                height: 118,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _realisations.length,
+                  separatorBuilder: (contexte, index) => const SizedBox(width: 10),
+                  itemBuilder: (contexte, i) {
+                    final realisation = _realisations[i];
+                    final apercu = realisation.medias.isEmpty ? null : realisation.medias.first;
+
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: SizedBox(
+                        width: 118,
+                        height: 118,
+                        child: apercu == null
+                            ? Container(
+                                color: context.bordureMaboko,
+                                alignment: Alignment.center,
+                                padding: const EdgeInsets.all(8),
+                                child: Text(
+                                  realisation.description,
+                                  maxLines: 4,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 11),
+                                ),
+                              )
+                            : Image.network(
+                                apercu,
+                                fit: BoxFit.cover,
+                                errorBuilder: (contexte, erreur, trace) =>
+                                    Container(color: context.bordureMaboko),
+                              ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
           if (artisan.bio != null && artisan.bio!.isNotEmpty) ...[
             const SizedBox(height: 16),
             _section(
@@ -225,9 +284,9 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
             titre: 'Avis clients',
             compteur: artisan.nbAvis,
             enfant: artisan.avis.isEmpty
-                ? const Text(
+                ? Text(
                     'Cet artisan n’a pas encore reçu d’avis.',
-                    style: TextStyle(color: MabokoCouleurs.texteSecondaire, fontSize: 13.5),
+                    style: TextStyle(color: context.texteSecondaireMaboko, fontSize: 13.5),
                   )
                 : Column(children: artisan.avis.map<Widget>(_ligneAvis).toList()),
           ),
@@ -242,7 +301,7 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
       children: [
         CircleAvatar(
           radius: 38,
-          backgroundColor: MabokoCouleurs.surface,
+          backgroundColor: context.surfaceMaboko,
           backgroundImage: artisan.avatarUrl != null && artisan.avatarUrl!.isNotEmpty
               ? NetworkImage(artisan.avatarUrl!)
               : null,
@@ -268,7 +327,7 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
                 const SizedBox(height: 3),
                 Text(
                   artisan.quartier!,
-                  style: const TextStyle(fontSize: 12.5, color: MabokoCouleurs.texteSecondaire),
+                  style: TextStyle(fontSize: 12.5, color: context.texteSecondaireMaboko),
                 ),
               ],
               const SizedBox(height: 8),
@@ -280,7 +339,7 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
                     artisan.nbAvis == 0
                         ? 'Pas encore d’avis'
                         : '${artisan.noteMoyenne.toStringAsFixed(1)} · ${artisan.nbAvis} avis',
-                    style: const TextStyle(fontSize: 12.5, color: MabokoCouleurs.texteSecondaire),
+                    style: TextStyle(fontSize: 12.5, color: context.texteSecondaireMaboko),
                   ),
                 ],
               ),
@@ -295,9 +354,9 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.surface,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: MabokoCouleurs.bordure),
+        border: Border.all(color: context.bordureMaboko),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -317,21 +376,21 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
       children: [
         Text(valeur, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
         const SizedBox(height: 2),
-        Text(libelle, style: const TextStyle(fontSize: 12, color: MabokoCouleurs.texteSecondaire)),
+        Text(libelle, style: TextStyle(fontSize: 12, color: context.texteSecondaireMaboko)),
       ],
     );
   }
 
-  Widget _separateur() => Container(width: 1, height: 30, color: MabokoCouleurs.bordure);
+  Widget _separateur() => Container(width: 1, height: 30, color: context.bordureMaboko);
 
   Widget _section({required String titre, required Widget enfant, int? compteur}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.surface,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: MabokoCouleurs.bordure),
+        border: Border.all(color: context.bordureMaboko),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -341,7 +400,7 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
               Text(titre, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               if (compteur != null && compteur > 0) ...[
                 const SizedBox(width: 6),
-                Text('($compteur)', style: const TextStyle(color: MabokoCouleurs.texteSecondaire, fontSize: 13)),
+                Text('($compteur)', style: TextStyle(color: context.texteSecondaireMaboko, fontSize: 13)),
               ],
             ],
           ),
@@ -356,7 +415,7 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.fond,
+        color: context.teinteMaboko,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: MabokoCouleurs.accent.withValues(alpha: 0.55)),
       ),
@@ -367,7 +426,7 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
           const SizedBox(width: 6),
           Text(
             badge.nom,
-            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: MabokoCouleurs.principale),
+            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: context.texteFortMaboko),
           ),
         ],
       ),
@@ -398,7 +457,7 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
             const SizedBox(height: 5),
             Text(
               avis.commentaire!,
-              style: const TextStyle(fontSize: 13.5, height: 1.45, color: MabokoCouleurs.texteSecondaire),
+              style: TextStyle(fontSize: 13.5, height: 1.45, color: context.texteSecondaireMaboko),
             ),
           ],
         ],

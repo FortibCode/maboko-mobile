@@ -45,12 +45,11 @@ class Onboarding3 extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Center(
-                    child: Image.asset(
-                      'assets/images/message.png',
-                      width: 110,
-                      height: 110,
-                      fit: BoxFit.contain,
+                  child: const Center(
+                    child: Icon(
+                      Icons.forum_rounded,
+                      size: 96,
+                      color: Color(0xFFB35B28),
                     ),
                   ),
                 ),

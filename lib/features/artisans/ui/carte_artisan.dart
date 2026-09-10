@@ -4,6 +4,7 @@ import '../../../core/theme/maboko_theme.dart';
 import '../../../core/widgets/etats.dart';
 import '../models/artisan.dart';
 import 'artisan_profile_screen.dart';
+import '../../../core/widgets/carte_pressable.dart';
 
 /// Ligne de résultat de recherche : ce qu'un client voit avant d'ouvrir
 /// la fiche complète.
@@ -14,12 +15,18 @@ class CarteArtisan extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return CartePressable(
+      echelle: 0.985,
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => ArtisanProfileScreen(artisanId: artisan.id)),
+      ),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.surface,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: MabokoCouleurs.bordure),
+        border: Border.all(color: context.bordureMaboko),
       ),
       child: Material(
         color: Colors.transparent,
@@ -36,7 +43,7 @@ class CarteArtisan extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 27,
-                  backgroundColor: MabokoCouleurs.fond,
+                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                   backgroundImage: artisan.avatarUrl != null && artisan.avatarUrl!.isNotEmpty
                       ? NetworkImage(artisan.avatarUrl!)
                       : null,
@@ -94,14 +101,14 @@ class CarteArtisan extends StatelessWidget {
                             artisan.nbAvis == 0
                                 ? 'Pas encore d’avis'
                                 : '${artisan.noteMoyenne.toStringAsFixed(1)} (${artisan.nbAvis})',
-                            style: const TextStyle(fontSize: 11.5, color: MabokoCouleurs.texteSecondaire),
+                            style: TextStyle(fontSize: 11.5, color: context.texteSecondaireMaboko),
                           ),
                           if (artisan.distanceKm != null) ...[
                             const SizedBox(width: 10),
-                            const Icon(Icons.place_outlined, size: 13, color: MabokoCouleurs.texteSecondaire),
+                            Icon(Icons.place_outlined, size: 13, color: context.texteSecondaireMaboko),
                             Text(
                               ' ${artisan.distanceKm!.toStringAsFixed(1)} km',
-                              style: const TextStyle(fontSize: 11.5, color: MabokoCouleurs.texteSecondaire),
+                              style: TextStyle(fontSize: 11.5, color: context.texteSecondaireMaboko),
                             ),
                           ],
                         ],
@@ -125,6 +132,7 @@ class CarteArtisan extends StatelessWidget {
           ),
         ),
       ),
+      ),
     );
   }
 }
@@ -139,9 +147,9 @@ class _PuceBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.fond,
+        color: context.teinteMaboko,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: MabokoCouleurs.bordure),
+        border: Border.all(color: context.bordureMaboko),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -150,7 +158,7 @@ class _PuceBadge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             libelle,
-            style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: MabokoCouleurs.principale),
+            style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: context.texteFortMaboko),
           ),
         ],
       ),

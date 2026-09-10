@@ -61,6 +61,8 @@ class Artisan {
     this.nbAvis = 0,
     this.nbMissionsTerminees = 0,
     this.metiers = const [],
+    this.metiersSlugs = const [],
+    this.rayonKm,
     this.badges = const [],
     this.avis = const [],
     this.plan,
@@ -84,7 +86,15 @@ class Artisan {
   final double noteMoyenne;
   final int nbAvis;
   final int nbMissionsTerminees;
+  /// Noms des métiers, pour l'affichage.
   final List<String> metiers;
+
+  /// Slugs des mêmes métiers, seuls acceptés par l'API quand on modifie la
+  /// fiche. Sans eux, l'écran de modification ne pouvait rien pré-cocher.
+  final List<String> metiersSlugs;
+
+  /// Rayon de déplacement en kilomètres.
+  final int? rayonKm;
   final List<BadgeConfiance> badges;
   final List<Avis> avis;
   final String? plan;
@@ -113,6 +123,10 @@ class Artisan {
       metiers: ((json['metiers'] as List?) ?? [])
           .map((m) => (m as Map<String, dynamic>)['nom'] as String)
           .toList(),
+      metiersSlugs: ((json['metiers'] as List?) ?? [])
+          .map((m) => (m as Map<String, dynamic>)['slug'] as String)
+          .toList(),
+      rayonKm: json['rayonKm'] as int?,
       badges: ((json['badges'] as List?) ?? [])
           .map((b) => BadgeConfiance.depuisJson(b as Map<String, dynamic>))
           .toList(),

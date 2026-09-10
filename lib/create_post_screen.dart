@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'core/theme/maboko_theme.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'dart:convert';
@@ -95,11 +97,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF4E7),
+      backgroundColor: context.fondMaboko,
       appBar: AppBar(
         title: const Text("Créer une publication"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        backgroundColor: context.surfaceMaboko,
+        foregroundColor: Theme.of(context).textTheme.titleLarge?.color,
         actions: [
           TextButton(
             onPressed: _isLoading ? null : _submitPost,
@@ -131,23 +133,23 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 height: 200,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.surfaceMaboko,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.brown.shade200),
+                  border: Border.all(color: context.bordureMaboko),
                 ),
                 child: _imageBytes != null
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Image.memory(_imageBytes!, fit: BoxFit.cover),
                       )
-                    : const Column(
+                    : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.add_a_photo, size: 50, color: Color(0xFFB35B28)),
-                          SizedBox(height: 8),
+                          const Icon(Icons.add_a_photo, size: 50, color: Color(0xFFB35B28)),
+                          const SizedBox(height: 8),
                           Text(
                             "Ajouter une photo de votre réalisation",
-                            style: TextStyle(color: Colors.grey, fontSize: 14),
+                            style: TextStyle(color: context.texteSecondaireMaboko, fontSize: 14),
                           ),
                         ],
                       ),
@@ -160,7 +162,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               decoration: InputDecoration(
                 hintText: "Légende de la publication...",
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: context.surfaceMaboko,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8.0),
                   borderSide: BorderSide.none,

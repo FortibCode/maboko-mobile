@@ -1,5 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/cache/cache_local.dart';
+
 class StorageService {
   // Clés statiques principales
   static const String _tokenKey = "auth_token";
@@ -7,7 +9,6 @@ class StorageService {
   static const String _nameKey = "user_name";
   static const String _roleKey = "user_role";
   static const String _telephoneKey = "user_telephone";
-  static const String _avatarIndexKey = "avatar_index";
   static const String _profileCompletedKey = "profile_completed_";
   static const String _onboardingDoneKey = "onboarding_completed";
 
@@ -92,15 +93,7 @@ class StorageService {
   // GESTION DE L'AVATAR SELECTIONNÉ
   // ----------------------------------------------------
 
-  static Future<bool> saveAvatarIndex(int avatarIndex) async {
-    final prefs = await SharedPreferences.getInstance();
-    return await prefs.setInt(_avatarIndexKey, avatarIndex);
-  }
 
-  static Future<int?> getAvatarIndex() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_avatarIndexKey);
-  }
 
   // ----------------------------------------------------
   // METHODE PRATIQUE POUR SAUVEGARDER TOUTES LES INFOS PROFIL D'UN COUP
@@ -109,12 +102,10 @@ class StorageService {
   static Future<void> saveUserData({
     required String name,
     required String role,
-    required int avatarIndex,
     String? email,
   }) async {
     await saveUserName(name);
     await saveUserRole(role);
-    await saveAvatarIndex(avatarIndex);
     if (email != null && email.isNotEmpty) {
       await saveUserEmail(email);
     }
@@ -177,12 +168,15 @@ class StorageService {
   // ----------------------------------------------------
 
   static Future<bool> clearToken() async {
+    // Le contenu mis en cache pour un compte ne doit pas rester visible du
+    // suivant sur un téléphone partagé.
+    await CacheLocal.viderTout();
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_emailKey); 
     await prefs.remove(_nameKey);
     await prefs.remove(_roleKey);
     await prefs.remove(_telephoneKey);
-    await prefs.remove(_avatarIndexKey);
     return await prefs.remove(_tokenKey);
   }
 

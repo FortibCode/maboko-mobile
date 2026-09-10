@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/maboko_theme.dart';
 import '../../../core/widgets/etats.dart';
+import '../../artisans/ui/fiche_artisan_screen.dart';
 import '../../demandes/models/demande.dart';
 import '../../demandes/ui/demande_detail_screen.dart';
 import '../../demandes/ui/demandes_screen.dart';
 import '../data/tableau_bord_repository.dart';
 import '../models/tableau_bord.dart';
+import 'graphique_revenus.dart';
 
 /// Tableau de bord artisan (§5.2.1) : missions reçues, en cours et terminées,
 /// revenus cumulés, puis la liste des dernières demandes à traiter.
@@ -15,7 +17,13 @@ import '../models/tableau_bord.dart';
 /// Remplace l'écran « Mon Business », dont tous les chiffres étaient lus
 /// dans le stockage local du téléphone et n'existaient donc que là.
 class TableauBordArtisanScreen extends StatefulWidget {
-  const TableauBordArtisanScreen({super.key});
+  const TableauBordArtisanScreen({super.key, this.enTete});
+
+  /// Barre posée au-dessus du contenu quand l'écran sert d'onglet d'accueil.
+  ///
+  /// Dans ce cas il n'a pas de barre de titre à lui : celle de la coquille
+  /// suffit, et deux barres empilées mangeraient un tiers de l'écran.
+  final Widget? enTete;
 
   @override
   State<TableauBordArtisanScreen> createState() => _TableauBordArtisanScreenState();
@@ -58,8 +66,20 @@ class _TableauBordArtisanScreenState extends State<TableauBordArtisanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.enTete != null) {
+      return Container(
+        color: context.fondMaboko,
+        child: Column(
+          children: [
+            widget.enTete!,
+            Expanded(child: _corps()),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
-      backgroundColor: MabokoCouleurs.fond,
+      backgroundColor: context.fondMaboko,
       appBar: AppBar(
         title: const Text('Mon activité'),
         backgroundColor: MabokoCouleurs.secondaire,
@@ -78,11 +98,30 @@ class _TableauBordArtisanScreenState extends State<TableauBordArtisanScreen> {
     final bord = _bord!;
 
     if (bord.ficheManquante) {
-      return const EtatVide(
+      // Sans bouton, cet ecran etait une impasse : le message demandait de
+      // completer la fiche sans offrir le moindre moyen de le faire.
+      return EtatVide(
         icone: Icons.badge_outlined,
         titre: 'Votre fiche artisan est incomplète',
         message: 'Renseignez votre métier et votre zone d’intervention pour '
             'apparaître dans les recherches et recevoir des missions.',
+        action: FilledButton.icon(
+          style: FilledButton.styleFrom(
+            backgroundColor: MabokoCouleurs.secondaire,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+          ),
+          onPressed: () async {
+            final cree = await Navigator.push<bool>(
+              context,
+              MaterialPageRoute(builder: (_) => const FicheArtisanScreen()),
+            );
+            if (cree == true) await _charger();
+          },
+          icon: const Icon(Icons.edit_outlined, size: 19),
+          label: const Text('Compléter ma fiche',
+              style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
       );
     }
 
@@ -94,6 +133,16 @@ class _TableauBordArtisanScreenState extends State<TableauBordArtisanScreen> {
         children: [
           _carteRevenus(bord),
           const SizedBox(height: 16),
+
+          // Suivi graphique des revenus mensuels (§5.2.4). Le cahier le
+          // demande explicitement ; seuls le total et le mois courant
+          // etaient affiches jusqu'ici.
+          _bloc(
+            titre: 'Revenus des 12 derniers mois',
+            enfant: GraphiqueRevenus(serie: bord.revenusParMois),
+          ),
+          const SizedBox(height: 16),
+
           _compteursMissions(bord),
           const SizedBox(height: 16),
           _reputation(bord),
@@ -108,7 +157,7 @@ class _TableauBordArtisanScreenState extends State<TableauBordArtisanScreen> {
                     .map<Widget>((b) => Container(
                           padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
                           decoration: BoxDecoration(
-                            color: MabokoCouleurs.fond,
+                            color: context.teinteMaboko,
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(color: MabokoCouleurs.accent.withValues(alpha: 0.55)),
                           ),
@@ -120,10 +169,10 @@ class _TableauBordArtisanScreenState extends State<TableauBordArtisanScreen> {
                               const SizedBox(width: 6),
                               Text(
                                 b.nom,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w700,
-                                  color: MabokoCouleurs.principale,
+                                  color: context.texteFortMaboko,
                                 ),
                               ),
                             ],
@@ -210,9 +259,9 @@ class _TableauBordArtisanScreenState extends State<TableauBordArtisanScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.surface,
+        color: context.surfaceMaboko,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: MabokoCouleurs.bordure),
+        border: Border.all(color: context.bordureMaboko),
       ),
       child: Column(
         children: [
@@ -224,7 +273,7 @@ class _TableauBordArtisanScreenState extends State<TableauBordArtisanScreen> {
           Text(
             libelle,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 11.5, color: MabokoCouleurs.texteSecondaire),
+            style: TextStyle(fontSize: 11.5, color: context.texteSecondaireMaboko),
           ),
         ],
       ),
@@ -246,7 +295,7 @@ class _TableauBordArtisanScreenState extends State<TableauBordArtisanScreen> {
           if (bord.nbAvis > 0)
             Text(
               'sur ${bord.nbAvis} avis',
-              style: const TextStyle(fontSize: 12.5, color: MabokoCouleurs.texteSecondaire),
+              style: TextStyle(fontSize: 12.5, color: context.texteSecondaireMaboko),
             ),
         ],
       ),
@@ -264,11 +313,11 @@ class _TableauBordArtisanScreenState extends State<TableauBordArtisanScreen> {
         child: const Text('Tout voir', style: TextStyle(color: MabokoCouleurs.secondaire)),
       ),
       enfant: bord.dernieresDemandes.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
+          ? Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
                 'Aucune nouvelle demande. Les missions qui vous sont adressées apparaîtront ici.',
-                style: TextStyle(color: MabokoCouleurs.texteSecondaire, fontSize: 13.5, height: 1.4),
+                style: TextStyle(color: context.texteSecondaireMaboko, fontSize: 13.5, height: 1.4),
               ),
             )
           : Column(children: bord.dernieresDemandes.map<Widget>(_ligneDemande).toList()),
@@ -282,7 +331,7 @@ class _TableauBordArtisanScreenState extends State<TableauBordArtisanScreen> {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: MabokoCouleurs.fond,
+          color: context.teinteMaboko,
           borderRadius: BorderRadius.circular(10),
         ),
         child: const Icon(Icons.assignment_outlined, size: 20, color: MabokoCouleurs.secondaire),
@@ -295,9 +344,9 @@ class _TableauBordArtisanScreenState extends State<TableauBordArtisanScreen> {
       ),
       subtitle: Text(
         '${demande.clientNom ?? 'Client'} · ${formaterFcfa(demande.budgetEstime)}',
-        style: const TextStyle(fontSize: 12, color: MabokoCouleurs.texteSecondaire),
+        style: TextStyle(fontSize: 12, color: context.texteSecondaireMaboko),
       ),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: MabokoCouleurs.texteSecondaire),
+      trailing: Icon(Icons.arrow_forward_ios, size: 14, color: context.texteSecondaireMaboko),
       onTap: () async {
         await Navigator.push(
           context,
@@ -315,9 +364,9 @@ class _TableauBordArtisanScreenState extends State<TableauBordArtisanScreen> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.surface,
+        color: context.surfaceMaboko,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: MabokoCouleurs.bordure),
+        border: Border.all(color: context.bordureMaboko),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

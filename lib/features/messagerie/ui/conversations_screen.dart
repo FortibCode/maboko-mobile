@@ -77,7 +77,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MabokoCouleurs.fond,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Messages'),
         backgroundColor: MabokoCouleurs.secondaire,
@@ -146,11 +146,11 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     final aDuNonLu = conversation.nonLus > 0;
 
     return ListTile(
-      tileColor: MabokoCouleurs.surface,
+      tileColor: context.surfaceMaboko,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       leading: CircleAvatar(
         radius: 24,
-        backgroundColor: MabokoCouleurs.fond,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         backgroundImage: conversation.interlocuteur.avatarUrl?.isNotEmpty == true
             ? NetworkImage(conversation.interlocuteur.avatarUrl!)
             : null,
@@ -176,7 +176,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontSize: 13,
-          color: aDuNonLu ? MabokoCouleurs.principale : MabokoCouleurs.texteSecondaire,
+          color: aDuNonLu ? MabokoCouleurs.principale : context.texteSecondaireMaboko,
           fontWeight: aDuNonLu ? FontWeight.w600 : FontWeight.normal,
         ),
       ),
@@ -186,7 +186,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         children: [
           Text(
             horodatageCourt(conversation.dernierMessageLe),
-            style: const TextStyle(fontSize: 11, color: MabokoCouleurs.texteSecondaire),
+            style: TextStyle(fontSize: 11, color: context.texteSecondaireMaboko),
           ),
           const SizedBox(height: 6),
           if (aDuNonLu)

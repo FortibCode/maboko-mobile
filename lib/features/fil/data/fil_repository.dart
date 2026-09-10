@@ -6,10 +6,17 @@ class FilRepository {
 
   /// Fil d'actualité. `abonnements` restreint aux artisans suivis ; sans
   /// abonnement, l'API bascule d'elle-même sur toute la plateforme.
-  Future<List<Publication>> publications({bool abonnements = false}) async {
+  /// Publications du fil.
+  ///
+  /// [artisanId] restreint aux réalisations d'un artisan : c'est ce qui
+  /// alimente son portfolio sur sa fiche (§5.1.6).
+  Future<List<Publication>> publications({bool abonnements = false, int? artisanId}) async {
     final reponse = await api.get(
       '/posts',
-      parametres: {if (abonnements) 'abonnements': '1'},
+      parametres: {
+        if (abonnements) 'abonnements': '1',
+        if (artisanId != null) 'artisan': '$artisanId',
+      },
     );
 
     return ((reponse['data'] as List?) ?? [])
@@ -60,6 +67,9 @@ class FilRepository {
       'medias': medias,
     });
   }
+
+  /// Retrait d'une réalisation. L'API n'autorise que son auteur.
+  Future<void> supprimerPublication(int postId) => api.delete('/posts/$postId');
 
   Future<void> publierStory({required String media, String? legende}) async {
     await api.post('/stories', corps: {

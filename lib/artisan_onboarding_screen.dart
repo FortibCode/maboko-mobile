@@ -1,13 +1,15 @@
 // Fichier : lib/artisan_onboarding.dart
 import 'package:flutter/material.dart';
 
+import 'core/theme/maboko_theme.dart';
+
 class ArtisanOnboarding extends StatelessWidget {
   const ArtisanOnboarding({super.key});
 
   @override
   Widget build(BuildContext context) {
     const Color primaryBrown = Color(0xFFB35B28);
-    const Color backgroundColor = Color(0xFFFAF4E7);
+    final Color backgroundColor = context.fondMaboko;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -33,24 +35,24 @@ class ArtisanOnboarding extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-              const Text(
-                "Développez votre activité\navec maboko.com",
+              Text(
+                "Développez votre activité\navec Maboko",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'serif',
-                  color: Colors.black87,
+                  color: Theme.of(context).textTheme.titleLarge?.color,
                   height: 1.2,
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 "Trouvez de nouveaux clients, présentez votre savoir-faire à travers votre portfolio et gérez vos chantiers facilement.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.black54,
+                  color: context.texteSecondaireMaboko,
                   height: 1.4,
                 ),
               ),
@@ -59,8 +61,17 @@ class ArtisanOnboarding extends StatelessWidget {
                 height: 52,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Emmène vers l'écran de personnalisation (ArtisanProfileChoiceScreen)
-                    Navigator.pushNamed(context, '/artisan-profile-choice');
+                    // Direction l'inscription. L'ecran de « vitrine » qui se
+                    // trouvait ici demandait un metier et une photo avant
+                    // qu'un compte existe : rien ne pouvait etre enregistre,
+                    // et l'envoi de photo aurait ete refuse faute de jeton.
+                    // Le metier se choisit desormais apres le code de
+                    // verification, quand il y a un compte pour le porter.
+                    Navigator.pushNamed(
+                      context,
+                      '/register',
+                      arguments: {'userRole': 'artisan'},
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryBrown,

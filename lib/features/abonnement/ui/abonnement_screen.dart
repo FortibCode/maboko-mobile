@@ -84,7 +84,7 @@ class _AbonnementScreenState extends State<AbonnementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MabokoCouleurs.fond,
+      backgroundColor: context.fondMaboko,
       appBar: AppBar(
         title: const Text('Mon abonnement'),
         backgroundColor: MabokoCouleurs.secondaire,
@@ -115,9 +115,9 @@ class _AbonnementScreenState extends State<AbonnementScreen> {
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Une formule supérieure remonte votre profil dans les résultats de recherche.',
-            style: TextStyle(fontSize: 12.5, color: MabokoCouleurs.texteSecondaire),
+            style: TextStyle(fontSize: 12.5, color: context.texteSecondaireMaboko),
           ),
           const SizedBox(height: 14),
           ..._plans.map((plan) => _cartePlan(plan, actuel.plan.slug == plan.slug)),
@@ -183,10 +183,10 @@ class _AbonnementScreenState extends State<AbonnementScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.surface,
+        color: context.surfaceMaboko,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: estActuel ? MabokoCouleurs.secondaire : MabokoCouleurs.bordure,
+          color: estActuel ? MabokoCouleurs.secondaire : context.bordureMaboko,
           width: estActuel ? 1.6 : 1,
         ),
       ),
@@ -223,7 +223,7 @@ class _AbonnementScreenState extends State<AbonnementScreen> {
                       const SizedBox(height: 3),
                       Text(
                         plan.description!,
-                        style: const TextStyle(fontSize: 12.5, color: MabokoCouleurs.texteSecondaire, height: 1.35),
+                        style: TextStyle(fontSize: 12.5, color: context.texteSecondaireMaboko, height: 1.35),
                       ),
                     ],
                   ],
@@ -238,7 +238,7 @@ class _AbonnementScreenState extends State<AbonnementScreen> {
                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: MabokoCouleurs.secondaire),
                   ),
                   if (!plan.estGratuit)
-                    const Text('par mois', style: TextStyle(fontSize: 10.5, color: MabokoCouleurs.texteSecondaire)),
+                    Text('par mois', style: TextStyle(fontSize: 10.5, color: context.texteSecondaireMaboko)),
                 ],
               ),
             ],

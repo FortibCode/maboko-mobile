@@ -79,7 +79,7 @@ class _DemandesScreenState extends State<DemandesScreen> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MabokoCouleurs.fond,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(widget.estArtisan ? 'Missions reçues' : 'Mes demandes'),
         backgroundColor: MabokoCouleurs.secondaire,
@@ -185,9 +185,9 @@ class _CarteDemande extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.surface,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: MabokoCouleurs.bordure),
+        border: Border.all(color: context.bordureMaboko),
       ),
       child: Material(
         color: Colors.transparent,
@@ -218,19 +218,19 @@ class _CarteDemande extends StatelessWidget {
                   demande.description,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, color: MabokoCouleurs.texteSecondaire, height: 1.4),
+                  style: TextStyle(fontSize: 13, color: context.texteSecondaireMaboko, height: 1.4),
                 ),
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    const Icon(Icons.place_outlined, size: 14, color: MabokoCouleurs.texteSecondaire),
+                    Icon(Icons.place_outlined, size: 14, color: context.texteSecondaireMaboko),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         demande.adresse,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12, color: MabokoCouleurs.texteSecondaire),
+                        style: TextStyle(fontSize: 12, color: context.texteSecondaireMaboko),
                       ),
                     ),
                   ],
@@ -253,10 +253,10 @@ class _CarteDemande extends StatelessWidget {
                     const Spacer(),
                     Text(
                       formaterFcfa(demande.montantFinal ?? demande.montantPropose ?? demande.budgetEstime),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.bold,
-                        color: MabokoCouleurs.principale,
+                        color: context.texteFortMaboko,
                       ),
                     ),
                   ],

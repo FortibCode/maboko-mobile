@@ -1,5 +1,23 @@
 import 'package:flutter/material.dart';
 
+import '../core/network/api_exception.dart';
+import '../core/theme/maboko_theme.dart';
+import '../core/widgets/carte_pressable.dart';
+import '../core/widgets/choix_photo.dart';
+import '../core/widgets/etats.dart';
+import '../features/compte/data/profil_repository.dart';
+import '../features/fil/data/fil_repository.dart';
+import '../features/fil/models/publication.dart';
+
+/// Portfolio de réalisations de l'artisan (§5.2.3).
+///
+/// L'écran précédent était une simulation : il ajoutait une entrée écrite en
+/// dur — titre fixe, logo de l'application en guise de photo — à une liste
+/// gardée en mémoire, puis annonçait « Réalisation ajoutée avec succès ».
+/// Rien n'était envoyé au serveur, donc rien n'était visible par un client.
+///
+/// Les réalisations sont désormais les publications de l'artisan : les mêmes
+/// que le fil affiche, et que la fiche artisan montre aux clients.
 class PortfolioScreen extends StatefulWidget {
   const PortfolioScreen({super.key});
 
@@ -8,164 +26,247 @@ class PortfolioScreen extends StatefulWidget {
 }
 
 class _PortfolioScreenState extends State<PortfolioScreen> {
-  // Liste des réalisations (vide au départ pour l'artisan qui part de zéro)
-  final List<Map<String, String>> _portfolioItems = [];
+  static const _fil = FilRepository();
 
-  void _addNewRealisation() {
-    // Simulation de l'ajout d'une réalisation (dans un vrai cas, on utiliserait ImagePicker)
-    setState(() {
-      _portfolioItems.add({
-        'title': 'Chantier Peinture & Finition',
-        'description': 'Travaux récents réalisés à Brazzaville.',
-        'image': 'assets/images/Maboko.jpeg',
-      });
-    });
+  List<Publication>? _realisations;
+  String? _erreur;
+  bool _envoi = false;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Réalisation ajoutée avec succès à votre portfolio !"),
-        backgroundColor: Color(0xFFB35B28),
+  @override
+  void initState() {
+    super.initState();
+    _charger();
+  }
+
+  Future<void> _charger() async {
+    setState(() => _erreur = null);
+
+    try {
+      final profil = await const ProfilRepository().moi();
+      final publications = await _fil.publications(artisanId: profil.id);
+      if (!mounted) return;
+      setState(() => _realisations = publications);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _erreur = e.message);
+    }
+  }
+
+  Future<void> _ajouter() async {
+    final photo = await choisirPhoto(context);
+    if (photo == null || !mounted) return;
+
+    final description = await _demanderDescription();
+    if (description == null || !mounted) return;
+
+    setState(() => _envoi = true);
+
+    try {
+      await _fil.publier(
+        metier: 'realisation',
+        description: description,
+        medias: [photo],
+      );
+      await _charger();
+      if (!mounted) return;
+      setState(() => _envoi = false);
+      _informer('Réalisation publiée. Elle est visible sur votre profil.', MabokoCouleurs.succes);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _envoi = false);
+      _informer(e.message, MabokoCouleurs.danger);
+    }
+  }
+
+  Future<String?> _demanderDescription() {
+    final champ = TextEditingController();
+
+    return showDialog<String>(
+      context: context,
+      builder: (contexte) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Décrivez cette réalisation'),
+        content: TextField(
+          controller: champ,
+          autofocus: true,
+          maxLines: 3,
+          maxLength: 300,
+          decoration: const InputDecoration(
+            hintText: 'Ex : réfection complète d’une toiture à Bacongo.',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(contexte), child: const Text('Annuler')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: MabokoCouleurs.secondaire),
+            onPressed: () {
+              final texte = champ.text.trim();
+              // L'API exige une description : sans elle, la publication
+              // partirait pour être refusée.
+              if (texte.isEmpty) return;
+              Navigator.pop(contexte, texte);
+            },
+            child: const Text('Publier'),
+          ),
+        ],
       ),
+    );
+  }
+
+  Future<void> _supprimer(Publication realisation) async {
+    final confirme = await showDialog<bool>(
+      context: context,
+      builder: (contexte) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Retirer cette réalisation ?'),
+        content: const Text('Elle disparaîtra de votre profil et du fil d’actualité.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(contexte, false), child: const Text('Annuler')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: MabokoCouleurs.danger),
+            onPressed: () => Navigator.pop(contexte, true),
+            child: const Text('Retirer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirme != true) return;
+
+    try {
+      await _fil.supprimerPublication(realisation.id);
+      await _charger();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      _informer(e.message, MabokoCouleurs.danger);
+    }
+  }
+
+  void _informer(String message, Color couleur) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: couleur),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF4E7),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text("Mon Portfolio", style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFFB35B28),
-        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('Mon portfolio'),
+        backgroundColor: MabokoCouleurs.secondaire,
+        foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: _portfolioItems.isEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.photo_library_outlined,
-                        size: 64,
-                        color: Color(0xFFB35B28),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _envoi ? null : _ajouter,
+        backgroundColor: MabokoCouleurs.secondaire,
+        icon: _envoi
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+            : const Icon(Icons.add_a_photo_rounded, color: Colors.white),
+        label: Text(
+          _envoi ? 'Publication…' : 'Ajouter',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: RefreshIndicator(
+        color: MabokoCouleurs.secondaire,
+        onRefresh: _charger,
+        child: _corps(),
+      ),
+    );
+  }
+
+  Widget _corps() {
+    if (_erreur != null) {
+      return ListView(
+        padding: const EdgeInsets.all(24),
+        children: [const SizedBox(height: 60), EtatErreur(message: _erreur!, onReessayer: _charger)],
+      );
+    }
+
+    if (_realisations == null) return const ChargementEnCours();
+
+    if (_realisations!.isEmpty) {
+      return ListView(
+        padding: const EdgeInsets.all(24),
+        children: const [
+          SizedBox(height: 50),
+          EtatVide(
+            icone: Icons.photo_library_outlined,
+            titre: 'Votre portfolio est vide',
+            message: 'Ajoutez une photo de vos travaux : elle apparaîtra sur votre profil, '
+                'et les clients pourront juger votre savoir-faire avant de vous contacter.',
+          ),
+        ],
+      );
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.82,
+      ),
+      itemCount: _realisations!.length,
+      itemBuilder: (contexte, i) => ApparitionDecalee(
+        rang: i,
+        child: _carte(_realisations![i]),
+      ),
+    );
+  }
+
+  Widget _carte(Publication realisation) {
+    final apercu = realisation.medias.isEmpty ? null : realisation.medias.first;
+
+    return CartePressable(
+      echelle: 0.97,
+      onTap: () => _supprimer(realisation),
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: MabokoCouleurs.accent.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: apercu == null
+                  ? Container(
+                      color: context.bordureMaboko.withValues(alpha: 0.4),
+                      child: Icon(Icons.image_outlined, color: context.texteSecondaireMaboko),
+                    )
+                  : Image.network(
+                      apercu,
+                      fit: BoxFit.cover,
+                      errorBuilder: (contexte, erreur, trace) => Container(
+                        color: context.bordureMaboko.withValues(alpha: 0.4),
+                        child: Icon(Icons.broken_image_outlined,
+                            color: context.texteSecondaireMaboko),
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      "Votre portfolio est vide",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      "Puisque vous débutez, ajoutez des photos de vos anciens chantiers ou de vos compétences pour inspirer confiance à vos futurs clients.",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
-                        height: 1.4,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 30),
-                    ElevatedButton.icon(
-                      onPressed: _addNewRealisation,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFB35B28),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                      icon: const Icon(Icons.add_a_photo_rounded),
-                      label: const Text(
-                        "Ajouter une réalisation",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.85,
-              ),
-              itemCount: _portfolioItems.length,
-              itemBuilder: (context, index) {
-                final item = _portfolioItems[index];
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                          child: Image.asset(
-                            item['image']!,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              color: Colors.grey.shade200,
-                              child: const Icon(Icons.image, color: Colors.grey),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(10.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item['title']!,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              item['description']!,
-                              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
             ),
-      floatingActionButton: _portfolioItems.isNotEmpty
-          ? FloatingActionButton(
-              onPressed: _addNewRealisation,
-              backgroundColor: const Color(0xFFB35B28),
-              child: const Icon(Icons.add, color: Colors.white),
-            )
-          : null,
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Text(
+                realisation.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12, height: 1.3),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

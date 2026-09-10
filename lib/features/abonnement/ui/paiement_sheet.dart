@@ -155,9 +155,9 @@ class _PaiementSheetState extends State<PaiementSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        decoration: const BoxDecoration(
-          color: MabokoCouleurs.fond,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        decoration: BoxDecoration(
+          color: context.fondMaboko,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
         ),
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         child: Column(
@@ -170,7 +170,7 @@ class _PaiementSheetState extends State<PaiementSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: MabokoCouleurs.bordure,
+                  color: context.bordureMaboko,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -201,10 +201,10 @@ class _PaiementSheetState extends State<PaiementSheet> {
                 hintText: '+242061234567',
                 prefixIcon: const Icon(Icons.phone_android, color: MabokoCouleurs.secondaire),
                 filled: true,
-                fillColor: MabokoCouleurs.surface,
+                fillColor: context.surfaceMaboko,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: MabokoCouleurs.bordure),
+                  borderSide: BorderSide(color: context.bordureMaboko),
                 ),
               ),
             ),
@@ -221,7 +221,7 @@ class _PaiementSheetState extends State<PaiementSheet> {
                   Expanded(
                     child: Text(
                       _etape!,
-                      style: const TextStyle(fontSize: 13, color: MabokoCouleurs.texteSecondaire),
+                      style: TextStyle(fontSize: 13, color: context.texteSecondaireMaboko),
                     ),
                   ),
                 ],
@@ -298,10 +298,10 @@ class _PaiementSheetState extends State<PaiementSheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
         decoration: BoxDecoration(
-          color: actif ? MabokoCouleurs.secondaire.withValues(alpha: 0.1) : MabokoCouleurs.surface,
+          color: actif ? MabokoCouleurs.secondaire.withValues(alpha: 0.1) : context.surfaceMaboko,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: actif ? MabokoCouleurs.secondaire : MabokoCouleurs.bordure,
+            color: actif ? MabokoCouleurs.secondaire : context.bordureMaboko,
             width: actif ? 1.6 : 1,
           ),
         ),
@@ -320,7 +320,7 @@ class _PaiementSheetState extends State<PaiementSheet> {
               const SizedBox(height: 2),
               Text(
                 sousTitre,
-                style: const TextStyle(fontSize: 12, color: MabokoCouleurs.texteSecondaire),
+                style: TextStyle(fontSize: 12, color: context.texteSecondaireMaboko),
               ),
             ],
             if (badge != null) ...[

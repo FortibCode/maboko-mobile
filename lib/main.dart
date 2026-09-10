@@ -13,16 +13,20 @@ import 'profile_choice.dart';
 import 'forgot_password.dart';
 import 'register_page.dart';
 import 'screens/home_page.dart';
-import 'screens/avatar_selection_screen.dart';
 import 'artisan_onboarding_screen.dart'; 
-import 'artisan_profile_choice_screen.dart';
+import 'features/courses/ui/chauffeur_shell.dart';
 import 'services/storage_service.dart';
+import 'core/session/role_utilisateur.dart';
+import 'core/theme/controleur_theme.dart';
 
 /// Cle globale du navigateur, necessaire pour ramener l'utilisateur vers
 /// l'ecran de connexion depuis la couche reseau, sans contexte de widget.
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-void main() {
+/// Bascule clair / sombre, partagee par toute l'application.
+final ControleurTheme controleurTheme = ControleurTheme();
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Refuse de demarrer une compilation de production configuree pour parler
@@ -35,6 +39,10 @@ void main() {
     navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
   };
 
+  // Le mode enregistre est relu avant le premier rendu, pour eviter que
+  // l'application s'ouvre en clair puis bascule sous les yeux de l'utilisateur.
+  await controleurTheme.charger();
+
   runApp(const MabokoApp());
 }
 
@@ -43,64 +51,45 @@ class MabokoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: navigatorKey,
-      title: 'Maboko Mobile',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: const Color(0xFFB35B28),
-        scaffoldBackgroundColor: const Color(0xFFFAF4E7),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFB35B28),
-          foregroundColor: Colors.white,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFB35B28),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-        ),
-        textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFFB35B28),
-          ),
-        ),
-      ),
-      initialRoute: "/",
-      routes: {
-        "/": (context) => const SplashScreenWithTimer(),
-        "/login": (context) => const LoginPage(),
-        "/onboarding1": (context) => const Onboarding1(),
-        "/onboarding2": (context) => const Onboarding2(),
-        "/onboarding3": (context) => const Onboarding3(),
-        "/profile-choice": (context) => const ProfileChoice(),
-        "/avatar_selection": (context) => const AvatarSelectionScreen(),
+    return ListenableBuilder(
+      listenable: controleurTheme,
+      builder: (contexte, _) => MaterialApp(
+        navigatorKey: navigatorKey,
+        title: 'Maboko Mobile',
+        debugShowCheckedModeBanner: false,
+        themeMode: controleurTheme.mode,
+        darkTheme: MabokoThemes.sombre,
+        theme: MabokoThemes.clair,
+        initialRoute: "/",
+        routes: {
+          "/": (context) => const SplashScreenWithTimer(),
+          "/login": (context) => const LoginPage(),
+          "/onboarding1": (context) => const Onboarding1(),
+          "/onboarding2": (context) => const Onboarding2(),
+          "/onboarding3": (context) => const Onboarding3(),
+          "/profile-choice": (context) => const ProfileChoice(),
         
-        // 2. Correction ici : l'onboarding arrive en premier
-        "/artisan-onboarding": (context) => const ArtisanOnboarding(),
-        // 3. Et la page de choix de profil vient juste après
-        "/artisan-profile-choice": (context) => const ArtisanProfileChoiceScreen(),
+          "/artisan-onboarding": (context) => const ArtisanOnboarding(),
+          "/forgot": (context) => const ForgotPasswordPage(),
+          "/register": (context) => const RegisterPage(),
+          // Espace chauffeur : meme application, coquille dediee.
+          "/chauffeur": (context) => const ChauffeurShell(),
+        },
+        // Gestion dynamique de la HomePage avec transmission des arguments
+        onGenerateRoute: (settings) {
+          if (settings.name == '/home') {
+            final args = settings.arguments as Map<String, dynamic>?;
 
-        "/forgot": (context) => const ForgotPasswordPage(),
-        "/register": (context) => const RegisterPage(),
-      },
-      // Gestion dynamique de la HomePage avec transmission des arguments
-      onGenerateRoute: (settings) {
-        if (settings.name == '/home') {
-          final args = settings.arguments as Map<String, dynamic>?;
-
-          return MaterialPageRoute(
-            builder: (context) => HomePage(
-              avatarName: args?['avatarName'] ?? "Utilisateur",
-              avatarIndex: args?['avatarIndex'] ?? 0,
-              userRole: args?['userRole'] ?? 'client',
-            ),
-          );
-        }
-        return null;
-      },
+            return MaterialPageRoute(
+              builder: (context) => HomePage(
+                avatarName: args?['avatarName'] ?? "Utilisateur",
+                userRole: args?['userRole'] ?? 'client',
+              ),
+            );
+          }
+          return null;
+        },
+      ),
     );
   }
 }
@@ -133,18 +122,13 @@ class _SplashScreenWithTimerState extends State<SplashScreenWithTimer> {
       // Utilisateur DÉJÀ connecté : chargement des préférences enregistrées
       final name = await StorageService.getUserName() ?? "Utilisateur";
       final role = await StorageService.getUserRole() ?? "client";
-      final avatarIndex = await StorageService.getAvatarIndex() ?? 0;
 
       if (!mounted) return;
-      Navigator.pushReplacementNamed(
-        context,
-        '/home',
-        arguments: {
-          'avatarName': name,
-          'avatarIndex': avatarIndex,
-          'userRole': role,
-        },
-      );
+
+      // Le rôle vient du stockage local, qui peut avoir vieilli. L'espace
+      // ouvert se corrige de lui-même dès que le serveur a répondu.
+      ouvrirEspace(context, RoleMaboko.depuis(role), nom: name);
+
       return;
     }
 

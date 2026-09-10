@@ -126,7 +126,7 @@ class _VerificationIdentiteScreenState extends State<VerificationIdentiteScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MabokoCouleurs.fond,
+      backgroundColor: context.fondMaboko,
       appBar: AppBar(
         title: const Text('Vérifier mon identité'),
         backgroundColor: MabokoCouleurs.secondaire,
@@ -160,10 +160,10 @@ class _VerificationIdentiteScreenState extends State<VerificationIdentiteScreen>
               labelText: 'Numéro de la pièce (facultatif)',
               prefixIcon: const Icon(Icons.badge_outlined, color: MabokoCouleurs.secondaire),
               filled: true,
-              fillColor: MabokoCouleurs.surface,
+              fillColor: context.surfaceMaboko,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: MabokoCouleurs.bordure),
+                borderSide: BorderSide(color: context.bordureMaboko),
               ),
             ),
           ),
@@ -246,31 +246,31 @@ class _VerificationIdentiteScreenState extends State<VerificationIdentiteScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.surface,
+        color: context.surfaceMaboko,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: MabokoCouleurs.bordure),
+        border: Border.all(color: context.bordureMaboko),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Pourquoi vérifier votre identité ?',
+          const Text('Pourquoi vérifier votre identité ?',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Text(
             'Le badge « Profil vérifié » apparaît sur votre fiche, vous fait '
             'remonter dans les résultats de recherche, et rassure les clients '
             'avant une intervention à domicile.',
-            style: TextStyle(fontSize: 13.5, height: 1.5, color: MabokoCouleurs.texteSecondaire),
+            style: TextStyle(fontSize: 13.5, height: 1.5, color: context.texteSecondaireMaboko),
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Row(
             children: [
-              Icon(Icons.lock_outline, size: 15, color: MabokoCouleurs.secondaire),
-              SizedBox(width: 8),
+              const Icon(Icons.lock_outline, size: 15, color: MabokoCouleurs.secondaire),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Vos pièces ne sont visibles que de l’équipe Maboko, jamais des clients.',
-                  style: TextStyle(fontSize: 12.5, color: MabokoCouleurs.texteSecondaire),
+                  style: TextStyle(fontSize: 12.5, color: context.texteSecondaireMaboko),
                 ),
               ),
             ],
@@ -314,10 +314,10 @@ class _VerificationIdentiteScreenState extends State<VerificationIdentiteScreen>
       child: Container(
         height: 128,
         decoration: BoxDecoration(
-          color: MabokoCouleurs.surface,
+          color: context.surfaceMaboko,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: donnees != null ? MabokoCouleurs.succes : MabokoCouleurs.bordure,
+            color: donnees != null ? MabokoCouleurs.succes : context.bordureMaboko,
           ),
         ),
         child: donnees != null

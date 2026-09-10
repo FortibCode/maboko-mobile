@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../core/theme/maboko_theme.dart';
+
 import '../services/storage_service.dart';
+import '../features/messagerie/ui/conversations_screen.dart';
+import 'a_propos_screen.dart';
+import '../features/compte/ui/modifier_profil_screen.dart';
+import '../features/notifications/ui/notifications_screen.dart';
+import 'confidentialite_screen.dart';
+import '../features/compte/data/google_auth.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -8,7 +16,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF4E7),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("Paramètres", style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFFB35B28),
@@ -25,7 +33,7 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.surfaceMaboko,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
             ),
@@ -35,27 +43,30 @@ class SettingsScreen extends StatelessWidget {
                   leading: const Icon(Icons.person_outline, color: Color(0xFFB35B28)),
                   title: const Text("Modifier mon profil"),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    // Action modification profil
-                  },
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ModifierProfilScreen()),
+                  ),
                 ),
                 const Divider(height: 1, indent: 16, endIndent: 16),
                 ListTile(
                   leading: const Icon(Icons.notifications_outlined, color: Color(0xFFB35B28)),
-                  title: const Text("Notifications"),
+                  title: const Text("Mes notifications"),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    // Action notifications
-                  },
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+                  ),
                 ),
                 const Divider(height: 1, indent: 16, endIndent: 16),
                 ListTile(
                   leading: const Icon(Icons.lock_outline, color: Color(0xFFB35B28)),
                   title: const Text("Confidentialité et sécurité"),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    // Action sécurité
-                  },
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ConfidentialiteScreen()),
+                  ),
                 ),
               ],
             ),
@@ -68,7 +79,7 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.surfaceMaboko,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
             ),
@@ -78,14 +89,20 @@ class SettingsScreen extends StatelessWidget {
                   leading: const Icon(Icons.help_outline, color: Color(0xFFB35B28)),
                   title: const Text("Centre d'aide"),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {},
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ConversationsScreen()),
+                  ),
                 ),
                 const Divider(height: 1, indent: 16, endIndent: 16),
                 ListTile(
                   leading: const Icon(Icons.info_outline, color: Color(0xFFB35B28)),
                   title: const Text("À propos de Maboko"),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {},
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AProposScreen()),
+                  ),
                 ),
               ],
             ),
@@ -94,7 +111,7 @@ class SettingsScreen extends StatelessWidget {
           // Bouton de déconnexion
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.surfaceMaboko,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
             ),
@@ -105,6 +122,7 @@ class SettingsScreen extends StatelessWidget {
                 style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
               ),
               onTap: () async {
+                await const GoogleAuth().deconnecter();
                 await StorageService.clearToken();
                 if (context.mounted) {
                   Navigator.pushReplacementNamed(context, "/login");

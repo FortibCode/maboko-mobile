@@ -97,9 +97,9 @@ class _CommentairesSheetState extends State<CommentairesSheet> {
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: Container(
           height: MediaQuery.of(context).size.height * 0.75,
-          decoration: const BoxDecoration(
-            color: MabokoCouleurs.fond,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+          decoration: BoxDecoration(
+            color: context.teinteMaboko,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
           ),
           child: Column(
             children: [
@@ -108,7 +108,7 @@ class _CommentairesSheetState extends State<CommentairesSheet> {
                 height: 4,
                 margin: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: MabokoCouleurs.bordure,
+                  color: context.bordureMaboko,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -164,7 +164,7 @@ class _CommentairesSheetState extends State<CommentairesSheet> {
         return ListTile(
           leading: CircleAvatar(
             radius: 18,
-            backgroundColor: MabokoCouleurs.surface,
+            backgroundColor: context.surfaceMaboko,
             backgroundImage: commentaire.auteurAvatar?.isNotEmpty == true
                 ? NetworkImage(commentaire.auteurAvatar!)
                 : null,
@@ -178,7 +178,7 @@ class _CommentairesSheetState extends State<CommentairesSheet> {
           ),
           subtitle: Text(
             commentaire.contenu,
-            style: const TextStyle(fontSize: 13.5, height: 1.4, color: MabokoCouleurs.principale),
+            style: TextStyle(fontSize: 13.5, height: 1.4, color: context.texteFortMaboko),
           ),
         );
       },
@@ -189,9 +189,9 @@ class _CommentairesSheetState extends State<CommentairesSheet> {
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-        decoration: const BoxDecoration(
-          color: MabokoCouleurs.surface,
-          border: Border(top: BorderSide(color: MabokoCouleurs.bordure)),
+        decoration: BoxDecoration(
+          color: context.surfaceMaboko,
+          border: Border(top: BorderSide(color: context.bordureMaboko)),
         ),
         child: Row(
           children: [

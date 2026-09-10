@@ -70,6 +70,25 @@ class ArtisanRepository {
         .toList();
   }
 
+  /// Artisans mis en favori par l'utilisateur connecté.
+  ///
+  /// L'API renvoie la même structure que la recherche : le modèle et la carte
+  /// d'artisan existants sont réutilisés tels quels.
+  Future<List<Artisan>> favoris() async {
+    final reponse = await api.get('/favoris');
+
+    return ((reponse['data'] as List?) ?? [])
+        .map((a) => Artisan.depuisJson(a as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Ajoute ou retire l'artisan des favoris. Renvoie l'état après bascule.
+  Future<bool> basculerFavori(int artisanId) async {
+    final reponse = await api.post('/favoris/$artisanId');
+
+    return (reponse as Map<String, dynamic>)['favori'] as bool? ?? false;
+  }
+
   Future<Artisan> fiche(int id) async {
     final reponse = await api.get('/artisans/$id');
 
@@ -82,6 +101,65 @@ class ArtisanRepository {
     return ((reponse['data'] as List?) ?? [])
         .map((a) => Avis.depuisJson(a as Map<String, dynamic>))
         .toList();
+  }
+
+  /// Création de la fiche artisan du compte connecté (§5.2.1).
+  ///
+  /// L'inscription crée le compte mais pas la fiche : sans elle l'artisan
+  /// n'apparaît dans aucune recherche et son tableau de bord n'a rien à
+  /// afficher. Aucun écran n'appelait cette route.
+  Future<Artisan> creerFiche({
+    required String specialite,
+    required String adresse,
+    required double latitude,
+    required double longitude,
+    required List<String> metiers,
+    String? bio,
+    String? zoneIntervention,
+    int? rayonKm,
+  }) async {
+    final reponse = await api.post('/artisans', corps: {
+      'specialite': specialite,
+      'adresse': adresse,
+      'latitude': latitude,
+      'longitude': longitude,
+      if (metiers.isNotEmpty) 'metiers': metiers,
+      if (bio != null && bio.isNotEmpty) 'bio': bio,
+      if (zoneIntervention != null && zoneIntervention.isNotEmpty)
+        'zone_intervention': zoneIntervention,
+      if (rayonKm != null) 'rayon_km': rayonKm,
+    });
+
+    final donnees = reponse['data'] ?? reponse;
+
+    return Artisan.depuisJson(donnees as Map<String, dynamic>);
+  }
+
+  /// Modification de sa propre fiche (§5.2.1).
+  ///
+  /// Sert notamment à ajouter ou retirer un métier depuis l'onglet Profil :
+  /// le choix fait à l'inscription n'était plus modifiable ensuite.
+  Future<Artisan> mettreAJourFiche(
+    int artisanId, {
+    String? specialite,
+    String? adresse,
+    List<String>? metiers,
+    String? bio,
+    String? zoneIntervention,
+    int? rayonKm,
+  }) async {
+    final reponse = await api.patch('/artisans/$artisanId', corps: {
+      if (specialite != null) 'specialite': specialite,
+      if (adresse != null) 'adresse': adresse,
+      if (metiers != null) 'metiers': metiers,
+      if (bio != null) 'bio': bio,
+      if (zoneIntervention != null) 'zone_intervention': zoneIntervention,
+      if (rayonKm != null) 'rayon_km': rayonKm,
+    });
+
+    final donnees = reponse['data'] ?? reponse;
+
+    return Artisan.depuisJson(donnees as Map<String, dynamic>);
   }
 
   /// Fiche de l'artisan connecté. Null si le compte n'en a pas encore.

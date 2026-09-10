@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'core/network/api.dart';
+import 'core/session/role_utilisateur.dart';
 import 'core/network/api_exception.dart';
 import 'services/storage_service.dart';
+import 'core/widgets/bascule_acces.dart';
+import 'features/compte/data/google_auth.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,6 +20,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   
   bool _isLoading = false;
+  bool _googleEnCours = false;
   bool _obscurePassword = true;
 
   String _formatIdentifier(String input) {
@@ -25,6 +29,42 @@ class _LoginPageState extends State<LoginPage> {
     if (RegExp(r'^0[456]\d{7}$').hasMatch(trimmed)) return '+242$trimmed';
     if (RegExp(r'^[456]\d{7}$').hasMatch(trimmed)) return '+2420$trimmed';
     return trimmed; // sinon e-mail ou numéro déjà complet
+  }
+
+  Future<void> _connexionGoogle() async {
+    setState(() => _googleEnCours = true);
+
+    try {
+      final session = await const GoogleAuth().connecter();
+
+      // Fenetre fermee par l'utilisateur : on ne signale rien.
+      if (session == null) {
+        if (mounted) setState(() => _googleEnCours = false);
+        return;
+      }
+
+      final utilisateur = session.utilisateur;
+      final nom = (utilisateur['nom'] as String?)?.trim();
+      final role = utilisateur['role'] as String? ?? 'client';
+
+      await StorageService.saveToken(session.jeton);
+      if (utilisateur['telephone'] is String) {
+        await StorageService.saveUserTelephone(utilisateur['telephone'] as String);
+      }
+      await StorageService.saveUserData(
+        name: nom == null || nom.isEmpty ? 'Utilisateur' : nom,
+        role: role,
+        email: utilisateur['email'] as String? ?? '',
+      );
+
+      if (!mounted) return;
+
+      ouvrirEspace(context, RoleMaboko.depuis(role), nom: nom ?? 'Utilisateur');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _googleEnCours = false);
+      _showErrorSnackBar(e.message);
+    }
   }
 
   Future<void> _handleLogin() async {
@@ -47,7 +87,6 @@ class _LoginPageState extends State<LoginPage> {
           : 'Utilisateur';
       final String role = user['role'] as String? ?? 'client';
       final String email = user['email'] as String? ?? _emailController.text.trim();
-      final int avatarIndex = await StorageService.getAvatarIndex() ?? 0;
 
       await StorageService.saveToken(data['token'] as String? ?? '');
       if (user['telephone'] is String) {
@@ -56,22 +95,14 @@ class _LoginPageState extends State<LoginPage> {
       await StorageService.saveUserData(
         name: name,
         role: role,
-        avatarIndex: avatarIndex,
         email: email,
       );
 
       if (!mounted) return;
 
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/home',
-        (route) => false,
-        arguments: {
-          'avatarName': name,
-          'avatarIndex': avatarIndex,
-          'userRole': role,
-        },
-      );
+      // L'espace ouvert est celui du role renvoye par l'API, jamais celui
+      // devine a partir de l'ecran d'ou vient l'utilisateur.
+      ouvrirEspace(context, RoleMaboko.depuis(role), nom: name);
     } on ApiException catch (e) {
       if (!mounted) return;
       _showErrorSnackBar(e.message);
@@ -166,7 +197,15 @@ class _LoginPageState extends State<LoginPage> {
                       fontWeight: FontWeight.w300,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 22),
+
+                  // Bascule Connexion / Inscription (§5.1.3).
+                  // Le rôle voulu se choisit sur le formulaire d'inscription
+                  // lui-même : depuis cet écran, aucun parcours ne le porte,
+                  // et tous les comptes créés par cet onglet naissaient
+                  // clients quel qu'ait été le souhait de l'utilisateur.
+                  const BasculeAcces(surConnexion: true, roleInscription: null),
+                  const SizedBox(height: 22),
 
                   // La Carte Blanche Flottante
                   Container(
@@ -188,6 +227,7 @@ class _LoginPageState extends State<LoginPage> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           TextFormField(
+                            style: const TextStyle(color: Color(0xFF2B2B2B), fontSize: 15),
                             controller: _emailController,
                             decoration: InputDecoration(
                               labelText: "Email ou téléphone",
@@ -210,6 +250,7 @@ class _LoginPageState extends State<LoginPage> {
                           const SizedBox(height: 12),
 
                           TextFormField(
+                            style: const TextStyle(color: Color(0xFF2B2B2B), fontSize: 15),
                             controller: _passwordController,
                             obscureText: _obscurePassword,
                             decoration: InputDecoration(
@@ -287,21 +328,31 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const SizedBox(height: 16),
 
+                          // Connexion Google (§5.1.3). Le serveur verifie le
+                          // jeton aupres de Google : l'identite n'est jamais
+                          // declaree par le telephone.
                           SizedBox(
                             height: 50,
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.pushNamed(context, '/register'),
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: iconColor, width: 2),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                            child: OutlinedButton.icon(
+                              onPressed: _googleEnCours ? null : _connexionGoogle,
+                              icon: _googleEnCours
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.g_mobiledata_rounded, size: 30),
+                              label: const Text(
+                                'Continuer avec Google',
+                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                               ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.person_add_outlined, color: iconColor, size: 20),
-                                  SizedBox(width: 8),
-                                  Text("Créer un compte", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: iconColor)),
-                                ],
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF3C4043),
+                                backgroundColor: Colors.white,
+                                side: BorderSide(color: hintGrey.withValues(alpha: 0.4)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
                               ),
                             ),
                           ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -34,6 +35,10 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
 
   Course? _course;
   StreamSubscription<dynamic>? _suiviPosition;
+
+  /// Dernière position connue du véhicule, pour estimer ce qu'il reste à
+  /// parcourir jusqu'à la cible du moment.
+  LatLng? _positionActuelle;
   bool _chargement = true;
   bool _actionEnCours = false;
   String? _erreur;
@@ -55,6 +60,10 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
   /// au client de suivre l'arrivée du véhicule sur sa carte.
   void _suivrePosition() {
     _suiviPosition = ServicePosition.suivi().listen((position) {
+      if (mounted) {
+        setState(() => _positionActuelle = LatLng(position.latitude, position.longitude));
+      }
+
       _repository.transmettrePosition(
         latitude: position.latitude,
         longitude: position.longitude,
@@ -175,7 +184,7 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MabokoCouleurs.fond,
+      backgroundColor: context.fondMaboko,
       appBar: AppBar(
         title: const Text('Course en cours'),
         backgroundColor: MabokoCouleurs.secondaire,
@@ -225,7 +234,7 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.surface,
+        color: context.surfaceMaboko,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12)],
       ),
@@ -255,6 +264,11 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
           _ligne(Icons.person_outline, course.clientNom ?? 'Client Maboko'),
           _ligne(Icons.trip_origin, course.depart.adresse),
           _ligne(Icons.place_outlined, course.arrivee.adresse),
+          const SizedBox(height: 10),
+          // « Avec la distance et le temps de trajet estimés » (§5.3.2) :
+          // l'écran donnait l'adresse et le tarif, jamais ce qu'il restait
+          // à parcourir.
+          _estimation(course),
           const SizedBox(height: 14),
           Row(
             children: [
@@ -281,6 +295,74 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
     );
   }
 
+  /// Distance restante et temps estimé jusqu'à la cible du moment.
+  ///
+  /// La cible change avec l'étape : le point de prise en charge tant que le
+  /// client n'est pas monté, sa destination ensuite.
+  Widget _estimation(Course course) {
+    final cible = course.clientABord ? course.arrivee : course.depart;
+    final depuis = _positionActuelle;
+
+    // Sans position, on annonce l'estimation du trajet complet plutôt que
+    // rien : elle reste juste une fois le client à bord.
+    final distance = depuis == null
+        ? (course.clientABord ? course.distanceKm : null)
+        : _distanceKm(depuis, LatLng(cible.latitude, cible.longitude));
+
+    if (distance == null) {
+      return Text(
+        'Trajet total : ${course.distanceKm.toStringAsFixed(1)} km · '
+        'environ ${course.dureeEstimeeMin} min',
+        style: TextStyle(fontSize: 12.5, color: context.texteSecondaireMaboko),
+      );
+    }
+
+    // 25 km/h : une moyenne réaliste en ville, embouteillages compris.
+    final minutes = (distance / 25 * 60).ceil().clamp(1, 999);
+
+    return Row(
+      children: [
+        const Icon(Icons.near_me_outlined, size: 15, color: MabokoCouleurs.secondaire),
+        const SizedBox(width: 6),
+        Text(
+          '${distance.toStringAsFixed(1)} km · environ $minutes min',
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: MabokoCouleurs.secondaire,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            course.clientABord ? 'jusqu’à la destination' : 'jusqu’au client',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12, color: context.texteSecondaireMaboko),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Distance à vol d'oiseau, en kilomètres.
+  static double _distanceKm(LatLng a, LatLng b) {
+    const rayonTerre = 6371.0;
+
+    final dLat = _radians(b.latitude - a.latitude);
+    final dLon = _radians(b.longitude - a.longitude);
+
+    final h = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_radians(a.latitude)) *
+            math.cos(_radians(b.latitude)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+
+    return rayonTerre * 2 * math.atan2(math.sqrt(h), math.sqrt(1 - h));
+  }
+
+  static double _radians(double degres) => degres * math.pi / 180;
+
   Widget _actionPrincipale(Course course) {
     final (libelle, action) = switch (course.statut) {
       'acceptee' => (
@@ -305,7 +387,7 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: MabokoCouleurs.secondaire,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: MabokoCouleurs.bordure,
+          disabledBackgroundColor: context.bordureMaboko,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         child: _actionEnCours
@@ -324,7 +406,7 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          Icon(icone, size: 16, color: MabokoCouleurs.texteSecondaire),
+          Icon(icone, size: 16, color: context.texteSecondaireMaboko),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

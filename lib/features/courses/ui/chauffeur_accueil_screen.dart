@@ -6,10 +6,10 @@ import '../../../core/localisation/service_position.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/maboko_theme.dart';
 import '../../../core/widgets/etats.dart';
-import '../../../services/storage_service.dart';
 import '../data/course_repository.dart';
 import '../models/course.dart';
 import 'course_chauffeur_screen.dart';
+import 'fiche_chauffeur_screen.dart';
 
 /// Accueil du chauffeur (§5.3.1 et §5.3.4) : bascule en ligne / hors ligne,
 /// courses proposées, et revenus du jour.
@@ -161,34 +161,39 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
     }
   }
 
+  /// Refus d'une course proposée (§5.3.1).
+  ///
+  /// Seul « Accepter » existait : une course sans intérêt revenait dans la
+  /// liste à chaque relecture, toutes les dix secondes, jusqu'à expiration.
+  Future<void> _refuser(Course course) async {
+    // Retrait immédiat : le chauffeur conduit, il ne doit pas attendre le
+    // serveur pour voir la carte disparaître.
+    setState(() => _propositions = _propositions.where((c) => c.id != course.id).toList());
+
+    try {
+      await _repository.refuser(course.id);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      _informer(e.message, MabokoCouleurs.danger);
+      await _charger();
+    }
+  }
+
   void _informer(String message, Color couleur) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: couleur),
     );
   }
 
-  Future<void> _deconnexion() async {
-    await StorageService.clearToken();
-    if (!mounted) return;
-    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MabokoCouleurs.fond,
+      backgroundColor: context.fondMaboko,
       appBar: AppBar(
         title: const Text('Allô Chauffeur'),
         backgroundColor: MabokoCouleurs.secondaire,
         foregroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            tooltip: 'Se déconnecter',
-            onPressed: _deconnexion,
-          ),
-        ],
       ),
       body: _corps(),
     );
@@ -204,11 +209,30 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
     final etat = _etat!;
 
     if (etat.ficheManquante) {
-      return const EtatVide(
+      // Le message renvoyait vers « l'equipe Maboko » sans aucun moyen de la
+      // joindre ni de deposer quoi que ce soit : le compte etait fige la.
+      return EtatVide(
         icone: Icons.no_transfer_outlined,
         titre: 'Votre fiche chauffeur est incomplète',
-        message: 'Renseignez votre véhicule et votre permis auprès de l’équipe '
-            'Maboko pour commencer à recevoir des courses.',
+        message: 'Renseignez votre véhicule et votre permis pour commencer '
+            'à recevoir des courses.',
+        action: FilledButton.icon(
+          style: FilledButton.styleFrom(
+            backgroundColor: MabokoCouleurs.secondaire,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+          ),
+          onPressed: () async {
+            final depose = await Navigator.push<bool>(
+              context,
+              MaterialPageRoute(builder: (_) => const FicheChauffeurScreen()),
+            );
+            if (depose == true) await _charger(premiereFois: true);
+          },
+          icon: const Icon(Icons.directions_car_outlined, size: 19),
+          label: const Text('Enregistrer mon véhicule',
+              style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
       );
     }
 
@@ -236,15 +260,15 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: etat.enLigne ? MabokoCouleurs.succes : MabokoCouleurs.surface,
+        color: etat.enLigne ? MabokoCouleurs.succes : context.surfaceMaboko,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: etat.enLigne ? MabokoCouleurs.succes : MabokoCouleurs.bordure),
+        border: Border.all(color: etat.enLigne ? MabokoCouleurs.succes : context.bordureMaboko),
       ),
       child: Row(
         children: [
           Icon(
             etat.enLigne ? Icons.wifi_tethering : Icons.wifi_tethering_off,
-            color: etat.enLigne ? Colors.white : MabokoCouleurs.texteSecondaire,
+            color: etat.enLigne ? Colors.white : context.texteSecondaireMaboko,
             size: 30,
           ),
           const SizedBox(width: 14),
@@ -267,7 +291,7 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
                       : 'Passez en ligne pour recevoir des courses.',
                   style: TextStyle(
                     fontSize: 12.5,
-                    color: etat.enLigne ? Colors.white70 : MabokoCouleurs.texteSecondaire,
+                    color: etat.enLigne ? Colors.white70 : context.texteSecondaireMaboko,
                   ),
                 ),
               ],
@@ -324,7 +348,7 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
                       '${course.depart.adresse} → ${course.arrivee.adresse}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12.5, color: MabokoCouleurs.texteSecondaire),
+                      style: TextStyle(fontSize: 12.5, color: context.texteSecondaireMaboko),
                     ),
                   ],
                 ),
@@ -343,14 +367,14 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.surface,
+        color: context.surfaceMaboko,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: MabokoCouleurs.bordure),
+        border: Border.all(color: context.bordureMaboko),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Aujourd’hui', style: TextStyle(fontSize: 13, color: MabokoCouleurs.texteSecondaire)),
+          Text('Aujourd’hui', style: TextStyle(fontSize: 13, color: context.texteSecondaireMaboko)),
           const SizedBox(height: 4),
           Text(
             formaterFcfa(revenus?.aujourdhui ?? 0),
@@ -360,7 +384,7 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
           Text(
             '${revenus?.coursesAujourdhui ?? 0} course(s) · '
             '${formaterFcfa(revenus?.totalSemaine ?? 0)} cette semaine',
-            style: const TextStyle(fontSize: 12.5, color: MabokoCouleurs.texteSecondaire),
+            style: TextStyle(fontSize: 12.5, color: context.texteSecondaireMaboko),
           ),
           if (revenus != null && revenus.semaine.isNotEmpty) ...[
             const SizedBox(height: 16),
@@ -392,14 +416,14 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
                   height: hauteur < 3 ? 3 : hauteur,
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: jour.total > 0 ? MabokoCouleurs.secondaire : MabokoCouleurs.bordure,
+                    color: jour.total > 0 ? MabokoCouleurs.secondaire : context.bordureMaboko,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   date == null ? '' : _jourCourt(date.weekday),
-                  style: const TextStyle(fontSize: 10, color: MabokoCouleurs.texteSecondaire),
+                  style: TextStyle(fontSize: 10, color: context.texteSecondaireMaboko),
                 ),
               ],
             ),
@@ -411,8 +435,8 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
 
   Widget _sectionPropositions(EtatChauffeur etat) {
     if (!etat.enLigne) {
-      return const SizedBox(
-        height: 160,
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
         child: EtatVide(
           icone: Icons.wifi_tethering_off,
           titre: 'Hors ligne',
@@ -422,8 +446,8 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
     }
 
     if (_propositions.isEmpty) {
-      return const SizedBox(
-        height: 160,
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
         child: EtatVide(
           icone: Icons.local_taxi_outlined,
           titre: 'Aucune course pour le moment',
@@ -450,9 +474,9 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.surface,
+        color: context.surfaceMaboko,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: MabokoCouleurs.bordure),
+        border: Border.all(color: context.bordureMaboko),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -486,22 +510,64 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
           _ligneTrajet(Icons.place_outlined, course.arrivee.adresse),
           const SizedBox(height: 6),
           Text(
-            '${course.distanceKm.toStringAsFixed(1)} km · environ ${course.dureeEstimeeMin} min',
-            style: const TextStyle(fontSize: 12, color: MabokoCouleurs.texteSecondaire),
+            'Trajet : ${course.distanceKm.toStringAsFixed(1)} km · environ ${course.dureeEstimeeMin} min',
+            style: TextStyle(fontSize: 12, color: context.texteSecondaireMaboko),
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: ElevatedButton(
-              onPressed: () => _accepter(course),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: MabokoCouleurs.secondaire,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Accepter la course', style: TextStyle(fontWeight: FontWeight.bold)),
+          // La distance du trajet ne dit pas si le client est a deux rues ou
+          // a l'autre bout de la ville : c'est pourtant ce qui decide d'y
+          // aller ou non (§5.3.1).
+          if (course.distancePriseEnChargeKm != null) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.near_me_outlined, size: 14, color: MabokoCouleurs.secondaire),
+                const SizedBox(width: 6),
+                Text(
+                  'Client à ${course.distancePriseEnChargeKm!.toStringAsFixed(1)} km de vous',
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.bold,
+                    color: MabokoCouleurs.secondaire,
+                  ),
+                ),
+              ],
             ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 44,
+                  child: OutlinedButton(
+                    onPressed: () => _refuser(course),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: context.texteSecondaireMaboko,
+                      side: BorderSide(color: context.bordureMaboko),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Refuser'),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 2,
+                child: SizedBox(
+                  height: 44,
+                  child: ElevatedButton(
+                    onPressed: () => _accepter(course),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: MabokoCouleurs.secondaire,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Accepter',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -513,7 +579,7 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
-          Icon(icone, size: 14, color: MabokoCouleurs.texteSecondaire),
+          Icon(icone, size: 14, color: context.texteSecondaireMaboko),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

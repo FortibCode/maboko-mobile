@@ -11,18 +11,42 @@ class AppConfig {
 
   /// Adresse de base de l'API, prefixe de version compris.
   ///
-  /// La valeur par defaut vise l'emulateur Android, ou 10.0.2.2 designe la
-  /// machine hote. Sur un telephone physique, passer l'adresse du poste de
-  /// developpement sur le reseau local.
+  /// La valeur par defaut vise le poste de developpement sur le reseau local.
+  /// Elle remplace 10.0.2.2, qui n'existe qu'a l'interieur de l'emulateur
+  /// Android : sur un telephone physique cette adresse ne mene nulle part et
+  /// l'application restait suspendue trente secondes avant d'accuser le reseau
+  /// du telephone. L'adresse du reseau local, elle, fonctionne dans les deux
+  /// cas — emulateur comme appareil reel.
+  ///
+  /// A changer si le routeur attribue une autre adresse au poste :
+  ///   flutter run --dart-define=API_BASE_URL=http://<ip-du-poste>:8000/api/v1
+  ///
+  /// Une compilation de production est de toute facon refusee au demarrage si
+  /// elle vise une API en clair (voir verifierConfiguration).
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000/api/v1',
+    defaultValue: 'http://192.168.1.76:8000/api/v1',
   );
+
+  /// Identifiant client OAuth du projet Google Cloud (§5.1.3).
+  ///
+  /// Sur Android, le jeton d'identite doit porter l'audience du client « Web »
+  /// du projet, pas celle du client Android : c'est cette valeur que le serveur
+  /// verifie. Elle se recupere dans la console Google Cloud et n'est pas un
+  /// secret — elle voyage dans chaque requete d'authentification.
+  ///
+  ///   flutter run --dart-define=GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
+  ///
+  /// Laissee vide, le bouton Google explique ce qui manque au lieu d'echouer
+  /// sans raison visible.
+  static const String googleClientId = String.fromEnvironment('GOOGLE_CLIENT_ID');
+
+  static bool get googleDisponible => googleClientId.isNotEmpty;
 
   /// Serveur WebSocket Reverb, pour la messagerie en temps réel (§7.2).
   ///
   ///   flutter run --dart-define=REVERB_HOST=10.0.2.2 --dart-define=REVERB_KEY=...
-  static const String reverbHost = String.fromEnvironment('REVERB_HOST', defaultValue: '10.0.2.2');
+  static const String reverbHost = String.fromEnvironment('REVERB_HOST', defaultValue: '192.168.1.76');
   static const int reverbPort = int.fromEnvironment('REVERB_PORT', defaultValue: 8080);
   static const String reverbKey = String.fromEnvironment('REVERB_KEY');
   static const bool reverbTls = bool.fromEnvironment('REVERB_TLS');

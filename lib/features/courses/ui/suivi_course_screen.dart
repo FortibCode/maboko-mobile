@@ -140,7 +140,7 @@ class _SuiviCourseScreenState extends State<SuiviCourseScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MabokoCouleurs.fond,
+      backgroundColor: context.fondMaboko,
       appBar: AppBar(
         title: const Text('Ma course'),
         backgroundColor: MabokoCouleurs.secondaire,
@@ -196,7 +196,7 @@ class _SuiviCourseScreenState extends State<SuiviCourseScreen> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.surface,
+        color: context.surfaceMaboko,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12)],
       ),
@@ -225,13 +225,13 @@ class _SuiviCourseScreenState extends State<SuiviCourseScreen> {
           const SizedBox(height: 4),
           Text(
             _sousTitreStatut(course),
-            style: const TextStyle(fontSize: 13, color: MabokoCouleurs.texteSecondaire, height: 1.4),
+            style: TextStyle(fontSize: 13, color: context.texteSecondaireMaboko, height: 1.4),
           ),
           if (course.chercheChauffeur) ...[
             const SizedBox(height: 14),
-            const LinearProgressIndicator(
+            LinearProgressIndicator(
               color: MabokoCouleurs.secondaire,
-              backgroundColor: MabokoCouleurs.bordure,
+              backgroundColor: context.bordureMaboko,
             ),
           ],
           if (course.chauffeur != null) ...[
@@ -276,15 +276,15 @@ class _SuiviCourseScreenState extends State<SuiviCourseScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.fond,
+        color: context.teinteMaboko,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             radius: 22,
-            backgroundColor: MabokoCouleurs.surface,
-            child: Icon(Icons.person, color: MabokoCouleurs.secondaire),
+            backgroundColor: context.surfaceMaboko,
+            child: const Icon(Icons.person, color: MabokoCouleurs.secondaire),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -299,7 +299,7 @@ class _SuiviCourseScreenState extends State<SuiviCourseScreen> {
                 // Le client doit pouvoir reconnaître le véhicule qui arrive.
                 Text(
                   [chauffeur.vehicule, chauffeur.plaque].whereType<String>().join(' · '),
-                  style: const TextStyle(fontSize: 12.5, color: MabokoCouleurs.texteSecondaire),
+                  style: TextStyle(fontSize: 12.5, color: context.texteSecondaireMaboko),
                 ),
                 if (chauffeur.noteMoyenne > 0) ...[
                   const SizedBox(height: 4),

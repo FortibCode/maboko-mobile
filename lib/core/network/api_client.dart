@@ -33,7 +33,10 @@ class ApiClient {
     return _envoyer('PATCH', chemin, corps: corps);
   }
 
-  Future<dynamic> delete(String chemin) => _envoyer('DELETE', chemin);
+  /// [corps] est accepté : la suppression de compte exige le mot de passe,
+  /// et HTTP autorise un corps sur DELETE.
+  Future<dynamic> delete(String chemin, {Map<String, dynamic>? corps}) =>
+      _envoyer('DELETE', chemin, corps: corps);
 
   Future<dynamic> _envoyer(
     String methode,
@@ -66,15 +69,30 @@ class ApiClient {
       reponse = await http.Response.fromStream(diffusee);
     } on TimeoutException {
       throw ApiException(
-        "Le serveur met trop de temps a repondre. Verifiez votre connexion.",
+        "Le serveur met trop de temps à répondre. Vérifiez votre connexion."
+        '${_indiceDeveloppement()}',
       );
     } catch (_) {
       throw ApiException(
-        "Impossible de joindre Maboko. Verifiez votre connexion internet.",
+        "Impossible de joindre Maboko. Vérifiez votre connexion internet."
+        '${_indiceDeveloppement()}',
       );
     }
 
     return _interpreter(reponse);
+  }
+
+  /// En développement, nomme l'adresse tentée.
+  ///
+  /// Sans cela, une application compilée avec l'adresse de l'émulateur Android
+  /// (10.0.2.2, qui n'existe que là) reste suspendue trente secondes puis
+  /// affiche « vérifiez votre connexion » — un message qui accuse le réseau du
+  /// téléphone alors que c'est la compilation qu'il faut corriger.
+  /// Rien n'est ajouté en production : l'utilisateur final n'a que faire d'une URL.
+  static String _indiceDeveloppement() {
+    if (AppConfig.isRelease) return '';
+
+    return '\n(API visée : ${AppConfig.apiBaseUrl})';
   }
 
   dynamic _interpreter(http.Response reponse) {

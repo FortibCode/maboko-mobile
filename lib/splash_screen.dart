@@ -1,6 +1,5 @@
 // Fichier : lib/splash_screen.dart
 import 'package:flutter/material.dart';
-import 'services/storage_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -41,19 +40,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     super.dispose();
   }
 
-  Future<void> _onDiscoverPressed() async {
-    // Nettoie toute session existante pour arriver sur un écran de login vierge
-    await StorageService.clearAll();
-
-    if (!mounted) return;
-
-    // Redirection vers le choix du profil et les onboardings
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      "/profile-choice",
-      (route) => false,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -172,38 +158,19 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       
                       const SizedBox(height: 30),
 
-                      // Bouton "Découvrir"
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: _onDiscoverPressed,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFF8C00),
-                            foregroundColor: Colors.white,
-                            elevation: 6,
-                            shadowColor: Colors.black.withValues(alpha: 0.4),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(26),
-                            ),
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                "Découvrir",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              SizedBox(width: 8),
-                              Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                            ],
-                          ),
+                      // Un indicateur, pas un bouton : la redirection est automatique
+                      // (voir SplashScreenWithTimer). Le bouton « Découvrir »
+                      // qui se trouvait ici appelait clearAll() : il deconnectait
+                      // l'utilisateur deja identifie s'il y touchait.
+                      const SizedBox(
+                        height: 32,
+                        width: 32,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor: AlwaysStoppedAnimation(Color(0xFFFF8C00)),
                         ),
                       ),
+                      const SizedBox(height: 20),
                       const SizedBox(height: 25),
                     ],
                   ),

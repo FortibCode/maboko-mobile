@@ -63,7 +63,7 @@ class _ArtisansParMetierScreenState extends State<ArtisansParMetierScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MabokoCouleurs.fond,
+      backgroundColor: context.fondMaboko,
       appBar: AppBar(
         title: Text(widget.titre),
         backgroundColor: MabokoCouleurs.secondaire,
@@ -129,9 +129,9 @@ class _ArtisansParMetierScreenState extends State<ArtisansParMetierScreen> {
         selected: actif,
         onSelected: (_) => onTap(),
         showCheckmark: false,
-        backgroundColor: MabokoCouleurs.surface,
+        backgroundColor: context.surfaceMaboko,
         selectedColor: MabokoCouleurs.secondaire.withValues(alpha: 0.15),
-        side: BorderSide(color: actif ? MabokoCouleurs.secondaire : MabokoCouleurs.bordure),
+        side: BorderSide(color: actif ? MabokoCouleurs.secondaire : context.bordureMaboko),
         labelStyle: TextStyle(
           fontSize: 12.5,
           fontWeight: actif ? FontWeight.w700 : FontWeight.w500,

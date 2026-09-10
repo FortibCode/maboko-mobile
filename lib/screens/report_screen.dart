@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../core/theme/maboko_theme.dart';
 import '../core/network/api.dart';
 import '../core/network/api_exception.dart';
 
@@ -70,11 +72,11 @@ class _ReportScreenState extends State<ReportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF4E7),
+      backgroundColor: context.fondMaboko,
       appBar: AppBar(
         title: const Text("Signaler le contenu"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        backgroundColor: context.surfaceMaboko,
+        foregroundColor: Theme.of(context).textTheme.titleLarge?.color,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -92,7 +94,7 @@ class _ReportScreenState extends State<ReportScreen> {
               decoration: InputDecoration(
                 hintText: "Décrivez la raison...",
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: context.surfaceMaboko,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8.0),
                   borderSide: BorderSide.none,

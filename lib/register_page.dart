@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'core/network/api.dart';
 import 'core/network/api_exception.dart';
 import 'services/storage_service.dart';
+import 'core/session/role_utilisateur.dart';
+import 'core/widgets/bascule_acces.dart';
+import 'features/artisans/ui/fiche_artisan_screen.dart';
+import 'features/courses/ui/fiche_chauffeur_screen.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -171,12 +175,7 @@ class _RegisterPageState extends State<RegisterPage> {
   /// L'ecran de choix de profil produit des valeurs comme « artisan_menuisier ».
   /// L'API ne connait que les roles du modele : le metier precis est conserve
   /// localement et rattachera la fiche artisan a l'etape suivante du parcours.
-  String _roleApi() {
-    final role = _userRole.toLowerCase();
-    if (role.startsWith('artisan')) return 'artisan';
-    if (role.startsWith('chauffeur')) return 'chauffeur';
-    return 'client';
-  }
+  String _roleApi() => RoleMaboko.depuis(_userRole).pourApi;
 
   Future<void> resendOtp() async {
     await sendRegisterOtp();
@@ -205,6 +204,89 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  /// Aiguillage juste apres la creation du compte.
+  ///
+  /// Un artisan et un chauffeur ne sont utilisables qu'une fois leur fiche
+  /// deposee : sans elle, l'un n'apparait dans aucune recherche et l'autre ne
+  /// recoit aucune course. Cette etape venait avant l'inscription, quand il
+  /// n'y avait pas encore de compte ou l'enregistrer — rien n'etait conserve.
+  String _titreSelonRole() => switch (RoleMaboko.depuis(_userRole)) {
+        RoleMaboko.artisan => "Rejoignez Maboko en tant qu'Artisan",
+        RoleMaboko.chauffeur => 'Rejoignez Allô Chauffeur',
+        _ => 'Rejoignez Maboko',
+      };
+
+  Widget _choixRole(RoleMaboko role, IconData icone) {
+    final choisi = RoleMaboko.depuis(_userRole) == role;
+
+    return GestureDetector(
+      onTap: () => setState(() => _userRole = role.pourApi),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        decoration: BoxDecoration(
+          color: choisi ? const Color(0xFFB35B28).withValues(alpha: 0.10) : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: choisi ? const Color(0xFFB35B28) : const Color(0xFFE8DCC8),
+            width: choisi ? 1.6 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(icone,
+                size: 22,
+                color: choisi ? const Color(0xFFB35B28) : const Color(0xFF7A6A5C)),
+            const SizedBox(height: 6),
+            Text(
+              role.libelle,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: choisi ? FontWeight.bold : FontWeight.normal,
+                color: choisi ? const Color(0xFFB35B28) : const Color(0xFF7A6A5C),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _apresInscription(String role, String nom) async {
+    final reel = RoleMaboko.depuis(role);
+
+    if (reel.estArtisan) {
+      await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FicheArtisanScreen(nomComplet: nom, premiereFois: true),
+        ),
+      );
+
+      return;
+    }
+
+    if (reel.estChauffeur) {
+      await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const FicheChauffeurScreen(premiereFois: true),
+        ),
+      );
+
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Bienvenue sur Maboko !"),
+        backgroundColor: Color(0xFFD46A00),
+      ),
+    );
+
+    ouvrirEspace(context, reel, nom: nom);
+  }
+
   Future<void> verifyAndRegister() async {
     if (codeController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -222,26 +304,36 @@ class _RegisterPageState extends State<RegisterPage> {
       // Seuls le numero et le code sont transmis : le compte est cree a partir
       // des donnees mises en attente cote serveur a l'etape precedente, ce qui
       // empeche de modifier son e-mail ou son role entre les deux appels.
-      await api.post('/verify-register-otp', corps: {
+      final donnees = await api.post('/verify-register-otp', corps: {
         "telephone": formatCongolesePhone(phoneController.text.trim()),
         "code": codeController.text.trim(),
       });
 
+      // Le serveur cree le compte ET ouvre la session : il renvoie un jeton.
+      // L'application le jetait pour renvoyer vers l'ecran de connexion, ou
+      // l'utilisateur retapait l'identifiant et le mot de passe qu'il venait
+      // de choisir.
+      final utilisateur = (donnees['user'] as Map<String, dynamic>?) ?? const {};
+      final String role = utilisateur['role'] as String? ?? _userRole;
+      final String nom = (utilisateur['nom'] as String?)?.trim().isNotEmpty == true
+          ? utilisateur['nom'] as String
+          : nameController.text.trim();
+
+      await StorageService.saveToken(donnees['token'] as String? ?? '');
+      await StorageService.saveUserData(
+        name: nom,
+        role: role,
+        email: utilisateur['email'] as String? ?? emailController.text.trim(),
+      );
+      if (utilisateur['telephone'] is String) {
+        await StorageService.saveUserTelephone(utilisateur['telephone'] as String);
+      }
+      await StorageService.saveOnboardingCompleted(true);
+
       setState(() => isLoading = false);
       if (!mounted) return;
 
-      await StorageService.saveUserEmail(emailController.text.trim());
-      await StorageService.saveUserRole(_userRole);
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Compte créé avec succès. Connectez-vous."),
-          backgroundColor: Color(0xFFD46A00),
-        ),
-      );
-
-      Navigator.pushReplacementNamed(context, "/login");
+      await _apresInscription(role, nom);
     } on ApiException catch (e) {
       setState(() => isLoading = false);
       if (!mounted) return;
@@ -355,9 +447,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   Text(
                     isOtpStep
                         ? "Validation du code"
-                        : (_userRole == 'artisan'
-                            ? "Rejoignez Maboko en tant qu'Artisan"
-                            : "Rejoignez Maboko"),
+                        : _titreSelonRole(),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 26,
@@ -377,6 +467,15 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                   ),
                   const SizedBox(height: 22),
+
+                  // Bascule Connexion / Inscription (§5.1.3). Masquee a
+                  // l'etape du code : l'utilisateur a deja soumis ses
+                  // informations, changer d'onglet lui ferait tout perdre.
+                  if (!isOtpStep) ...[
+                    BasculeAcces(surConnexion: false, roleInscription: _userRole),
+                    const SizedBox(height: 22),
+                  ],
+
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -394,18 +493,46 @@ class _RegisterPageState extends State<RegisterPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (!isOtpStep) ...[
+                          // Le role etait impose par l'ecran d'ou venait
+                          // l'utilisateur : arriver ici par l'onglet
+                          // « Inscription » creait toujours un compte client,
+                          // et par l'accroche artisan toujours un artisan.
+                          // Personne ne voyait ce choix, et rien ne permettait
+                          // de le corriger ensuite.
+                          const Text(
+                            'Je crée un compte en tant que',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF7A6A5C),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(child: _choixRole(RoleMaboko.client, Icons.search_rounded)),
+                              const SizedBox(width: 8),
+                              Expanded(child: _choixRole(RoleMaboko.artisan, Icons.handyman_outlined)),
+                              const SizedBox(width: 8),
+                              Expanded(child: _choixRole(RoleMaboko.chauffeur, Icons.local_taxi_outlined)),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
                           TextField(
+                            style: const TextStyle(color: Color(0xFF2B2B2B), fontSize: 15),
                             controller: nameController,
                             decoration: _inputDecoration("Nom d'utilisateur", Icons.person_outline),
                           ),
                           const SizedBox(height: 14),
                           TextField(
+                            style: const TextStyle(color: Color(0xFF2B2B2B), fontSize: 15),
                             controller: emailController,
                             keyboardType: TextInputType.emailAddress,
                             decoration: _inputDecoration("Email", Icons.email_outlined),
                           ),
                           const SizedBox(height: 14),
                           TextField(
+                            style: const TextStyle(color: Color(0xFF2B2B2B), fontSize: 15),
                             controller: phoneController,
                             keyboardType: TextInputType.phone,
                             decoration: _inputDecoration(
@@ -417,6 +544,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                           const SizedBox(height: 14),
                           TextField(
+                            style: const TextStyle(color: Color(0xFF2B2B2B), fontSize: 15),
                             controller: passwordController,
                             obscureText: _obscurePassword,
                             decoration: _inputDecoration(
@@ -493,6 +621,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 ),
                         ] else ...[
                           TextField(
+                            style: const TextStyle(color: Color(0xFF2B2B2B), fontSize: 15),
                             controller: codeController,
                             keyboardType: TextInputType.number,
                             decoration: _inputDecoration("Code de validation SMS", Icons.lock_clock_outlined),

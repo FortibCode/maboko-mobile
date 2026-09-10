@@ -6,7 +6,7 @@ import '../../../core/widgets/etats.dart';
 import '../../artisans/ui/artisans_par_metier_screen.dart';
 import '../data/metier_repository.dart';
 import '../models/metier.dart';
-import 'icones_metiers.dart';
+import 'visuel_metier.dart';
 
 /// Écran « Explorer les métiers » (§5.1.5).
 ///
@@ -25,6 +25,12 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
   final TextEditingController _recherche = TextEditingController();
 
   List<Metier> _metiers = const [];
+
+  /// Cinq métiers par page : la grille reste lisible et chaque carte garde
+  /// assez de place, au lieu d'une liste interminable qu'on parcourt sans
+  /// rien retenir.
+  static const _parPage = 5;
+  int _page = 1;
   bool _chargement = true;
   String? _erreur;
 
@@ -71,6 +77,15 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
     return _metiers.where((m) => m.nom.toLowerCase().contains(terme)).toList();
   }
 
+  int get _nbPages => (_resultats.length / _parPage).ceil().clamp(1, 9999);
+
+  List<Metier> get _pageCourante {
+    final debut = (_page - 1) * _parPage;
+    if (debut >= _resultats.length) return const [];
+
+    return _resultats.sublist(debut, (debut + _parPage).clamp(0, _resultats.length));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -85,14 +100,14 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Trouvez le bon artisan, près de chez vous',
-                style: TextStyle(color: MabokoCouleurs.texteSecondaire, fontSize: 13),
+                style: TextStyle(color: context.texteSecondaireMaboko, fontSize: 13),
               ),
               const SizedBox(height: 14),
               TextField(
                 controller: _recherche,
-                onChanged: (_) => setState(() {}),
+                onChanged: (_) => setState(() => _page = 1),
                 decoration: InputDecoration(
                   hintText: 'Rechercher un métier…',
                   prefixIcon: const Icon(Icons.search, color: MabokoCouleurs.secondaire),
@@ -103,7 +118,7 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
                           onPressed: () => setState(_recherche.clear),
                         ),
                   filled: true,
-                  fillColor: MabokoCouleurs.surface,
+                  fillColor: context.surfaceMaboko,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
                     borderSide: BorderSide.none,
@@ -141,19 +156,113 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
     return RefreshIndicator(
       color: MabokoCouleurs.secondaire,
       onRefresh: _charger,
-      child: GridView.builder(
+      child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.35,
-        ),
-        itemCount: resultats.length,
-        itemBuilder: (context, index) => _CarteMetier(metier: resultats[index]),
+        children: [
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.15,
+            ),
+            itemCount: _pageCourante.length,
+            itemBuilder: (context, index) => _CarteMetier(metier: _pageCourante[index]),
+          ),
+          if (_nbPages > 1) ...[
+            const SizedBox(height: 20),
+            _pagination(resultats.length),
+          ],
+        ],
       ),
     );
   }
+
+  Widget _pagination(int total) {
+    final debut = (_page - 1) * _parPage + 1;
+    final fin = (debut + _pageCourante.length - 1).clamp(debut, total);
+
+    return Column(
+      children: [
+        Text(
+          '$debut–$fin sur $total métiers',
+          style: TextStyle(fontSize: 12, color: context.texteSecondaireMaboko),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _boutonPage(
+              Icons.chevron_left_rounded,
+              _page > 1 ? () => setState(() => _page--) : null,
+            ),
+            const SizedBox(width: 6),
+            for (var n = 1; n <= _nbPages; n++) ...[
+              _numeroPage(n),
+              const SizedBox(width: 6),
+            ],
+            _boutonPage(
+              Icons.chevron_right_rounded,
+              _page < _nbPages ? () => setState(() => _page++) : null,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _numeroPage(int n) {
+    final actif = n == _page;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: actif ? null : () => setState(() => _page = n),
+      child: Container(
+        width: 36,
+        height: 36,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: actif ? MabokoCouleurs.secondaire : null,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: actif ? MabokoCouleurs.secondaire : context.bordureMaboko,
+          ),
+        ),
+        child: Text(
+          '$n',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+            color: actif ? Colors.white : context.texteSecondaireMaboko,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _boutonPage(IconData icone, VoidCallback? action) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: action,
+      child: Container(
+        width: 36,
+        height: 36,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: context.bordureMaboko),
+        ),
+        child: Icon(
+          icone,
+          size: 20,
+          color: action == null ? context.bordureMaboko : MabokoCouleurs.secondaire,
+        ),
+      ),
+    );
+  }
+
 }
 
 class _CarteMetier extends StatelessWidget {
@@ -164,7 +273,7 @@ class _CarteMetier extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: MabokoCouleurs.surface,
+      color: Theme.of(context).cardColor,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -181,20 +290,13 @@ class _CarteMetier extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: MabokoCouleurs.bordure),
+            border: Border.all(color: context.bordureMaboko),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.all(9),
-                decoration: BoxDecoration(
-                  color: MabokoCouleurs.fond,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(iconeMetier(metier.icone), color: MabokoCouleurs.secondaire, size: 24),
-              ),
+              VisuelMetier(metier: metier, taille: 46, rayon: 12, tailleIcone: 24),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -209,7 +311,7 @@ class _CarteMetier extends StatelessWidget {
                     metier.nbArtisans == 0
                         ? 'Aucun artisan inscrit'
                         : '${metier.nbArtisans} artisan${metier.nbArtisans > 1 ? 's' : ''}',
-                    style: const TextStyle(fontSize: 11.5, color: MabokoCouleurs.texteSecondaire),
+                    style: TextStyle(fontSize: 11.5, color: context.texteSecondaireMaboko),
                   ),
                 ],
               ),

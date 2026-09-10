@@ -15,7 +15,6 @@ dependencies:
   http: ^1.2.0
 
   # Génération de données fictives (utile pour tests)
-  faker: ^2.1.0
 
   # Stockage local (ex: SharedPreferences)
   shared_preferences: ^2.2.2
@@ -44,6 +43,7 @@ dependencies:
   # Gestion des notifications locales
   flutter_local_notifications: ^17.0.0
   image_picker: ^1.2.3
+  google_sign_in: ^6.2.1
 
 dev_dependencies:
   flutter_test:
@@ -56,10 +56,5 @@ flutter:
   # Déclaration explicite de toutes les images de ton application
   assets:
     - assets/images/Maboko.jpeg
-    - assets/images/message.png
-    - assets/images/photo.png
-    - assets/images/recherche.png
     - assets/images/bricolage.png
     - assets/images/voiture.png
-    - assets/images/emojiF.jpg
-    - assets/images/emojiG.jpg

@@ -61,6 +61,7 @@ class Course {
     required this.id,
     required this.statut,
     required this.typeVehicule,
+    this.distancePriseEnChargeKm,
     required this.depart,
     required this.arrivee,
     this.distanceKm = 0,
@@ -70,11 +71,17 @@ class Course {
     this.chauffeur,
     this.clientNom,
     this.annuleePar,
+    this.termineeLe,
+    this.creeeLe,
   });
 
   final int id;
   final String statut;
   final String typeVehicule;
+
+  /// Distance qui sépare le chauffeur du point de prise en charge (§5.3.1).
+  /// Renseignée uniquement sur les courses qui lui sont proposées.
+  final double? distancePriseEnChargeKm;
   final PointTrajet depart;
   final PointTrajet arrivee;
   final double distanceKm;
@@ -84,6 +91,10 @@ class Course {
   final ChauffeurCourse? chauffeur;
   final String? clientNom;
   final String? annuleePar;
+
+  /// Horodatages exposés par l'API, utiles à l'historique du chauffeur.
+  final DateTime? termineeLe;
+  final DateTime? creeeLe;
 
   bool get chercheChauffeur => statut == 'recherche';
 
@@ -102,6 +113,7 @@ class Course {
       id: json['id'] as int,
       statut: json['statut'] as String,
       typeVehicule: json['typeVehicule'] as String? ?? 'moto',
+      distancePriseEnChargeKm: (json['distancePriseEnChargeKm'] as num?)?.toDouble(),
       depart: PointTrajet.depuisJson(json['depart'] as Map<String, dynamic>?),
       arrivee: PointTrajet.depuisJson(json['arrivee'] as Map<String, dynamic>?),
       distanceKm: (json['distanceKm'] as num?)?.toDouble() ?? 0,
@@ -111,6 +123,8 @@ class Course {
       chauffeur: chauffeur == null ? null : ChauffeurCourse.depuisJson(chauffeur),
       clientNom: (client?['nomComplet'] as String?)?.trim(),
       annuleePar: json['annuleePar'] as String?,
+      termineeLe: DateTime.tryParse(json['termineeLe'] as String? ?? ''),
+      creeeLe: DateTime.tryParse(json['creeeLe'] as String? ?? ''),
     );
   }
 }

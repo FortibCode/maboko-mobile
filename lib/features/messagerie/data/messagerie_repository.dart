@@ -37,10 +37,21 @@ class MessagerieRepository {
         .toList();
   }
 
-  Future<MessageChat> envoyer(int conversationId, String contenu) async {
+  /// Envoi d'un message : du texte, une photo, ou les deux.
+  ///
+  /// L'API acceptait un media depuis le debut ; la conversation savait
+  /// l'afficher mais pas en envoyer un.
+  Future<MessageChat> envoyer(
+    int conversationId,
+    String contenu, {
+    String? media,
+  }) async {
     final reponse = await api.post(
       '/conversations/$conversationId/messages',
-      corps: {'contenu': contenu},
+      corps: {
+        if (contenu.isNotEmpty) 'contenu': contenu,
+        if (media != null) 'media': media,
+      },
     );
 
     return MessageChat.depuisJson(reponse['donnees'] as Map<String, dynamic>);

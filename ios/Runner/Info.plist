@@ -16,6 +16,15 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>maboko_app</string>
+	<!-- iOS interrompt l'application si l'une de ces cles manque au moment ou
+	     l'appareil photo, la photothèque ou la position sont sollicités. Elles
+	     étaient absentes : toute prise de photo faisait planter l'application. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Maboko utilise l’appareil photo pour votre photo de profil, vos réalisations et vos pièces d’identité.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Maboko accède à vos photos pour illustrer votre profil, vos réalisations et vos demandes.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Maboko utilise votre position pour vous proposer les artisans et les courses les plus proches.</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

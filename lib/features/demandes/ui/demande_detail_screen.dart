@@ -198,7 +198,7 @@ class _DemandeDetailScreenState extends State<DemandeDetailScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(message, style: const TextStyle(fontSize: 13, color: MabokoCouleurs.texteSecondaire)),
+            Text(message, style: TextStyle(fontSize: 13, color: context.texteSecondaireMaboko)),
             const SizedBox(height: 14),
             TextField(
               controller: controleur,
@@ -242,7 +242,7 @@ class _DemandeDetailScreenState extends State<DemandeDetailScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(message, style: const TextStyle(fontSize: 13, color: MabokoCouleurs.texteSecondaire)),
+            Text(message, style: TextStyle(fontSize: 13, color: context.texteSecondaireMaboko)),
             const SizedBox(height: 14),
             TextField(
               controller: controleur,
@@ -270,7 +270,7 @@ class _DemandeDetailScreenState extends State<DemandeDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MabokoCouleurs.fond,
+      backgroundColor: context.fondMaboko,
       appBar: AppBar(
         title: const Text('Détail de la demande'),
         backgroundColor: MabokoCouleurs.secondaire,
@@ -328,8 +328,8 @@ class _DemandeDetailScreenState extends State<DemandeDetailScreen> {
                     errorBuilder: (_, __, ___) => Container(
                       width: 92,
                       height: 92,
-                      color: MabokoCouleurs.fond,
-                      child: const Icon(Icons.broken_image_outlined, color: MabokoCouleurs.bordure),
+                      color: context.teinteMaboko,
+                      child: Icon(Icons.broken_image_outlined, color: context.bordureMaboko),
                     ),
                   ),
                 ),
@@ -382,9 +382,9 @@ class _DemandeDetailScreenState extends State<DemandeDetailScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.surface,
+        color: context.surfaceMaboko,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: MabokoCouleurs.bordure),
+        border: Border.all(color: context.bordureMaboko),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -409,7 +409,7 @@ class _DemandeDetailScreenState extends State<DemandeDetailScreen> {
             width: 118,
             child: Text(
               libelle,
-              style: const TextStyle(fontSize: 13, color: MabokoCouleurs.texteSecondaire),
+              style: TextStyle(fontSize: 13, color: context.texteSecondaireMaboko),
             ),
           ),
           Expanded(
@@ -531,9 +531,9 @@ class _DialogueNotationState extends State<_DialogueNotation> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Votre avis aide les prochains clients à choisir.',
-            style: TextStyle(fontSize: 13, color: MabokoCouleurs.texteSecondaire),
+            style: TextStyle(fontSize: 13, color: context.texteSecondaireMaboko),
           ),
           const SizedBox(height: 14),
           Row(

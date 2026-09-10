@@ -104,7 +104,7 @@ class _DemandeFormScreenState extends State<DemandeFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MabokoCouleurs.fond,
+      backgroundColor: context.fondMaboko,
       appBar: AppBar(
         title: const Text('Demande de devis'),
         backgroundColor: MabokoCouleurs.secondaire,
@@ -191,25 +191,25 @@ class _DemandeFormScreenState extends State<DemandeFormScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.surface,
+        color: context.surfaceMaboko,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: MabokoCouleurs.bordure),
+        border: Border.all(color: context.bordureMaboko),
       ),
       child: Row(
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             radius: 22,
-            backgroundColor: MabokoCouleurs.fond,
-            child: Icon(Icons.handyman_rounded, color: MabokoCouleurs.secondaire, size: 22),
+            backgroundColor: context.fondMaboko,
+            child: const Icon(Icons.handyman_rounded, color: MabokoCouleurs.secondaire, size: 22),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Demande adressée à',
-                  style: TextStyle(fontSize: 11.5, color: MabokoCouleurs.texteSecondaire),
+                  style: TextStyle(fontSize: 11.5, color: context.texteSecondaireMaboko),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -250,14 +250,14 @@ class _DemandeFormScreenState extends State<DemandeFormScreen> {
         hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFB6A997)),
         prefixIcon: Icon(icone, color: MabokoCouleurs.secondaire),
         filled: true,
-        fillColor: MabokoCouleurs.surface,
+        fillColor: context.surfaceMaboko,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: MabokoCouleurs.bordure),
+          borderSide: BorderSide(color: context.bordureMaboko),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: MabokoCouleurs.bordure),
+          borderSide: BorderSide(color: context.bordureMaboko),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -274,9 +274,9 @@ class _DemandeFormScreenState extends State<DemandeFormScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         decoration: BoxDecoration(
-          color: MabokoCouleurs.surface,
+          color: context.surfaceMaboko,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: MabokoCouleurs.bordure),
+          border: Border.all(color: context.bordureMaboko),
         ),
         child: Row(
           children: [
@@ -315,14 +315,14 @@ class _DemandeFormScreenState extends State<DemandeFormScreen> {
             const SizedBox(width: 6),
             Text(
               '${_photos.length}/$_maxPhotos',
-              style: const TextStyle(fontSize: 12.5, color: MabokoCouleurs.texteSecondaire),
+              style: TextStyle(fontSize: 12.5, color: context.texteSecondaireMaboko),
             ),
           ],
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Une photo du problème aide l’artisan à chiffrer sans se déplacer.',
-          style: TextStyle(fontSize: 12.5, color: MabokoCouleurs.texteSecondaire),
+          style: TextStyle(fontSize: 12.5, color: context.texteSecondaireMaboko),
         ),
         const SizedBox(height: 12),
         Wrap(
@@ -375,16 +375,16 @@ class _DemandeFormScreenState extends State<DemandeFormScreen> {
         width: 84,
         height: 84,
         decoration: BoxDecoration(
-          color: MabokoCouleurs.surface,
+          color: context.surfaceMaboko,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: MabokoCouleurs.bordure),
+          border: Border.all(color: context.bordureMaboko),
         ),
-        child: const Column(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add_a_photo_outlined, color: MabokoCouleurs.secondaire, size: 22),
-            SizedBox(height: 4),
-            Text('Ajouter', style: TextStyle(fontSize: 10.5, color: MabokoCouleurs.texteSecondaire)),
+            const Icon(Icons.add_a_photo_outlined, color: MabokoCouleurs.secondaire, size: 22),
+            const SizedBox(height: 4),
+            Text('Ajouter', style: TextStyle(fontSize: 10.5, color: context.texteSecondaireMaboko)),
           ],
         ),
       ),

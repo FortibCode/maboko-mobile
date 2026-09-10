@@ -6,6 +6,7 @@ import '../../../core/config/app_config.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/temps_reel/canal_reverb.dart';
 import '../../../core/theme/maboko_theme.dart';
+import '../../../core/widgets/choix_photo.dart';
 import '../../../core/widgets/etats.dart';
 import '../data/messagerie_repository.dart';
 import '../models/conversation.dart';
@@ -132,15 +133,29 @@ class _ConversationScreenState extends State<ConversationScreen> {
     }
   }
 
-  Future<void> _envoyer() async {
+  /// Envoi d'une photo dans la conversation.
+  ///
+  /// Le bouton n'existait pas : on pouvait recevoir une image, jamais en
+  /// joindre une — alors qu'un chantier se decrit surtout en photos.
+  Future<void> _envoyerPhoto() async {
+    if (_envoiEnCours) return;
+
+    final photo = await choisirPhoto(context);
+    if (photo == null || !mounted) return;
+
+    await _envoyer(media: photo);
+  }
+
+  Future<void> _envoyer({String? media}) async {
     final contenu = _saisie.text.trim();
-    if (contenu.isEmpty || _envoiEnCours) return;
+    if ((contenu.isEmpty && media == null) || _envoiEnCours) return;
 
     setState(() => _envoiEnCours = true);
     _saisie.clear();
 
     try {
-      final message = await _repository.envoyer(widget.conversation.id, contenu);
+      final message =
+          await _repository.envoyer(widget.conversation.id, contenu, media: media);
       if (!mounted) return;
       setState(() {
         _messages = [message, ..._messages];
@@ -169,7 +184,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
     final interlocuteur = widget.conversation.interlocuteur;
 
     return Scaffold(
-      backgroundColor: MabokoCouleurs.fond,
+      backgroundColor: context.fondMaboko,
       appBar: AppBar(
         backgroundColor: MabokoCouleurs.secondaire,
         foregroundColor: Colors.white,
@@ -249,14 +264,14 @@ class _ConversationScreenState extends State<ConversationScreen> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: deMoi ? MabokoCouleurs.secondaire : MabokoCouleurs.surface,
+          color: deMoi ? MabokoCouleurs.secondaire : context.surfaceMaboko,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
             bottomLeft: Radius.circular(deMoi ? 16 : 4),
             bottomRight: Radius.circular(deMoi ? 4 : 16),
           ),
-          border: deMoi ? null : Border.all(color: MabokoCouleurs.bordure),
+          border: deMoi ? null : Border.all(color: context.bordureMaboko),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -280,7 +295,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
               horodatageCourt(message.envoyeLe),
               style: TextStyle(
                 fontSize: 10,
-                color: deMoi ? Colors.white70 : MabokoCouleurs.texteSecondaire,
+                color: deMoi ? Colors.white70 : context.texteSecondaireMaboko,
               ),
             ),
           ],
@@ -293,9 +308,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
-        decoration: const BoxDecoration(
-          color: MabokoCouleurs.surface,
-          border: Border(top: BorderSide(color: MabokoCouleurs.bordure)),
+        decoration: BoxDecoration(
+          color: context.surfaceMaboko,
+          border: Border(top: BorderSide(color: context.bordureMaboko)),
         ),
         child: Row(
           children: [
@@ -314,7 +329,15 @@ class _ConversationScreenState extends State<ConversationScreen> {
               ),
             ),
             IconButton(
-              onPressed: _envoiEnCours ? null : _envoyer,
+              tooltip: 'Joindre une photo',
+              onPressed: _envoiEnCours ? null : _envoyerPhoto,
+              icon: Icon(Icons.photo_camera_outlined,
+                  color: _envoiEnCours
+                      ? context.texteSecondaireMaboko
+                      : MabokoCouleurs.secondaire),
+            ),
+            IconButton(
+              onPressed: _envoiEnCours ? null : () => _envoyer(),
               icon: _envoiEnCours
                   ? const SizedBox(
                       width: 20,

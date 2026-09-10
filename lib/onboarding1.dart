@@ -43,12 +43,11 @@ class Onboarding1 extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Center(
-                    child: Image.asset(
-                      'assets/images/recherche.png',
-                      width: 110,
-                      height: 110,
-                      fit: BoxFit.contain,
+                  child: const Center(
+                    child: Icon(
+                      Icons.search_rounded,
+                      size: 96,
+                      color: Color(0xFFB35B28),
                     ),
                   ),
                 ),

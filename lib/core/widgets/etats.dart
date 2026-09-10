@@ -17,7 +17,7 @@ class ChargementEnCours extends StatelessWidget {
           const CircularProgressIndicator(color: MabokoCouleurs.secondaire),
           if (message != null) ...[
             const SizedBox(height: 16),
-            Text(message!, style: const TextStyle(color: MabokoCouleurs.texteSecondaire)),
+            Text(message!, style: TextStyle(color: context.texteSecondaireMaboko)),
           ],
         ],
       ),
@@ -47,6 +47,7 @@ class EtatVide extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icone, size: 56, color: MabokoCouleurs.bordure),
             const SizedBox(height: 16),
@@ -60,7 +61,7 @@ class EtatVide extends StatelessWidget {
               Text(
                 message!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: MabokoCouleurs.texteSecondaire, height: 1.4),
+                style: TextStyle(color: context.texteSecondaireMaboko, height: 1.4),
               ),
             ],
             if (action != null) ...[const SizedBox(height: 20), action!],

@@ -166,7 +166,7 @@ class _ReservationCourseScreenState extends State<ReservationCourseScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MabokoCouleurs.fond,
+      backgroundColor: context.fondMaboko,
       appBar: AppBar(
         title: const Text('Allô Chauffeur'),
         backgroundColor: MabokoCouleurs.secondaire,
@@ -226,7 +226,7 @@ class _ReservationCourseScreenState extends State<ReservationCourseScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: MabokoCouleurs.surface,
+                color: context.surfaceMaboko,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)],
               ),
@@ -252,7 +252,7 @@ class _ReservationCourseScreenState extends State<ReservationCourseScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.surface,
+        color: context.surfaceMaboko,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12)],
       ),
@@ -293,7 +293,7 @@ class _ReservationCourseScreenState extends State<ReservationCourseScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: MabokoCouleurs.secondaire,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: MabokoCouleurs.bordure,
+                  disabledBackgroundColor: context.bordureMaboko,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
               ),
@@ -313,7 +313,7 @@ class _ReservationCourseScreenState extends State<ReservationCourseScreen> {
         prefixIcon: Icon(icone, color: couleur, size: 20),
         isDense: true,
         filled: true,
-        fillColor: MabokoCouleurs.fond,
+        fillColor: context.teinteMaboko,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -337,7 +337,7 @@ class _ReservationCourseScreenState extends State<ReservationCourseScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: actif ? MabokoCouleurs.secondaire.withValues(alpha: 0.12) : MabokoCouleurs.fond,
+          color: actif ? MabokoCouleurs.secondaire.withValues(alpha: 0.12) : context.teinteMaboko,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: actif ? MabokoCouleurs.secondaire : Colors.transparent,
@@ -346,7 +346,7 @@ class _ReservationCourseScreenState extends State<ReservationCourseScreen> {
         ),
         child: Column(
           children: [
-            Icon(icone, color: actif ? MabokoCouleurs.secondaire : MabokoCouleurs.texteSecondaire),
+            Icon(icone, color: actif ? MabokoCouleurs.secondaire : context.texteSecondaireMaboko),
             const SizedBox(height: 4),
             Text(
               libelle,
@@ -379,11 +379,11 @@ class _ReservationCourseScreenState extends State<ReservationCourseScreen> {
     final estimation = _estimation;
 
     if (estimation == null) {
-      return const SizedBox(
+      return SizedBox(
         height: 22,
         child: Text(
           'Choisissez une destination pour voir le tarif.',
-          style: TextStyle(fontSize: 12.5, color: MabokoCouleurs.texteSecondaire),
+          style: TextStyle(fontSize: 12.5, color: context.texteSecondaireMaboko),
         ),
       );
     }
@@ -391,7 +391,7 @@ class _ReservationCourseScreenState extends State<ReservationCourseScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: MabokoCouleurs.fond,
+        color: context.teinteMaboko,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -406,7 +406,7 @@ class _ReservationCourseScreenState extends State<ReservationCourseScreen> {
               ),
               Text(
                 '${estimation.distanceKm.toStringAsFixed(1)} km · environ ${estimation.dureeMin} min',
-                style: const TextStyle(fontSize: 12, color: MabokoCouleurs.texteSecondaire),
+                style: TextStyle(fontSize: 12, color: context.texteSecondaireMaboko),
               ),
             ],
           ),
