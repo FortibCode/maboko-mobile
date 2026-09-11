@@ -15,7 +15,10 @@ import 'app_config.dart';
 Future<void> ouvrirReglageAdresse(BuildContext context) async {
   if (AppConfig.isRelease) return;
 
-  final champ = TextEditingController(text: AdresseApi.valeur);
+  // Le champ montre l'adresse telle qu'elle a ete saisie, pas celle que
+  // l'application compose pour ses appels : c'est la premiere qu'on relit et
+  // qu'on corrige.
+  final champ = TextEditingController(text: AdresseApi.valeurConfiguree);
   String? erreur;
 
   await showDialog<void>(
@@ -29,8 +32,8 @@ Future<void> ouvrirReglageAdresse(BuildContext context) async {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Saisissez l’adresse affichée par votre backend au démarrage. '
-              'Le port et « /api/v1 » sont ajoutés si vous les omettez.',
+              'Saisissez l’adresse de votre serveur. Le reste du chemin est '
+              'complété tout seul.',
               style: TextStyle(fontSize: 12.5, height: 1.4, color: contexte.texteSecondaireMaboko),
             ),
             const SizedBox(height: 14),
@@ -39,14 +42,16 @@ Future<void> ouvrirReglageAdresse(BuildContext context) async {
               autofocus: true,
               keyboardType: TextInputType.url,
               decoration: InputDecoration(
-                hintText: '192.168.1.83',
+                // L'adresse du serveur en ligne sert d'exemple : l'adresse
+                // du poste change a chaque bail DHCP et vieillirait ici.
+                hintText: 'https://maboko-api.onrender.com',
                 errorText: erreur,
                 border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 10),
             Text(
-              'Valeur d’origine : ${AdresseApi.valeurCompilee}',
+              'Adresse par défaut : ${AppConfig.apiBaseUrl}',
               style: TextStyle(fontSize: 11, color: contexte.texteSecondaireMaboko),
             ),
           ],

@@ -11,9 +11,10 @@ class AppConfig {
 
   /// Adresse de base de l'API, prefixe de version compris.
   ///
-  /// La valeur par defaut vise l'API en ligne : une application installee
-  /// sans configuration particuliere fonctionne donc telle quelle, sur
-  /// n'importe quel reseau.
+  /// La valeur par defaut est l'adresse du serveur en ligne, telle que Render
+  /// la fournit. Le chemin des routes — « /api/v1 » — est ajoute a la lecture
+  /// par AdresseApi : la constante porte donc l'adresse de l'hebergeur, sans
+  /// detail d'implementation, et l'application reste fonctionnelle.
   ///
   /// Pour travailler contre un backend local, deux chemins : le reglage
   /// « Adresse du serveur » dans les parametres de l'application, qui evite
@@ -24,7 +25,7 @@ class AppConfig {
   /// elle vise une API en clair (voir verifierConfiguration).
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://maboko-api.onrender.com/api/v1',
+    defaultValue: 'https://maboko-api.onrender.com',
   );
 
   /// Identifiant client OAuth du projet Google Cloud (§5.1.3).

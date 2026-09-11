@@ -20,17 +20,27 @@ class AdresseApi {
 
   /// Adresse visée quand rien d'exploitable n'est configuré.
   ///
+  /// Contrairement à la valeur que l'on configure, celle-ci porte déjà le
+  /// chemin des routes : elle est rendue telle quelle par la normalisation,
+  /// qui ne peut pas se rappeler elle-même pour la compléter.
+  ///
   /// `String.fromEnvironment` ne rend sa valeur par défaut que si la clé est
   /// absente : un `--dart-define=API_BASE_URL=` vide renvoie une chaîne vide,
   /// dont on ne peut rien construire. Ce repli évite qu'une configuration
   /// bancale ne rende l'application muette.
-  static const _replis = 'https://maboko-api.onrender.com/api/v1';
+  static const _domaineDeSecours = 'https://maboko-api.onrender.com';
+  static const _replis = '$_domaineDeSecours/api/v1';
 
   /// Valeur en vigueur, lue une fois au démarrage puis gardée en mémoire :
   /// chaque requête la consulte, elle ne peut pas être asynchrone.
   static String _courante = AppConfig.apiBaseUrl;
 
+  /// Adresse réellement appelée, chemin des routes compris.
   static String get valeur => _normaliser(_courante);
+
+  /// Adresse telle qu'elle a été configurée ou saisie, sans le chemin ajouté
+  /// à la lecture. C'est ce qu'un humain écrit, et donc ce qu'on lui remontre.
+  static String get valeurConfiguree => _courante;
 
   /// Vrai si l'adresse a été changée depuis l'application.
   static bool get personnalisee => valeur != valeurCompilee;

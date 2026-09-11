@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maboko_mobile/core/config/adresse_api.dart';
-import 'package:maboko_mobile/core/config/app_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Adresse du serveur, modifiable sans recompiler.
@@ -18,7 +17,11 @@ void main() {
   test('sans réglage, l’adresse compilée s’applique', () async {
     await AdresseApi.charger();
 
-    expect(AdresseApi.valeur, AppConfig.apiBaseUrl);
+    // La constante porte l'adresse du serveur ; le chemin des routes est
+    // ajouté à la lecture.
+    expect(AdresseApi.valeur, 'https://maboko-api.onrender.com/api/v1');
+
+    expect(AdresseApi.valeur, AdresseApi.valeurCompilee);
     expect(AdresseApi.personnalisee, isFalse);
   });
 
@@ -51,7 +54,7 @@ void main() {
     final motif = await AdresseApi.definir('   ');
 
     expect(motif, isNotNull);
-    expect(AdresseApi.valeur, AppConfig.apiBaseUrl);
+    expect(AdresseApi.valeur, AdresseApi.valeurCompilee);
   });
 
   test('l’adresse choisie survit à un redémarrage', () async {
@@ -86,7 +89,7 @@ void main() {
     await AdresseApi.definir('192.168.1.90');
     await AdresseApi.reinitialiser();
 
-    expect(AdresseApi.valeur, AppConfig.apiBaseUrl);
+    expect(AdresseApi.valeur, AdresseApi.valeurCompilee);
     expect(AdresseApi.personnalisee, isFalse);
   });
 

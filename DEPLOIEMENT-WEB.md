@@ -14,7 +14,7 @@ qui compile ensuite `build/web` — le dossier que `vercel.json` publie.
 
    | Variable | Valeur |
    |---|---|
-   | `API_BASE_URL` | `https://maboko-api.onrender.com/api/v1` |
+   | `API_BASE_URL` | `https://maboko-api.onrender.com` — l'adresse du serveur ; le chemin des routes est ajouté par l'application |
    | `GOOGLE_CLIENT_ID` | l'identifiant OAuth, si la connexion Google est active |
    | `VERSION_FLUTTER` | `3.44.1` par défaut ; à changer pour suivre une autre version |
 
@@ -63,7 +63,7 @@ l'application installée.
 Si vous préférez ne pas faire construire Vercel :
 
 ```
-flutter build web --release --dart-define=API_BASE_URL=https://maboko-api.onrender.com/api/v1
+flutter build web --release --dart-define=API_BASE_URL=https://maboko-api.onrender.com
 npx vercel deploy build/web --prod
 ```
 
