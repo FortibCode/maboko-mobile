@@ -63,7 +63,7 @@ class MabokoApp extends StatelessWidget {
       listenable: controleurTheme,
       builder: (contexte, _) => MaterialApp(
         navigatorKey: navigatorKey,
-        title: 'Maboko Mobile',
+        title: 'Maboko',
         debugShowCheckedModeBanner: false,
         themeMode: controleurTheme.mode,
         darkTheme: MabokoThemes.sombre,

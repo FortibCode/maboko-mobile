@@ -69,11 +69,20 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Spacer(),
-                      // Logo Maboko avec une ombre douce et un fond blanc cassé/crème
+                      // Logo Maboko en entier.
+                      //
+                      // Il etait auparavant decoupe dans un cercle de 130
+                      // pixels, en mode « cover » : le symbole remplissait le
+                      // disque et le mot « maboko » comme la signature « les
+                      // mains qui font le Congo » disparaissaient hors cadre.
+                      // Le logo complet demande une surface rectangulaire et
+                      // « contain », qui n'en rogne rien.
                       Container(
+                        width: 260,
+                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
                           color: const Color(0xFFFDFBF7),
+                          borderRadius: BorderRadius.circular(28),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.25),
@@ -83,18 +92,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                             ),
                           ],
                         ),
-                        padding: const EdgeInsets.all(12),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/images/Maboko.jpeg',
-                            width: 130,
-                            height: 130,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => const Icon(
-                              Icons.handshake,
-                              size: 80,
-                              color: Colors.orange,
-                            ),
+                        child: Image.asset(
+                          'assets/images/Maboko.jpeg',
+                          width: 216,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) => const Icon(
+                            Icons.handshake,
+                            size: 80,
+                            color: Colors.orange,
                           ),
                         ),
                       ),
@@ -102,7 +107,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       
                       // Titre principal
                       const Text(
-                        "Bienvenue sur\nMaboko Mobile",
+                        "Bienvenue sur\nMaboko",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 26,
