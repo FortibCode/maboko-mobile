@@ -22,12 +22,12 @@ class AdresseApi {
   /// chaque requête la consulte, elle ne peut pas être asynchrone.
   static String _courante = AppConfig.apiBaseUrl;
 
-  static String get valeur => _courante;
+  static String get valeur => _normaliser(_courante);
 
   /// Vrai si l'adresse a été changée depuis l'application.
-  static bool get personnalisee => _courante != AppConfig.apiBaseUrl;
+  static bool get personnalisee => valeur != valeurCompilee;
 
-  static String get valeurCompilee => AppConfig.apiBaseUrl;
+  static String get valeurCompilee => _normaliser(AppConfig.apiBaseUrl);
 
   /// À appeler au démarrage, avant la première requête.
   static Future<void> charger() async {
@@ -83,6 +83,10 @@ class AdresseApi {
     }
 
     // Ni port ni chemin : on complète avec ceux du serveur de développement.
+    // « https://maboko-api.onrender.com » est l'adresse du serveur ; les
+    // routes vivent sous « /api/v1 ». Confondre les deux produit un 404 sur
+    // chaque appel, sans rien qui explique pourquoi — le préfixe est donc
+    // ajouté ici quand il manque.
     final uri = Uri.tryParse(texte);
 
     if (uri != null && uri.host.isNotEmpty) {

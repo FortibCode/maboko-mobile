@@ -68,6 +68,20 @@ void main() {
     expect(AdresseApi.personnalisee, isTrue);
   });
 
+  test('le domaine seul reçoit le préfixe des routes', () async {
+    // « https://maboko-api.onrender.com » est l'adresse du serveur, pas celle
+    // des routes : sans « /api/v1 », chaque appel repart en 404.
+    await AdresseApi.definir('https://maboko-api.onrender.com');
+
+    expect(AdresseApi.valeur, 'https://maboko-api.onrender.com/api/v1');
+  });
+
+  test('une barre finale seule ne suffit pas à faire un chemin', () async {
+    await AdresseApi.definir('https://maboko-api.onrender.com/');
+
+    expect(AdresseApi.valeur, 'https://maboko-api.onrender.com/api/v1');
+  });
+
   test('la réinitialisation ramène à l’adresse compilée', () async {
     await AdresseApi.definir('192.168.1.90');
     await AdresseApi.reinitialiser();
