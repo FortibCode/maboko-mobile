@@ -56,5 +56,8 @@ flutter:
   # Déclaration explicite de toutes les images de ton application
   assets:
     - assets/images/Maboko.jpeg
+    # Logo « G » officiel de Google, aux quatre couleurs de la marque.
+    # Les variantes 2.0x et 3.0x sont reprises automatiquement par Flutter.
+    - assets/images/google_g.png
     - assets/images/bricolage.png
     - assets/images/voiture.png

@@ -356,7 +356,17 @@ class _LoginPageState extends State<LoginPage> {
                                       height: 18,
                                       child: CircularProgressIndicator(strokeWidth: 2),
                                     )
-                                  : const Icon(Icons.g_mobiledata_rounded, size: 30),
+                                  // Le logo officiel, pas l'icone Material
+                                  // « g_mobiledata » : Google demande son
+                                  // propre « G » sur les boutons de connexion,
+                                  // et un utilisateur reconnait ces quatre
+                                  // couleurs avant meme de lire le texte.
+                                  : Image.asset(
+                                      'assets/images/google_g.png',
+                                      width: 20,
+                                      height: 20,
+                                      filterQuality: FilterQuality.medium,
+                                    ),
                               label: const Text(
                                 'Continuer avec Google',
                                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
