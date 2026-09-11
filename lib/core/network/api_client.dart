@@ -140,8 +140,13 @@ class ApiClient {
     }
 
     if (code >= 500) {
+      // Une panne serveur ne se raconte pas a l'utilisateur : une trace PHP
+      // ne lui apprend rien. Mais quand le serveur explique lui-meme ce qui
+      // manque — une passerelle SMS absente, par exemple — ce message vaut
+      // mille fois mieux qu'un « incident » qui laisse tout le monde deviner.
       throw ApiException(
-        'Le service Maboko rencontre un incident. Reessayez dans un instant.',
+        _message(donnees) ??
+            'Le service Maboko rencontre un incident. Reessayez dans un instant.',
         statusCode: code,
       );
     }
