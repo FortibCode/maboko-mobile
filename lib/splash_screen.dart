@@ -69,20 +69,25 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Spacer(),
-                      // Logo Maboko en entier.
+                      // Le logo entier, dans son cercle.
                       //
-                      // Il etait auparavant decoupe dans un cercle de 130
-                      // pixels, en mode « cover » : le symbole remplissait le
-                      // disque et le mot « maboko » comme la signature « les
-                      // mains qui font le Congo » disparaissaient hors cadre.
-                      // Le logo complet demande une surface rectangulaire et
-                      // « contain », qui n'en rogne rien.
+                      // Le probleme n'etait pas le cercle mais le rognage :
+                      // « cover » remplissait le disque avec le symbole et
+                      // poussait le mot « maboko » et la signature hors
+                      // cadre. « contain » a l'interieur d'un carre inscrit
+                      // dans le cercle — cote = diametre / racine de 2 —
+                      // laisse le logo complet.
+                      //
+                      // Le disque reprend le creme du logo lui-meme : le bord
+                      // carre de l'image se fond dedans, on ne voit que le
+                      // cercle.
                       Container(
-                        width: 260,
-                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+                        width: 210,
+                        height: 210,
+                        alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFDFBF7),
-                          borderRadius: BorderRadius.circular(28),
+                          shape: BoxShape.circle,
+                          color: const Color(0xFFFDF3E7),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.25),
@@ -92,14 +97,16 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                             ),
                           ],
                         ),
-                        child: Image.asset(
-                          'assets/images/Maboko.jpeg',
-                          width: 216,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) => const Icon(
-                            Icons.handshake,
-                            size: 80,
-                            color: Colors.orange,
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/maboko_logo_carre.png',
+                            width: 152,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) => const Icon(
+                              Icons.handshake,
+                              size: 80,
+                              color: Colors.orange,
+                            ),
                           ),
                         ),
                       ),
