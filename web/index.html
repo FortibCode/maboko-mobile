@@ -69,8 +69,11 @@
     }
 
     #chargement img {
-      width: 108px;
-      height: 108px;
+      /* Le logo occupait 108 pixels au centre d'un ecran vide : perdu.
+         Il prend maintenant une largeur relative, plafonnee, pour rester
+         lisible du petit telephone a l'ecran de bureau. */
+      width: min(62vw, 260px);
+      height: auto;
       animation: respiration 1.6s ease-in-out infinite;
     }
 
@@ -81,7 +84,7 @@
   </style>
 </head>
 <body>
-  <div id="chargement"><img src="icons/Icon-192.png" alt="Maboko"></div>
+  <div id="chargement"><img src="chargement.png" alt="Maboko — les mains qui font le Congo"></div>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
