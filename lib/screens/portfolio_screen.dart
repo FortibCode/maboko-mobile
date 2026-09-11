@@ -5,6 +5,7 @@ import '../core/theme/maboko_theme.dart';
 import '../core/widgets/carte_pressable.dart';
 import '../core/widgets/choix_photo.dart';
 import '../core/widgets/etats.dart';
+import '../core/widgets/visionneuse_photo.dart';
 import '../features/compte/data/profil_repository.dart';
 import '../features/fil/data/fil_repository.dart';
 import '../features/fil/models/publication.dart';
@@ -223,12 +224,39 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
     );
   }
 
+  Widget _apercu(String? url) {
+    if (url == null) {
+      return Container(
+        color: MabokoCouleurs.bordure.withValues(alpha: 0.4),
+        child: Icon(Icons.image_outlined, color: context.texteSecondaireMaboko),
+      );
+    }
+
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      errorBuilder: (contexte, erreur, trace) => Container(
+        color: MabokoCouleurs.bordure.withValues(alpha: 0.4),
+        child: Icon(Icons.broken_image_outlined, color: context.texteSecondaireMaboko),
+      ),
+    );
+  }
+
   Widget _carte(Publication realisation) {
     final apercu = realisation.medias.isEmpty ? null : realisation.medias.first;
 
+    // L'appui ouvrait la demande de suppression : la seule action possible
+    // sur sa propre realisation etait de l'effacer, sans meme pouvoir la
+    // regarder en grand. Le retrait passe desormais par un bouton dedie.
     return CartePressable(
       echelle: 0.97,
-      onTap: () => _supprimer(realisation),
+      onTap: apercu == null
+          ? null
+          : () => VisionneusePhoto.ouvrir(
+                context,
+                urls: realisation.medias,
+                legende: realisation.description,
+              ),
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
@@ -240,20 +268,29 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: apercu == null
-                  ? Container(
-                      color: context.bordureMaboko.withValues(alpha: 0.4),
-                      child: Icon(Icons.image_outlined, color: context.texteSecondaireMaboko),
-                    )
-                  : Image.network(
-                      apercu,
-                      fit: BoxFit.cover,
-                      errorBuilder: (contexte, erreur, trace) => Container(
-                        color: context.bordureMaboko.withValues(alpha: 0.4),
-                        child: Icon(Icons.broken_image_outlined,
-                            color: context.texteSecondaireMaboko),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _apercu(apercu),
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Material(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => _supprimer(realisation),
+                        child: const Padding(
+                          padding: EdgeInsets.all(6),
+                          child: Icon(Icons.delete_outline_rounded,
+                              size: 17, color: Colors.white),
+                        ),
                       ),
                     ),
+                  ),
+                ],
+              ),
             ),
             Padding(
               padding: const EdgeInsets.all(10),

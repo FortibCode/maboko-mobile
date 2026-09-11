@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Icone adaptative (Android 8 et suivants).
+
+    Le lanceur applique lui-meme la forme retenue par le constructeur —
+    cercle, carre arrondi, goutte. Le symbole reste dans la zone centrale
+    visible quelle que soit la decoupe ; le fond reprend le creme de la charte.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>

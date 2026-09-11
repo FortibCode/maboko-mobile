@@ -11,21 +11,20 @@ class AppConfig {
 
   /// Adresse de base de l'API, prefixe de version compris.
   ///
-  /// La valeur par defaut vise le poste de developpement sur le reseau local.
-  /// Elle remplace 10.0.2.2, qui n'existe qu'a l'interieur de l'emulateur
-  /// Android : sur un telephone physique cette adresse ne mene nulle part et
-  /// l'application restait suspendue trente secondes avant d'accuser le reseau
-  /// du telephone. L'adresse du reseau local, elle, fonctionne dans les deux
-  /// cas — emulateur comme appareil reel.
+  /// La valeur par defaut vise l'API en ligne : une application installee
+  /// sans configuration particuliere fonctionne donc telle quelle, sur
+  /// n'importe quel reseau.
   ///
-  /// A changer si le routeur attribue une autre adresse au poste :
+  /// Pour travailler contre un backend local, deux chemins : le reglage
+  /// « Adresse du serveur » dans les parametres de l'application, qui evite
+  /// de recompiler (voir AdresseApi), ou une valeur figee a la compilation :
   ///   flutter run --dart-define=API_BASE_URL=http://<ip-du-poste>:8000/api/v1
   ///
   /// Une compilation de production est de toute facon refusee au demarrage si
   /// elle vise une API en clair (voir verifierConfiguration).
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.1.76:8000/api/v1',
+    defaultValue: 'https://maboko-api.onrender.com/api/v1',
   );
 
   /// Identifiant client OAuth du projet Google Cloud (§5.1.3).
@@ -46,7 +45,7 @@ class AppConfig {
   /// Serveur WebSocket Reverb, pour la messagerie en temps réel (§7.2).
   ///
   ///   flutter run --dart-define=REVERB_HOST=10.0.2.2 --dart-define=REVERB_KEY=...
-  static const String reverbHost = String.fromEnvironment('REVERB_HOST', defaultValue: '192.168.1.76');
+  static const String reverbHost = String.fromEnvironment('REVERB_HOST', defaultValue: 'maboko-api.onrender.com');
   static const int reverbPort = int.fromEnvironment('REVERB_PORT', defaultValue: 8080);
   static const String reverbKey = String.fromEnvironment('REVERB_KEY');
   static const bool reverbTls = bool.fromEnvironment('REVERB_TLS');

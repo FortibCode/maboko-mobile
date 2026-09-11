@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'core/config/app_config.dart';
+import 'core/config/reglage_adresse.dart';
 import 'core/network/api.dart';
 import 'core/session/role_utilisateur.dart';
 import 'core/network/api_exception.dart';
@@ -112,11 +114,24 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _showErrorSnackBar(String message) {
+    // Un echec reseau en developpement vient presque toujours de l'adresse du
+    // serveur, qui change a chaque bail DHCP. Le raccourci evite d'aller la
+    // chercher dans les parametres — ou d'attendre une recompilation.
+    final reseau = !AppConfig.isRelease && message.contains('Impossible de joindre');
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: reseau ? 8 : 4),
+        action: reseau
+            ? SnackBarAction(
+                label: 'Adresse',
+                textColor: Colors.white,
+                onPressed: () => ouvrirReglageAdresse(context),
+              )
+            : null,
       ),
     );
   }

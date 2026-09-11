@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/maboko_theme.dart';
+import '../../../core/widgets/visionneuse_photo.dart';
 import '../../../core/widgets/etats.dart';
 import '../../demandes/ui/demande_form_screen.dart';
 import '../../messagerie/data/messagerie_repository.dart';
@@ -226,29 +227,53 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
                     final realisation = _realisations[i];
                     final apercu = realisation.medias.isEmpty ? null : realisation.medias.first;
 
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: SizedBox(
-                        width: 118,
-                        height: 118,
-                        child: apercu == null
-                            ? Container(
-                                color: context.bordureMaboko,
-                                alignment: Alignment.center,
-                                padding: const EdgeInsets.all(8),
-                                child: Text(
-                                  realisation.description,
-                                  maxLines: 4,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 11),
-                                ),
-                              )
-                            : Image.network(
-                                apercu,
-                                fit: BoxFit.cover,
-                                errorBuilder: (contexte, erreur, trace) =>
-                                    Container(color: context.bordureMaboko),
+                    // La vignette n'ouvrait rien : le client jugeait un
+                    // savoir-faire sur un carre de 118 pixels.
+                    return GestureDetector(
+                      onTap: apercu == null
+                          ? null
+                          : () => VisionneusePhoto.ouvrir(
+                                contexte,
+                                urls: realisation.medias,
+                                legende: realisation.description,
                               ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: SizedBox(
+                          width: 118,
+                          height: 118,
+                          child: apercu == null
+                              ? Container(
+                                  color: context.bordureMaboko,
+                                  alignment: Alignment.center,
+                                  padding: const EdgeInsets.all(8),
+                                  child: Text(
+                                    realisation.description,
+                                    maxLines: 4,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
+                                )
+                              : Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    Image.network(
+                                      apercu,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (contexte, erreur, trace) =>
+                                          Container(color: context.bordureMaboko),
+                                    ),
+                                    // Un repere discret : la vignette est
+                                    // rognee, la photo entiere est derriere.
+                                    const Positioned(
+                                      right: 5,
+                                      bottom: 5,
+                                      child: Icon(Icons.zoom_out_map_rounded,
+                                          size: 15, color: Colors.white),
+                                    ),
+                                  ],
+                                ),
+                        ),
                       ),
                     );
                   },

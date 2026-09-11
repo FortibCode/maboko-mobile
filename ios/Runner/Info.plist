@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Maboko App</string>
+	<string>Maboko</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>maboko_app</string>
+	<string>Maboko</string>
 	<!-- iOS interrompt l'application si l'une de ces cles manque au moment ou
 	     l'appareil photo, la photothèque ou la position sont sollicités. Elles
 	     étaient absentes : toute prise de photo faisait planter l'application. -->

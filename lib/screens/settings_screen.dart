@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../core/config/adresse_api.dart';
+import '../core/config/app_config.dart';
+import '../core/config/reglage_adresse.dart';
 import '../core/theme/maboko_theme.dart';
 
 import '../services/storage_service.dart';
@@ -107,6 +110,43 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
           ),
+
+          // Reglage de developpement : l'adresse du poste change a chaque
+          // bail DHCP, et l'application ne joignait plus rien jusqu'a une
+          // recompilation. Absent des compilations de production.
+          if (!AppConfig.isRelease) ...[
+            const SizedBox(height: 24),
+            const Text(
+              "Développement",
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: context.surfaceMaboko,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
+              ),
+              child: StatefulBuilder(
+                builder: (contexte, rafraichir) => ListTile(
+                  leading: const Icon(Icons.dns_outlined, color: Color(0xFFB35B28)),
+                  title: const Text("Adresse du serveur"),
+                  subtitle: Text(
+                    AdresseApi.valeur,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11.5, color: contexte.texteSecondaireMaboko),
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () async {
+                    await ouvrirReglageAdresse(contexte);
+                    rafraichir(() {});
+                  },
+                ),
+              ),
+            ),
+          ],
+
           const SizedBox(height: 24),
           // Bouton de déconnexion
           Container(

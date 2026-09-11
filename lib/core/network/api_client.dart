@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../config/adresse_api.dart';
 import '../config/app_config.dart';
 import '../../services/storage_service.dart';
 import 'api_exception.dart';
@@ -44,7 +45,7 @@ class ApiClient {
     Map<String, dynamic>? corps,
     Map<String, String>? parametres,
   }) async {
-    final uri = Uri.parse('${AppConfig.apiBaseUrl}$chemin')
+    final uri = Uri.parse('${AdresseApi.valeur}$chemin')
         .replace(queryParameters: parametres);
 
     final entetes = <String, String>{
@@ -92,7 +93,7 @@ class ApiClient {
   static String _indiceDeveloppement() {
     if (AppConfig.isRelease) return '';
 
-    return '\n(API visée : ${AppConfig.apiBaseUrl})';
+    return '\n(API visée : ${AdresseApi.valeur})';
   }
 
   dynamic _interpreter(http.Response reponse) {

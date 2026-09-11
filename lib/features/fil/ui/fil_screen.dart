@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/cache/cache_local.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/maboko_theme.dart';
+import '../../../core/widgets/photo_publication.dart';
+import '../../../core/widgets/visionneuse_photo.dart';
 import '../../../core/widgets/etats.dart';
 import '../data/fil_repository.dart';
 import '../models/publication.dart';
@@ -340,10 +342,12 @@ class _FilScreenState extends State<FilScreen> {
 
   Widget _media(Publication publication) {
     if (publication.medias.length == 1) {
-      return _image(publication.medias.first);
+      return _image(publication.medias.first, publication);
     }
 
-    // Plusieurs photos : galerie horizontale, avec le rang de chacune.
+    // Plusieurs photos : galerie horizontale, avec le rang de chacune. La
+    // hauteur suit la première photo, pour que la galerie ne saute pas d'une
+    // image à l'autre.
     return SizedBox(
       height: 320,
       child: PageView.builder(
@@ -351,7 +355,7 @@ class _FilScreenState extends State<FilScreen> {
         itemBuilder: (context, i) => Stack(
           fit: StackFit.expand,
           children: [
-            _image(publication.medias[i]),
+            _image(publication.medias[i], publication, rang: i),
             Positioned(
               top: 10,
               right: 12,
@@ -373,27 +377,48 @@ class _FilScreenState extends State<FilScreen> {
     );
   }
 
-  Widget _image(String url) {
-    return Image.network(
-      url,
-      height: 320,
-      width: double.infinity,
-      fit: BoxFit.cover,
-      loadingBuilder: (context, enfant, progression) {
-        if (progression == null) return enfant;
+  Widget _image(String url, Publication publication, {int rang = 0}) {
+    // Une seule photo : elle garde ses proportions. Une réalisation prise à
+    // la verticale perdait sa moitié dans une boîte de hauteur fixe.
+    if (publication.medias.length == 1) {
+      return PhotoPublication(
+        url: url,
+        onTap: () => VisionneusePhoto.ouvrir(
+          context,
+          urls: publication.medias,
+          legende: publication.description,
+        ),
+      );
+    }
 
-        return Container(
+    return GestureDetector(
+      onTap: () => VisionneusePhoto.ouvrir(
+        context,
+        urls: publication.medias,
+        depart: rang,
+        legende: publication.description,
+      ),
+      child: Image.network(
+        url,
+        height: 320,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, enfant, progression) {
+          if (progression == null) return enfant;
+
+          return Container(
+            height: 320,
+            color: context.teinteMaboko,
+            child: const Center(
+              child: CircularProgressIndicator(color: MabokoCouleurs.secondaire, strokeWidth: 2),
+            ),
+          );
+        },
+        errorBuilder: (_, __, ___) => Container(
           height: 320,
           color: context.teinteMaboko,
-          child: const Center(
-            child: CircularProgressIndicator(color: MabokoCouleurs.secondaire, strokeWidth: 2),
-          ),
-        );
-      },
-      errorBuilder: (_, __, ___) => Container(
-        height: 320,
-        color: context.teinteMaboko,
-        child: Icon(Icons.broken_image_outlined, size: 40, color: context.bordureMaboko),
+          child: Icon(Icons.broken_image_outlined, size: 40, color: context.bordureMaboko),
+        ),
       ),
     );
   }

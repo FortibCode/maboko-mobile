@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white" />
+<!--
+    Ecran de lancement natif, affiche avant que Flutter ne demarre.
 
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+    Il montrait un fond blanc vide : l'application semblait mettre du temps a
+    s'ouvrir sur rien. Le symbole Maboko sur le creme de la charte enchaine
+    sans rupture avec le premier ecran de l'application.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/ic_launcher_background" />
+
+    <item>
         <bitmap
             android:gravity="center"
             android:src="@mipmap/launch_image" />
-    </item> -->
+    </item>
 </layer-list>

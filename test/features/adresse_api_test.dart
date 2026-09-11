@@ -1,0 +1,78 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:maboko_mobile/core/config/adresse_api.dart';
+import 'package:maboko_mobile/core/config/app_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Adresse du serveur, modifiable sans recompiler.
+///
+/// Le poste de développement reçoit son adresse en DHCP. Au renouvellement du
+/// bail elle change, et l'application ne joint plus rien : « Impossible de
+/// joindre Maboko ». L'adresse était figée à la compilation, il fallait donc
+/// reconstruire l'application à chaque fois.
+void main() {
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    await AdresseApi.reinitialiser();
+  });
+
+  test('sans réglage, l’adresse compilée s’applique', () async {
+    await AdresseApi.charger();
+
+    expect(AdresseApi.valeur, AppConfig.apiBaseUrl);
+    expect(AdresseApi.personnalisee, isFalse);
+  });
+
+  test('une simple adresse IP suffit', () async {
+    final motif = await AdresseApi.definir('192.168.1.90');
+
+    expect(motif, isNull);
+    expect(AdresseApi.valeur, 'http://192.168.1.90:8000/api/v1');
+  });
+
+  test('un port explicite est conservé', () async {
+    await AdresseApi.definir('192.168.1.90:9000');
+
+    expect(AdresseApi.valeur, 'http://192.168.1.90:9000/api/v1');
+  });
+
+  test('une adresse complète est reprise telle quelle', () async {
+    await AdresseApi.definir('https://api.maboko.cg/api/v1');
+
+    expect(AdresseApi.valeur, 'https://api.maboko.cg/api/v1');
+  });
+
+  test('la barre finale est retirée', () async {
+    await AdresseApi.definir('http://192.168.1.90:8000/api/v1/');
+
+    expect(AdresseApi.valeur, 'http://192.168.1.90:8000/api/v1');
+  });
+
+  test('une saisie incompréhensible est refusée', () async {
+    final motif = await AdresseApi.definir('   ');
+
+    expect(motif, isNotNull);
+    expect(AdresseApi.valeur, AppConfig.apiBaseUrl);
+  });
+
+  test('l’adresse choisie survit à un redémarrage', () async {
+    await AdresseApi.definir('192.168.1.90');
+    // Redémarrage : la valeur en mémoire repart de la valeur compilée.
+    await AdresseApi.reinitialiser();
+    SharedPreferences.setMockInitialValues({
+      'api_base_url': 'http://192.168.1.90:8000/api/v1',
+    });
+
+    await AdresseApi.charger();
+
+    expect(AdresseApi.valeur, 'http://192.168.1.90:8000/api/v1');
+    expect(AdresseApi.personnalisee, isTrue);
+  });
+
+  test('la réinitialisation ramène à l’adresse compilée', () async {
+    await AdresseApi.definir('192.168.1.90');
+    await AdresseApi.reinitialiser();
+
+    expect(AdresseApi.valeur, AppConfig.apiBaseUrl);
+    expect(AdresseApi.personnalisee, isFalse);
+  });
+}

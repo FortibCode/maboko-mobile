@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'core/config/adresse_api.dart';
 import 'core/config/app_config.dart';
 import 'core/network/api_client.dart';
 import 'splash_screen.dart';
@@ -41,6 +42,10 @@ Future<void> main() async {
 
   // Le mode enregistre est relu avant le premier rendu, pour eviter que
   // l'application s'ouvre en clair puis bascule sous les yeux de l'utilisateur.
+  // L'adresse du serveur peut avoir ete corrigee depuis les parametres :
+  // le poste de developpement change d'adresse a chaque bail DHCP.
+  await AdresseApi.charger();
+
   await controleurTheme.charger();
 
   runApp(const MabokoApp());
