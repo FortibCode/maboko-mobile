@@ -30,9 +30,8 @@ final ControleurTheme controleurTheme = ControleurTheme();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Refuse de demarrer une compilation de production configuree pour parler
-  // a l'API en HTTP : le paragraphe 7.1 impose le chiffrement systematique.
-  AppConfig.verifierConfiguration();
+  // Le controle de securite porte sur l'adresse reellement utilisee : il doit
+  // donc venir apres la lecture du reglage, pas avant.
 
   // Un jeton expire ou revoque ramene immediatement a la connexion, au lieu
   // de laisser l'utilisateur sur un ecran qui ne chargera jamais.
@@ -45,6 +44,10 @@ Future<void> main() async {
   // L'adresse du serveur peut avoir ete corrigee depuis les parametres :
   // le poste de developpement change d'adresse a chaque bail DHCP.
   await AdresseApi.charger();
+
+  // Refuse de demarrer une compilation de production configuree pour parler
+  // a l'API en HTTP : le paragraphe 7.1 impose le chiffrement systematique.
+  AppConfig.verifierConfiguration(AdresseApi.valeur);
 
   await controleurTheme.charger();
 

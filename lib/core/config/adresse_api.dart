@@ -18,6 +18,14 @@ class AdresseApi {
 
   static const _cle = 'api_base_url';
 
+  /// Adresse visée quand rien d'exploitable n'est configuré.
+  ///
+  /// `String.fromEnvironment` ne rend sa valeur par défaut que si la clé est
+  /// absente : un `--dart-define=API_BASE_URL=` vide renvoie une chaîne vide,
+  /// dont on ne peut rien construire. Ce repli évite qu'une configuration
+  /// bancale ne rende l'application muette.
+  static const _replis = 'https://maboko-api.onrender.com/api/v1';
+
   /// Valeur en vigueur, lue une fois au démarrage puis gardée en mémoire :
   /// chaque requête la consulte, elle ne peut pas être asynchrone.
   static String _courante = AppConfig.apiBaseUrl;
@@ -49,6 +57,11 @@ class AdresseApi {
   static Future<String?> definir(String saisie) async {
     if (AppConfig.isRelease) return 'Adresse non modifiable en production.';
 
+    // La saisie de l'utilisateur est jugee telle qu'il l'a ecrite : effacer
+    // le champ doit lui etre signale, pas remplace en silence par le repli
+    // qui, lui, ne sert qu'a la lecture d'une configuration bancale.
+    if (saisie.trim().isEmpty) return 'Adresse incompréhensible.';
+
     final nettoyee = _normaliser(saisie);
     final motif = _valider(nettoyee);
 
@@ -76,7 +89,9 @@ class AdresseApi {
   static String _normaliser(String saisie) {
     var texte = saisie.trim();
 
-    if (texte.isEmpty) return texte;
+    // Rien d'exploitable : mieux vaut une adresse qui répond qu'une adresse
+    // relative dont aucune requête ne pourra être construite.
+    if (texte.isEmpty) return _replis;
 
     if (!texte.startsWith('http://') && !texte.startsWith('https://')) {
       texte = 'http://$texte';
@@ -104,7 +119,17 @@ class AdresseApi {
           '${chemin.isEmpty ? '/api/v1' : chemin}';
     }
 
-    return texte.replaceAll(RegExp(r'/+$'), '');
+    texte = texte.replaceAll(RegExp(r'/+$'), '');
+
+    // Dernier filet : une saisie que rien ne sauve retombe sur le repli,
+    // plutôt que de faire échouer chaque appel avec un message obscur.
+    final controle = Uri.tryParse(texte);
+
+    if (controle == null || !controle.hasScheme || controle.host.isEmpty) {
+      return _replis;
+    }
+
+    return texte;
   }
 
   static String? _valider(String adresse) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/config/adresse_api.dart';
 import '../core/config/app_config.dart';
 import '../core/theme/maboko_theme.dart';
 
@@ -76,7 +77,7 @@ class AProposScreen extends StatelessWidget {
               _Ligne(
                 Icons.lock_outline_rounded,
                 'Transport des données',
-                AppConfig.transportEstSecurise
+                AppConfig.estSecurise(AdresseApi.valeur)
                     ? 'Chiffré (HTTPS)'
                     : 'Non chiffré — configuration de développement',
               ),

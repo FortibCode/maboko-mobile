@@ -68,16 +68,24 @@ class AppConfig {
   /// En production, l'API doit obligatoirement etre jointe en HTTPS :
   /// le paragraphe 7.1 du cahier de charges impose le chiffrement
   /// systematique des donnees utilisateurs.
-  static bool get transportEstSecurise => apiBaseUrl.startsWith('https://');
+  static bool estSecurise(String adresse) => adresse.startsWith('https://');
 
   /// Leve une erreur au demarrage si une compilation de production est
   /// configuree pour parler a l'API en clair. Mieux vaut un echec visible
   /// qu'une application qui transmet des mots de passe en HTTP.
-  static void verifierConfiguration() {
-    if (isRelease && !transportEstSecurise) {
+  /// Le contrôle porte sur l'adresse **réellement utilisée**, pas sur la
+  /// valeur compilée brute.
+  ///
+  /// `String.fromEnvironment` ne rend sa valeur par défaut que si la clé est
+  /// absente : un `--dart-define=API_BASE_URL=` vide renvoyait une chaîne
+  /// vide, qui ne commence pas par « https:// ». Le contrôle levait alors une
+  /// erreur dès le démarrage et l'application restait bloquée sur son écran
+  /// de chargement, sans rien afficher — pour une variable mal renseignée.
+  static void verifierConfiguration(String adresseEffective) {
+    if (isRelease && !estSecurise(adresseEffective)) {
       throw StateError(
         'Configuration refusee : une compilation de production doit viser une '
-        'API en HTTPS. Valeur recue : $apiBaseUrl',
+        'API en HTTPS. Valeur recue : $adresseEffective',
       );
     }
   }

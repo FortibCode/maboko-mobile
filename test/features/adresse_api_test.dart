@@ -89,4 +89,33 @@ void main() {
     expect(AdresseApi.valeur, AppConfig.apiBaseUrl);
     expect(AdresseApi.personnalisee, isFalse);
   });
+
+  test('une adresse vide retombe sur une adresse exploitable', () async {
+    // « String.fromEnvironment » ne rend sa valeur par defaut que si la cle
+    // est absente : un --dart-define=API_BASE_URL= vide renvoie une chaine
+    // vide, dont aucune requete ne peut etre construite.
+    SharedPreferences.setMockInitialValues({'api_base_url': '   '});
+    await AdresseApi.charger();
+
+    final adresse = Uri.tryParse(AdresseApi.valeur);
+
+    expect(adresse, isNotNull);
+    expect(adresse!.hasScheme, isTrue);
+    expect(adresse.host, isNotEmpty);
+  });
+
+  test('une saisie incompréhensible ne casse pas les appels', () async {
+    await AdresseApi.definir('n importe quoi');
+
+    final adresse = Uri.tryParse(AdresseApi.valeur);
+
+    expect(adresse?.hasScheme, isTrue);
+    expect(adresse?.host, isNotEmpty);
+  });
+
+  test('un hôte sans protocole reste utilisable', () async {
+    await AdresseApi.definir('maboko-api.onrender.com');
+
+    expect(Uri.parse(AdresseApi.valeur).host, 'maboko-api.onrender.com');
+  });
 }
