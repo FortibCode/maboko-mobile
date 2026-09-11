@@ -24,7 +24,7 @@ class AppConfig {
   /// elle vise une API en clair (voir verifierConfiguration).
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://maboko-api.onrender.com/api/v1',
+    defaultValue: 'https://maboko-api.onrender.com/',
   );
 
   /// Identifiant client OAuth du projet Google Cloud (§5.1.3).

@@ -18,6 +18,17 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+
+  <!--
+    Cette balise manquait au projet, alors que le gabarit Flutter la fournit.
+    Sans elle, le navigateur mobile suppose une page large d'environ 980
+    pixels et dessine l'application dedans ; le moteur Flutter n'injecte la
+    bonne valeur qu'une fois main.dart.js telecharge — plusieurs secondes sur
+    une connexion lente. Pendant ce temps, l'application s'affiche dans un
+    coin de la page, le reste en blanc.
+  -->
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="description" content="Maboko — les mains qui font le Congo. Trouvez un artisan qualifié près de chez vous, demandez un devis, ou réservez une course Allô Chauffeur.">
 
   <!-- iOS meta tags & icons -->
@@ -32,8 +43,45 @@
   <title>Maboko</title>
   <meta name="theme-color" content="#B35B28">
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    Fond de chargement. L'application pese une dizaine de megaoctets au
+    premier acces : sans cela, l'utilisateur regarde une page blanche le
+    temps du telechargement. Le creme de la charte enchaine sans rupture
+    avec le premier ecran.
+  -->
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background-color: #FDF3E7;
+      overflow: hidden;
+    }
+
+    #chargement {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #FDF3E7;
+    }
+
+    #chargement img {
+      width: 108px;
+      height: 108px;
+      animation: respiration 1.6s ease-in-out infinite;
+    }
+
+    @keyframes respiration {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.72; transform: scale(0.94); }
+    }
+  </style>
 </head>
 <body>
+  <div id="chargement"><img src="icons/Icon-192.png" alt="Maboko"></div>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
@@ -43,5 +91,14 @@
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    // Le voile disparait des que Flutter a dessine sa premiere image.
+    window.addEventListener('flutter-first-frame', function () {
+      var voile = document.getElementById('chargement');
+      if (voile) voile.remove();
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    });
+  </script>
 </body>
 </html>
