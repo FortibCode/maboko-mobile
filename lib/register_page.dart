@@ -4,7 +4,7 @@ import 'core/network/api_exception.dart';
 import 'services/storage_service.dart';
 import 'core/session/role_utilisateur.dart';
 import 'core/widgets/bascule_acces.dart';
-import 'features/artisans/ui/fiche_artisan_screen.dart';
+import 'features/artisans/ui/inscription/artisan_experience_screen.dart';
 import 'features/courses/ui/fiche_chauffeur_screen.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -20,7 +20,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController codeController = TextEditingController();
-  
+
   bool isLoading = false;
   bool _obscurePassword = true;
   bool isOtpStep = false;
@@ -32,8 +32,6 @@ class _RegisterPageState extends State<RegisterPage> {
   bool hasUppercase = false;
   bool hasDigit = false;
   bool hasSpecialChar = false;
-
-  // Adresse IP mise à jour selon ton ipconfig actuel
 
   @override
   void initState() {
@@ -140,16 +138,12 @@ class _RegisterPageState extends State<RegisterPage> {
         "email": emailController.text.trim(),
         "telephone": formattedPhone,
         "password": passwordController.text,
-        // Le role etait absent de cette requete : tous les comptes crees,
-        // artisans compris, etaient enregistres comme clients en base.
         "role": _roleApi(),
       });
 
       setState(() => isLoading = false);
       if (!mounted) return;
 
-      // En developpement sans passerelle SMS, l'API peut renvoyer le code
-      // (OTP_EXPOSE_IN_RESPONSE). Ce champ est absent en production.
       final codeDeveloppement = data is Map ? data['debug_code'] : null;
       if (codeDeveloppement != null) {
         _showOtpDialog(codeDeveloppement.toString());
@@ -172,9 +166,6 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  /// L'ecran de choix de profil produit des valeurs comme « artisan_menuisier ».
-  /// L'API ne connait que les roles du modele : le metier precis est conserve
-  /// localement et rattachera la fiche artisan a l'etape suivante du parcours.
   String _roleApi() => RoleMaboko.depuis(_userRole).pourApi;
 
   Future<void> resendOtp() async {
@@ -190,26 +181,23 @@ class _RegisterPageState extends State<RegisterPage> {
           children: [
             Icon(Icons.sms_outlined, color: Color(0xFFD46A00)),
             SizedBox(width: 8),
-            Text("Code de développement", style: TextStyle(color: Color(0xFFD46A00), fontWeight: FontWeight.bold)),
+            Text("Code de développement",
+                style: TextStyle(color: Color(0xFFD46A00), fontWeight: FontWeight.bold)),
           ],
         ),
-        content: Text("Votre code de validation est : $code", style: const TextStyle(fontSize: 16)),
+        content: Text("Votre code de validation est : $code",
+            style: const TextStyle(fontSize: 16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("OK", style: TextStyle(color: Color(0xFFD46A00), fontWeight: FontWeight.bold)),
+            child: const Text("OK",
+                style: TextStyle(color: Color(0xFFD46A00), fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
 
-  /// Aiguillage juste apres la creation du compte.
-  ///
-  /// Un artisan et un chauffeur ne sont utilisables qu'une fois leur fiche
-  /// deposee : sans elle, l'un n'apparait dans aucune recherche et l'autre ne
-  /// recoit aucune course. Cette etape venait avant l'inscription, quand il
-  /// n'y avait pas encore de compte ou l'enregistrer — rien n'etait conserve.
   String _titreSelonRole() => switch (RoleMaboko.depuis(_userRole)) {
         RoleMaboko.artisan => "Rejoignez Maboko en tant qu'Artisan",
         RoleMaboko.chauffeur => 'Rejoignez Allô Chauffeur',
@@ -252,6 +240,11 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  /// Aiguillage juste après la création du compte.
+  ///
+  /// L'artisan passe désormais par un parcours d'inscription en plusieurs
+  /// étapes (expérience, ville, quartier, bio, RCCM) avant sa fiche métier.
+  /// Le chauffeur garde son parcours actuel.
   Future<void> _apresInscription(String role, String nom) async {
     final reel = RoleMaboko.depuis(role);
 
@@ -259,7 +252,7 @@ class _RegisterPageState extends State<RegisterPage> {
       await Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => FicheArtisanScreen(nomComplet: nom, premiereFois: true),
+          builder: (_) => ArtisanExperienceScreen(nomComplet: nom),
         ),
       );
 
@@ -301,18 +294,11 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() => isLoading = true);
 
     try {
-      // Seuls le numero et le code sont transmis : le compte est cree a partir
-      // des donnees mises en attente cote serveur a l'etape precedente, ce qui
-      // empeche de modifier son e-mail ou son role entre les deux appels.
       final donnees = await api.post('/verify-register-otp', corps: {
         "telephone": formatCongolesePhone(phoneController.text.trim()),
         "code": codeController.text.trim(),
       });
 
-      // Le serveur cree le compte ET ouvre la session : il renvoie un jeton.
-      // L'application le jetait pour renvoyer vers l'ecran de connexion, ou
-      // l'utilisateur retapait l'identifiant et le mot de passe qu'il venait
-      // de choisir.
       final utilisateur = (donnees['user'] as Map<String, dynamic>?) ?? const {};
       final String role = utilisateur['role'] as String? ?? _userRole;
       final String nom = (utilisateur['nom'] as String?)?.trim().isNotEmpty == true
@@ -343,7 +329,8 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  InputDecoration _inputDecoration(String label, IconData icon, {String? helperText, Widget? suffixIcon, String? prefixText}) {
+  InputDecoration _inputDecoration(String label, IconData icon,
+      {String? helperText, Widget? suffixIcon, String? prefixText}) {
     return InputDecoration(
       labelText: label,
       labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
@@ -445,9 +432,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    isOtpStep
-                        ? "Validation du code"
-                        : _titreSelonRole(),
+                    isOtpStep ? "Validation du code" : _titreSelonRole(),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 26,
@@ -457,7 +442,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    isOtpStep 
+                    isOtpStep
                         ? "Entrez le code reçu par SMS au ${phoneController.text}"
                         : "Remplissez les informations pour créer votre compte.",
                     textAlign: TextAlign.center,
@@ -468,9 +453,6 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 22),
 
-                  // Bascule Connexion / Inscription (§5.1.3). Masquee a
-                  // l'etape du code : l'utilisateur a deja soumis ses
-                  // informations, changer d'onglet lui ferait tout perdre.
                   if (!isOtpStep) ...[
                     BasculeAcces(surConnexion: false, roleInscription: _userRole),
                     const SizedBox(height: 22),
@@ -493,12 +475,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (!isOtpStep) ...[
-                          // Le role etait impose par l'ecran d'ou venait
-                          // l'utilisateur : arriver ici par l'onglet
-                          // « Inscription » creait toujours un compte client,
-                          // et par l'accroche artisan toujours un artisan.
-                          // Personne ne voyait ce choix, et rien ne permettait
-                          // de le corriger ensuite.
                           const Text(
                             'Je crée un compte en tant que',
                             style: TextStyle(
@@ -536,7 +512,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             controller: phoneController,
                             keyboardType: TextInputType.phone,
                             decoration: _inputDecoration(
-                              "Téléphone", 
+                              "Téléphone",
                               Icons.phone_outlined,
                               prefixText: "+242 ",
                               helperText: "Ex : 06 666 66 66 (9 chiffres)",
@@ -577,7 +553,10 @@ class _RegisterPageState extends State<RegisterPage> {
                               children: [
                                 const Text(
                                   "Le mot de passe doit contenir :",
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFFD46A00)),
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      color: Color(0xFFD46A00)),
                                 ),
                                 const SizedBox(height: 6),
                                 _buildPasswordRuleRow("Au moins 8 caractères", hasMinLength),
@@ -683,7 +662,10 @@ class _RegisterPageState extends State<RegisterPage> {
                               },
                               child: const Text(
                                 "Modifier mes informations",
-                                style: TextStyle(color: Color(0xFFD46A00), fontWeight: FontWeight.w600, fontSize: 13),
+                                style: TextStyle(
+                                    color: Color(0xFFD46A00),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13),
                               ),
                             ),
                           ),

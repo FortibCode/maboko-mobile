@@ -34,7 +34,7 @@ import '../main.dart' show controleurTheme;
 import '../features/compte/ui/moyens_paiement_screen.dart';
 import '../core/widgets/carte_pressable.dart';
 
-// ⬇️⬇️ NOUVEAUX IMPORTS — Role CLIENT uniquement ⬇️⬇️
+// ⬇️⬇️ NOUVEAUX IMPORTS — Role CLIENT ⬇️⬇️
 import '../features/compte/ui/mes_avis_screen.dart';
 import 'contacts_urgence_screen.dart';
 import 'parametres_data_screen.dart';
@@ -48,7 +48,19 @@ import 'preservation_saisonniere_screen.dart';
 import 'temoignages_video_screen.dart';
 import 'confidentialite_screen.dart';
 import 'langue_screen.dart';
-// ⬆️⬆️ FIN DES NOUVEAUX IMPORTS ⬆️⬆️
+// ⬆️⬆️ FIN IMPORTS CLIENT ⬆️⬆️
+
+// ⬇️⬇️ NOUVEAUX IMPORTS — Role ARTISAN ⬇️⬇️
+import '../features/artisans/ui/avis_recus_screen.dart';
+import '../features/artisans/ui/mes_documents_screen.dart';
+import '../features/artisans/ui/mode_samedi_screen.dart';
+import '../features/artisans/ui/calculateur_devis_screen.dart';
+import '../features/artisans/ui/rappels_relances_screen.dart';
+import '../features/artisans/ui/caisse_a_outils_screen.dart';
+import '../features/artisans/ui/boutique_materiaux_screen.dart';
+import '../features/artisans/ui/reseau_entraide_screen.dart';
+import '../features/artisans/ui/paiements_revenus_screen.dart';
+// ⬆️⬆️ FIN IMPORTS ARTISAN ⬆️⬆️
 
 class HomePage extends StatefulWidget {
   final String avatarName;
@@ -123,8 +135,7 @@ class _HomePageState extends State<HomePage> {
 
       setState(() => _profil = profil);
     } catch (_) {
-      // Le profil enrichit l'écran sans le conditionner : en cas d'échec on
-      // garde les initiales et le nom déjà connus localement.
+      // Le profil enrichit l'écran sans le conditionner.
     }
   }
 
@@ -175,8 +186,7 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
       setState(() => _bord = bord);
     } on ApiException {
-      // Les compteurs ne sont pas essentiels : en cas d'échec ils
-      // restent à « — » plutôt que de bloquer l'affichage du profil.
+      // Les compteurs ne sont pas essentiels.
     }
   }
 
@@ -560,6 +570,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ===========================================================================
+  // MENU CLIENT
+  // ===========================================================================
   Widget _buildClientProfileMenu() {
     return Column(
       children: [
@@ -587,8 +600,6 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const MoyensPaiementScreen()),
           );
         }),
-
-        // ⬇️⬇️ NOUVELLES ENTRÉES CLIENT ⬇️⬇️
         _buildMenuItem(Icons.star_outline_rounded, "Mes avis", onTap: () {
           Navigator.push(
             context,
@@ -602,8 +613,9 @@ class _HomePageState extends State<HomePage> {
           );
         }),
         _buildMenuItem(Icons.storefront_outlined, "Boutiques et matériaux", onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Bientôt disponible.')),
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const BoutiqueMateriauxScreen()),
           );
         }),
         _buildMenuItem(Icons.tips_and_updates_outlined, "Conseils et assistances", onTap: () {
@@ -652,8 +664,6 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const ComptesLiesScreen()),
           );
         }),
-        // ⬆️⬆️ FIN DES NOUVELLES ENTRÉES ⬆️⬆️
-
         _buildMenuItem(Icons.notifications_none, "Notifications", onTap: () {
           Navigator.push(
             context,
@@ -704,90 +714,172 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ===========================================================================
+  // MENU ARTISAN
+  // ===========================================================================
   Widget _buildArtisanProfileMenu() {
     return Column(
       children: [
-        ListTile(
-          leading: const Icon(Icons.assignment_outlined, color: MabokoCouleurs.secondaire),
-          title: const Text("Missions reçues"),
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: () => Navigator.push(
+        // ===== MISSIONS & ACTIVITÉ =====
+        _buildMenuItem(Icons.assignment_outlined, "Missions reçues", onTap: () {
+          Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const DemandesScreen(estArtisan: true)),
-          ),
-        ),
-        const Divider(height: 1),
-        ListTile(
-          leading: const Icon(Icons.star_rounded, color: Color(0xFFB35B28)),
-          title: const Text("Mon Abonnement"),
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: () => Navigator.push(
+          );
+        }),
+        _buildMenuItem(Icons.business_center_rounded, "Mon activité", onTap: () async {
+          await Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const AbonnementScreen()),
-          ),
-        ),
-        const Divider(height: 1),
-        ListTile(
-          leading: const Icon(Icons.verified_user_outlined, color: MabokoCouleurs.secondaire),
-          title: const Text("Vérifier mon identité"),
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: () => Navigator.push(
+            MaterialPageRoute(builder: (context) => const TableauBordArtisanScreen()),
+          );
+          await _chargerTableauBord();
+        }),
+        _buildMenuItem(Icons.payments_rounded, "Paiements et revenus", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const PaiementsRevenusScreen()),
+          );
+        }),
+
+        // ===== OUTILS MÉTIER =====
+        _buildMenuItem(Icons.calculate_outlined, "Calculateur de devis", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CalculateurDevisScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.checklist_rounded, "Rappels et relances", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const RappelsRelancesScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.construction_outlined, "Caisse à outils", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CaisseAOutilsScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.storefront_outlined, "Boutique matériaux", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const BoutiqueMateriauxScreen()),
+          );
+        }),
+
+        // ===== RÉPUTATION =====
+        _buildMenuItem(Icons.star_outline_rounded, "Avis reçus", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AvisRecusScreen()),
+          );
+        }),
+
+        // ===== PORTFOLIO & FICHE =====
+        _buildMenuItem(Icons.photo_library_rounded, "Mon Portfolio", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const PortfolioScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.handyman_outlined, "Mes métiers et ma zone", onTap: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const FicheArtisanScreen(modification: true),
+            ),
+          );
+          await _chargerTableauBord();
+        }),
+
+        // ===== COMPTE PRO =====
+        _buildMenuItem(Icons.folder_outlined, "Mes documents", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const MesDocumentsScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.verified_user_outlined, "Vérifier mon identité", onTap: () {
+          Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const VerificationIdentiteScreen()),
-          ),
-        ),
-        const Divider(height: 1),
-        ListTile(
-          leading: const Icon(Icons.business_center_rounded, color: Color(0xFFB35B28)),
-          title: const Text("Mon activité"),
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const TableauBordArtisanScreen()),
-            );
-            await _chargerTableauBord();
-          },
-        ),
-        const Divider(height: 1),
-        ListTile(
-          leading: const Icon(Icons.photo_library_rounded, color: Color(0xFFB35B28)),
-          title: const Text("Mon Portfolio"),
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PortfolioScreen())),
-        ),
-        const Divider(height: 1),
-        ListTile(
-          leading: const Icon(Icons.handyman_outlined, color: Color(0xFFB35B28)),
-          title: const Text("Mes métiers et ma zone"),
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const FicheArtisanScreen(modification: true),
-              ),
-            );
-            await _chargerTableauBord();
-          },
-        ),
-        const Divider(height: 1),
-        ListTile(
-          leading: const Icon(Icons.settings_outlined, color: Color(0xFFB35B28)),
-          title: const Text("Paramètres"),
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen())),
-        ),
+          );
+        }),
+        _buildMenuItem(Icons.star_rounded, "Mon Abonnement", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AbonnementScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.work_outline_rounded, "Mode samedi", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ModeSamediScreen()),
+          );
+        }),
+
+        // ===== RÉSEAU =====
+        _buildMenuItem(Icons.groups_outlined, "Réseau d’entraide", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ReseauEntraideScreen()),
+          );
+        }),
+
+        // ===== NOTIFICATIONS & PRÉFÉRENCES =====
+        _buildMenuItem(Icons.notifications_none, "Notifications", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.data_saver_on_outlined, "Paramètres data", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ParametresDataScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.language_outlined, "Langue", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const LangueScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.accessibility_new_rounded, "Accessibilité", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AccessibiliteScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.support_agent_rounded, "Aide et support", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AideSupportScreen()),
+          );
+        }),
+
+        // ===== PARAMÈTRES & DÉCONNEXION =====
+        _buildMenuItem(Icons.settings_outlined, "Paramètres", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SettingsScreen()),
+          );
+        }),
         const Divider(height: 1),
         ListTile(
           leading: const Icon(Icons.logout_rounded, color: Colors.red),
-          title: const Text("Se déconnecter", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          title: const Text("Se déconnecter",
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.red),
           onTap: _logout,
         ),
       ],
     );
   }
+
+  // ===========================================================================
+  // Helpers
+  // ===========================================================================
 
   Widget _buildMenuItem(IconData icon, String title, {VoidCallback? onTap}) {
     return Column(

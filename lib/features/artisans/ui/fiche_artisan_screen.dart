@@ -8,6 +8,7 @@ import '../../metiers/data/metier_repository.dart';
 import '../../metiers/models/metier.dart';
 import '../data/artisan_repository.dart';
 import '../models/artisan.dart';
+import 'inscription/inscription_artisan_data.dart';
 
 /// Création de la fiche artisan (§5.2.1).
 ///
@@ -15,6 +16,9 @@ import '../models/artisan.dart';
 /// n'apparaît dans aucune recherche et son tableau de bord n'affiche que
 /// « Votre fiche artisan est incomplète » — sans rien pour y remédier.
 /// La route existait côté serveur, aucun écran ne l'appelait.
+///
+/// Depuis le nouveau parcours, les infos ville/quartier/bio collectées aux
+/// étapes précédentes sont pré-remplies ici.
 class FicheArtisanScreen extends StatefulWidget {
   const FicheArtisanScreen({
     super.key,
@@ -30,9 +34,7 @@ class FicheArtisanScreen extends StatefulWidget {
   /// Nom de l'artisan, pour l'accueillir au sortir de l'inscription.
   final String? nomComplet;
 
-  /// Passage juste après la création du compte : pas de retour en arrière —
-  /// il n'y a nulle part où revenir — et l'écran ouvre l'application au lieu
-  /// de se refermer sur celui qui l'a appelé.
+  /// Passage juste après la création du compte : pas de retour en arrière.
   final bool premiereFois;
 
   /// Modification d'une fiche existante : les champs sont pré-remplis et
@@ -48,10 +50,6 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
   static const _metiersDepot = MetierRepository();
 
   /// Repères des principales villes du pays.
-  ///
-  /// Utilisés seulement si le téléphone refuse sa position : la fiche exige
-  /// des coordonnées, et un artisan ne doit pas rester bloqué parce qu'il a
-  /// dit non à la géolocalisation. La précision est alors annoncée.
   static const _villes = <String, ({double lat, double lon})>{
     'Brazzaville': (lat: -4.2634, lon: 15.2429),
     'Pointe-Noire': (lat: -4.7761, lon: 11.8635),
@@ -74,10 +72,8 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
   /// Fiche existante, en mode modification.
   Artisan? _existante;
 
-  late String _ville = widget.villeConnue?.trim().isNotEmpty == true &&
-          _villes.containsKey(widget.villeConnue!.trim())
-      ? widget.villeConnue!.trim()
-      : 'Brazzaville';
+  /// Ville affichée par défaut dans le dropdown.
+  late String _ville;
 
   int _rayon = 10;
   bool _envoi = false;
@@ -86,6 +82,7 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
   @override
   void initState() {
     super.initState();
+    _ville = _villeParDefaut();
     _charger();
   }
 
@@ -97,12 +94,29 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
     super.dispose();
   }
 
+  /// Ville par défaut : celle passée en paramètre si valide, sinon Brazzaville.
+  String _villeParDefaut() {
+    final connue = widget.villeConnue?.trim();
+    if (connue != null && connue.isNotEmpty && _villes.containsKey(connue)) {
+      return connue;
+    }
+    return 'Brazzaville';
+  }
+
   Future<void> _charger() async {
     setState(() => _erreurChargement = null);
 
     try {
       final liste = await _metiersDepot.lister();
       final fiche = widget.modification ? await _artisans.maFiche() : null;
+
+      // En mode première fois, on relit les infos du parcours d'inscription
+      // pour pré-remplir la ville, le quartier (dans zone) et la bio.
+      InscriptionArtisanData? parcours;
+      if (widget.premiereFois) {
+        parcours = await InscriptionArtisanData.charger();
+      }
+
       if (!mounted) return;
 
       setState(() {
@@ -110,6 +124,7 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
         _existante = fiche;
 
         if (fiche != null) {
+          // Mode modification : on utilise la fiche existante.
           _choisis
             ..clear()
             ..addAll(fiche.metiersSlugs);
@@ -117,6 +132,21 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
           _zone.text = fiche.zoneIntervention ?? '';
           _bio.text = fiche.bio ?? '';
           _rayon = fiche.rayonKm ?? _rayon;
+          if (fiche.zoneIntervention != null &&
+              _villes.containsKey(fiche.zoneIntervention)) {
+            _ville = fiche.zoneIntervention!;
+          }
+        } else if (parcours != null) {
+          // Mode première fois : on pré-remplit avec le parcours.
+          if (parcours.ville != null && _villes.containsKey(parcours.ville)) {
+            _ville = parcours.ville!;
+          }
+          if (parcours.quartier != null && parcours.quartier!.isNotEmpty) {
+            _zone.text = parcours.quartier!;
+          }
+          if (parcours.bio != null && parcours.bio!.isNotEmpty) {
+            _bio.text = parcours.bio!;
+          }
         }
       });
     } on ApiException catch (e) {
@@ -135,9 +165,6 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
 
     setState(() => _envoi = true);
 
-    // La position du téléphone d'abord ; le repère de la ville seulement si
-    // elle est refusée ou indisponible. Inutile de la redemander quand on ne
-    // fait que corriger ses métiers.
     final position = _existante == null ? await ServicePosition.actuelle() : null;
     final repere = _villes[_ville]!;
     final precise = position != null;
@@ -146,8 +173,6 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
 
     try {
       if (_existante != null) {
-        // Les coordonnées ne sont pas retouchées ici : l'artisan modifie ses
-        // métiers ou sa zone, pas l'endroit d'où il exerce.
         await _artisans.mettreAJourFiche(
           _existante!.id,
           specialite: metierChoisi.nom,
@@ -170,6 +195,12 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
               _zone.text.trim().isEmpty ? _ville : _zone.text.trim(),
           rayonKm: _rayon,
         );
+      }
+
+      // La fiche est enregistrée : on peut vider le parcours d'inscription
+      // pour ne pas polluer la prochaine connexion.
+      if (widget.premiereFois) {
+        await InscriptionArtisanData.vider();
       }
 
       if (!mounted) return;
