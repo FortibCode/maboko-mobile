@@ -1,164 +1,79 @@
 import 'package:flutter/material.dart';
 
-import '../core/network/api.dart';
-import '../core/network/api_exception.dart';
 import '../core/theme/maboko_theme.dart';
-import '../services/storage_service.dart';
-import '../features/compte/data/google_auth.dart';
 
-/// Confidentialité et sécurité du compte.
+/// Politique de confidentialité (§5.1.7).
 ///
-/// L'entrée existait dans les paramètres sans action. La suppression de compte,
-/// elle, était déjà exposée par l'API mais restée inaccessible : un utilisateur
-/// ne pouvait pas fermer son compte depuis l'application.
-class ConfidentialiteScreen extends StatefulWidget {
+/// Document obligatoire pour la mise en ligne sur les stores, et utile au
+/// client qui veut comprendre ce que Maboko garde de lui. Contenu volontairement
+/// court : les longues politiques ne sont jamais lues.
+class ConfidentialiteScreen extends StatelessWidget {
   const ConfidentialiteScreen({super.key});
 
-  @override
-  State<ConfidentialiteScreen> createState() => _ConfidentialiteScreenState();
-}
-
-class _ConfidentialiteScreenState extends State<ConfidentialiteScreen> {
-  bool _suppression = false;
-
-  Future<void> _supprimerCompte() async {
-    final motDePasse = TextEditingController();
-
-    // Le mot de passe est redemandé : un téléphone laissé déverrouillé ne doit
-    // pas suffire à effacer un compte. L'API l'exige également.
-    final confirme = await showDialog<bool>(
-      context: context,
-      builder: (contexte) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Supprimer définitivement ?'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Votre compte, vos demandes et vos messages seront effacés. '
-              'Cette action est irréversible.',
-              style: TextStyle(height: 1.4, fontSize: 13.5),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: motDePasse,
-              obscureText: true,
-              autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Confirmez votre mot de passe',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(contexte, false),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: MabokoCouleurs.danger),
-            onPressed: () => Navigator.pop(contexte, true),
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirme != true || !mounted) return;
-
-    if (motDePasse.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Le mot de passe est obligatoire.'),
-          backgroundColor: MabokoCouleurs.danger,
-        ),
-      );
-
-      return;
-    }
-
-    setState(() => _suppression = true);
-
-    try {
-      await api.delete('/compte', corps: {'password': motDePasse.text});
-      await const GoogleAuth().deconnecter();
-      await StorageService.clearAll();
-      if (!mounted) return;
-      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() => _suppression = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message), backgroundColor: MabokoCouleurs.danger),
-      );
-    }
-  }
+  static const _derniereMiseAJour = 'Octobre 2025';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: context.fondMaboko,
       appBar: AppBar(
-        title: const Text('Confidentialité et sécurité'),
+        title: const Text('Confidentialité'),
         backgroundColor: MabokoCouleurs.secondaire,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
         children: [
-          _carte(
-            titre: 'Mot de passe',
-            enfants: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.lock_reset_rounded, color: MabokoCouleurs.secondaire),
-                title: const Text('Changer mon mot de passe', style: TextStyle(fontSize: 14)),
-                subtitle: const Text(
-                  'Un code vous sera envoyé par SMS.',
-                  style: TextStyle(fontSize: 12),
-                ),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 15),
-                onTap: () => Navigator.pushNamed(context, '/forgot'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+          _entete(context),
+          const SizedBox(height: 20),
 
-          _carte(
-            titre: 'Vos données',
-            enfants: const [
-              _Info(
-                Icons.lock_outline_rounded,
-                'Vos pièces d’identité sont chiffrées',
-                'Elles ne servent qu’à la vérification de votre profil.',
-              ),
-              _Info(
-                Icons.visibility_off_outlined,
-                'Votre numéro n’est pas public',
-                'Il n’est transmis qu’à l’artisan ou au chauffeur d’une mission acceptée.',
-              ),
-            ],
-          ),
+          _section(context, 'Ce que nous gardons'),
+          _paragraphe(context,
+              'Votre nom, votre adresse e-mail, votre numéro de téléphone et '
+              'votre ville. Ces informations servent à vous identifier, à '
+              'mettre les artisans en relation avec vous, et à sécuriser '
+              'votre compte.'),
+
+          _section(context, 'Ce que nous ne gardons jamais'),
+          _paragraphe(context,
+              'Votre mot de passe (il est chiffré, même nous ne le voyons pas). '
+              'Vos contacts d’urgence, votre journal personnel, vos '
+              'enregistrements et vos témoignages vidéos restent uniquement '
+              'sur votre téléphone.'),
+
+          _section(context, 'Ce que nous partageons'),
+          _paragraphe(context,
+              'Quand vous contactez un artisan, il voit votre nom, votre ville '
+              'et le contenu de votre demande. Rien d’autre. Nous ne vendons '
+              'jamais vos données à des tiers.'),
+
+          _section(context, 'Vos droits'),
+          _paragraphe(context,
+              'Vous pouvez demander une copie de vos données, les corriger, ou '
+              'supprimer votre compte à tout moment depuis les paramètres. La '
+              'suppression est définitive et efface tout en 30 jours.'),
+
+          _section(context, 'Publicité'),
+          _paragraphe(context,
+              'Maboko n’affiche aucune publicité. Les artisans paient un '
+              'abonnement pour apparaître en avant dans les recherches, mais '
+              'cela n’affecte jamais les avis clients.'),
+
+          _section(context, 'Contact'),
+          _paragraphe(context,
+              'Pour toute question sur vos données : support@maboko.app. '
+              'Nous répondons en moins de 48 heures.'),
+
           const SizedBox(height: 24),
-
-          OutlinedButton.icon(
-            onPressed: _suppression ? null : _supprimerCompte,
-            icon: _suppression
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: MabokoCouleurs.danger),
-                  )
-                : const Icon(Icons.delete_forever_rounded),
-            label: const Text('Supprimer mon compte'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: MabokoCouleurs.danger,
-              side: const BorderSide(color: MabokoCouleurs.danger),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          Center(
+            child: Text(
+              'Dernière mise à jour : $_derniereMiseAJour',
+              style: TextStyle(
+                fontSize: 12,
+                color: context.texteSecondaireMaboko,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ),
         ],
@@ -166,68 +81,48 @@ class _ConfidentialiteScreenState extends State<ConfidentialiteScreen> {
     );
   }
 
-  Widget _carte({required String titre, required List<Widget> enfants}) {
+  Widget _entete(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: MabokoCouleurs.accent.withValues(alpha: 0.2)),
+        color: context.teinteMaboko,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: MabokoCouleurs.accent.withValues(alpha: 0.4)),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            titre.toUpperCase(),
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.1,
-              color: context.texteSecondaireMaboko,
+          const Icon(Icons.shield_outlined, size: 22, color: MabokoCouleurs.accent),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Chez Maboko, vos données personnelles restent les vôtres. '
+              'Cette page explique en clair ce que nous gardons et pourquoi.',
+              style: TextStyle(fontSize: 12.5, height: 1.5, color: context.texteSecondaireMaboko),
             ),
           ),
-          const SizedBox(height: 8),
-          ...enfants,
         ],
       ),
     );
   }
-}
 
-class _Info extends StatelessWidget {
-  const _Info(this.icone, this.titre, this.detail);
-
-  final IconData icone;
-  final String titre;
-  final String detail;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _section(BuildContext context, String titre) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icone, size: 19, color: MabokoCouleurs.secondaire),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(titre, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 2),
-                Text(
-                  detail,
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.35,
-                    color: context.texteSecondaireMaboko,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+      padding: const EdgeInsets.only(top: 18, bottom: 8),
+      child: Text(
+        titre,
+        style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _paragraphe(BuildContext context, String texte) {
+    return Text(
+      texte,
+      style: TextStyle(
+        fontSize: 13.5,
+        height: 1.55,
+        color: context.texteSecondaireMaboko,
       ),
     );
   }

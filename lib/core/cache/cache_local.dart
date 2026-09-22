@@ -69,4 +69,23 @@ class CacheLocal {
       await prefs.remove(cle);
     }
   }
+
+  /// Taille approximative du cache, en octets.
+  ///
+  /// Les valeurs sont stockées en JSON dans les préférences : la longueur de
+  /// la chaîne encodée donne une bonne estimation de ce qu'elles pèsent.
+  /// Les clés de date sont ignorées (elles sont minuscules).
+  static Future<int> taille() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    var total = 0;
+    for (final cle in prefs.getKeys().where(
+      (c) => c.startsWith(_prefixe) && !c.startsWith(_prefixeDate),
+    )) {
+      final valeur = prefs.getString(cle);
+      if (valeur != null) total += valeur.length;
+    }
+
+    return total;
+  }
 }

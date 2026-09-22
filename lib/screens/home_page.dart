@@ -34,6 +34,22 @@ import '../main.dart' show controleurTheme;
 import '../features/compte/ui/moyens_paiement_screen.dart';
 import '../core/widgets/carte_pressable.dart';
 
+// ⬇️⬇️ NOUVEAUX IMPORTS — Role CLIENT uniquement ⬇️⬇️
+import '../features/compte/ui/mes_avis_screen.dart';
+import 'contacts_urgence_screen.dart';
+import 'parametres_data_screen.dart';
+import 'comptes_lies_screen.dart';
+import 'enregistrements_screen.dart';
+import 'conseils_screen.dart';
+import 'aide_support_screen.dart';
+import 'accessibilite_screen.dart';
+import 'journal_personnel_screen.dart';
+import 'preservation_saisonniere_screen.dart';
+import 'temoignages_video_screen.dart';
+import 'confidentialite_screen.dart';
+import 'langue_screen.dart';
+// ⬆️⬆️ FIN DES NOUVEAUX IMPORTS ⬆️⬆️
+
 class HomePage extends StatefulWidget {
   final String avatarName;
   final String userRole;
@@ -53,22 +69,14 @@ class _HomePageState extends State<HomePage> {
 
   int _currentIndex = 0;
 
-  /// Compteurs du profil. Null tant qu'ils ne sont pas chargés : ils étaient
-  /// auparavant écrits en dur dans le code (« 12 Favoris, 3 Messages »).
   TableauBord? _bord;
-
-  /// Profil réel du compte : photo, localisation, coordonnées.
   ProfilUtilisateur? _profil;
-
-  /// Raccourcis vers les métiers les plus recherchés (§5.1.4).
   List<Metier> _metiers = const [];
 
-  /// Ouvre le tiroir depuis la barre haute, qui n'est pas un AppBar.
   final GlobalKey<ScaffoldState> _cleEchafaudage = GlobalKey<ScaffoldState>();
 
   int _notificationsNonLues = 0;
   bool _envoiPhoto = false;
-
 
   @override
   void initState() {
@@ -105,9 +113,6 @@ class _HomePageState extends State<HomePage> {
       final profil = await const ProfilRepository().moi();
       if (!mounted) return;
 
-      // Le serveur fait autorité sur le rôle. Si l'interface ouverte n'est pas
-      // celle du compte, on bascule au lieu de rester sur un espace qui ne lui
-      // correspond pas — et dont aucune action n'aboutirait.
       final bascule = await realignerSurLeServeur(
         context,
         roleServeur: profil.role,
@@ -170,8 +175,8 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
       setState(() => _bord = bord);
     } on ApiException {
-      // Les compteurs ne sont pas essentiels à l'affichage du profil :
-      // en cas d'échec, ils restent à « — » plutôt que de bloquer l'écran.
+      // Les compteurs ne sont pas essentiels : en cas d'échec ils
+      // restent à « — » plutôt que de bloquer l'affichage du profil.
     }
   }
 
@@ -182,7 +187,6 @@ class _HomePageState extends State<HomePage> {
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
-  // Formate 'artisan_menuisier' en 'Menuisier'
   String _getFormattedRoleLabel() {
     if (!RoleMaboko.depuis(widget.userRole).estArtisan) return "Client";
     String rawTrade = widget.userRole.replaceAll('artisan_', '').trim();
@@ -190,10 +194,6 @@ class _HomePageState extends State<HomePage> {
     return rawTrade[0].toUpperCase() + rawTrade.substring(1);
   }
 
-  // Récupère l'icône de profil sélectionnée lors de l'enregistrement
-
-  /// Barre supérieure du fil : accès au tiroir, marque, et les trois actions
-  /// que l'utilisateur cherche le plus souvent — notifications, thème, profil.
   Widget _barreHaut() {
     final sombre = controleurTheme.estSombre(context);
 
@@ -216,16 +216,11 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const Spacer(),
-
           IconButton(
             icon: const Icon(Icons.search_rounded),
             tooltip: 'Rechercher un métier ou un artisan',
-            // La recherche vit dans l'onglet Découvrir, qui interroge le
-            // référentiel complet plutôt que le fil affiché.
             onPressed: () => setState(() => _currentIndex = 1),
           ),
-
-          // Le compteur de non-lues évite d'ouvrir l'écran pour rien.
           Stack(
             clipBehavior: Clip.none,
             children: [
@@ -265,14 +260,11 @@ class _HomePageState extends State<HomePage> {
                 ),
             ],
           ),
-
           IconButton(
             icon: Icon(sombre ? Icons.light_mode_rounded : Icons.dark_mode_outlined),
             tooltip: sombre ? 'Passer en clair' : 'Passer en sombre',
             onPressed: () => controleurTheme.basculer(context),
           ),
-
-          // La photo mène au tiroir : c'est là que vit tout le compte.
           Padding(
             padding: const EdgeInsets.only(left: 2),
             child: GestureDetector(
@@ -293,9 +285,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // Le rôle est lu explicitement : « client » ne se déduit plus de
-    // « ne contient pas artisan », qui rangeait dans l'espace client tout ce
-    // qui n'était pas prévu.
     final role = RoleMaboko.depuis(widget.userRole);
     final bool isClient = !role.estArtisan;
 
@@ -308,7 +297,6 @@ class _HomePageState extends State<HomePage> {
         onDeconnexion: _logout,
         onPhotoModifiee: _changerPhoto,
       ),
-      // Bouton de création rapide pour les artisans sur la vue Accueil
       floatingActionButton: (!isClient && _currentIndex == 0)
           ? FloatingActionButton.extended(
               onPressed: () {
@@ -326,138 +314,117 @@ class _HomePageState extends State<HomePage> {
         child: IndexedStack(
           index: _currentIndex,
           children: [
-            // --- ONGLET 0 : ACCUEIL ---
-            //
-            // Le client arrive sur le fil d'actualité (§5.1.4), l'artisan sur
-            // son tableau de bord (§5.2.1). Les deux recevaient le fil : un
-            // artisan qui se connectait atterrissait donc dans l'espace
-            // client, avec « Explorer par métier » et « Allô Chauffeur ».
             if (!isClient)
               TableauBordArtisanScreen(enTete: _barreHaut())
             else
-            FilScreen(
-              enTete: Column(
-                children: [
-                  _barreHaut(),
-                  // Accès rapide aux métiers les plus recherchés (§5.1.4).
-                  //
-                  // La bande était collée sous la barre et tronquée au bord
-                  // droit : rien n'indiquait qu'elle défilait. Elle a
-                  // desormais un en-tête, de l'air, et un lien « Tout voir ».
-                  if (_metiers.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 12, 2),
-                      child: Row(
-                        children: [
-                          Text(
-                            'Explorer par métier',
-                            style: TextStyle(
-                              fontSize: 15.5,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).textTheme.titleMedium?.color,
-                            ),
-                          ),
-                          const Spacer(),
-                          TextButton(
-                            onPressed: () => setState(() => _currentIndex = 1),
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 10),
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: const Text(
-                              'Tout voir',
+              FilScreen(
+                enTete: Column(
+                  children: [
+                    _barreHaut(),
+                    if (_metiers.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 12, 2),
+                        child: Row(
+                          children: [
+                            Text(
+                              'Explorer par métier',
                               style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: MabokoCouleurs.secondaire,
+                                fontSize: 15.5,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).textTheme.titleMedium?.color,
                               ),
                             ),
-                          ),
-                        ],
+                            const Spacer(),
+                            TextButton(
+                              onPressed: () => setState(() => _currentIndex = 1),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: const Text(
+                                'Tout voir',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: MabokoCouleurs.secondaire,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    SizedBox(
-                      height: 104,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        // La dernière carte s'arrête avant le bord : on voit
-                        // qu'il reste quelque chose à faire défiler.
-                        padding: const EdgeInsets.fromLTRB(20, 6, 28, 10),
-                        itemCount: _metiers.length,
-                        separatorBuilder: (contexte, index) => const SizedBox(width: 14),
-                        itemBuilder: (contexte, i) => _CarteMetierAccueil(
-                          metier: _metiers[i],
-                          rang: i,
+                      SizedBox(
+                        height: 104,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.fromLTRB(20, 6, 28, 10),
+                          itemCount: _metiers.length,
+                          separatorBuilder: (contexte, index) => const SizedBox(width: 14),
+                          itemBuilder: (contexte, i) => _CarteMetierAccueil(
+                            metier: _metiers[i],
+                            rang: i,
+                          ),
+                        ),
+                      ),
+                    ],
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+                      child: CartePressable(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ReservationCourseScreen()),
+                        ),
+                        echelle: 0.985,
+                        child: Material(
+                          color: MabokoCouleurs.accent.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: MabokoCouleurs.accent.withValues(alpha: 0.5)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.local_taxi_rounded, color: MabokoCouleurs.accent),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('Allô Chauffeur',
+                                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5)),
+                                      Text('Moto ou voiture, près de chez vous',
+                                          style: TextStyle(
+                                              fontSize: 12, color: context.texteSecondaireMaboko)),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_forward_ios, size: 14),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ],
-                  // Bandeau Allô Chauffeur : réserver une course en un clic
-                  // depuis l'accueil (§5.1.4).
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-                    child: CartePressable(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const ReservationCourseScreen()),
-                      ),
-                      echelle: 0.985,
-                      child: Material(
-                        color: MabokoCouleurs.accent.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(14),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: MabokoCouleurs.accent.withValues(alpha: 0.5)),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.local_taxi_rounded, color: MabokoCouleurs.accent),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text('Allô Chauffeur',
-                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5)),
-                                    Text('Moto ou voiture, près de chez vous',
-                                        style: TextStyle(
-                                            fontSize: 12, color: context.texteSecondaireMaboko)),
-                                  ],
-                                ),
-                              ),
-                              const Icon(Icons.arrow_forward_ios, size: 14),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
 
-
-            // --- ONGLET 1 : « Découvrir » (§5.1.5) côté client,
-            // « Missions reçues » (§5.2.2) côté artisan ---
             if (isClient)
               const ExplorerScreen()
             else
               const DemandesScreen(estArtisan: true),
 
-            // --- ONGLET 2 : MESSAGERIE (§5.1.9) ---
             const ConversationsScreen(),
 
-            // --- ONGLET 3 : PROFIL ---
             SingleChildScrollView(
               padding: const EdgeInsets.all(20.0),
               child: Column(
                 children: [
                   const SizedBox(height: 10),
-                  // Affichage de l'avatar sélectionné lors de la configuration
                   _envoiPhoto
                       ? const SizedBox(
                           width: 90,
@@ -491,7 +458,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 25),
 
-                  // Statistiques
                   if (isClient) ...[
                     Row(
                       children: [
@@ -528,7 +494,6 @@ class _HomePageState extends State<HomePage> {
                     const SizedBox(height: 20),
                   ],
 
-                  // Menu dynamique du Profil
                   Container(
                     decoration: BoxDecoration(
                       color: context.surfaceMaboko,
@@ -562,8 +527,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// Un compteur non encore chargé s'affiche par un tiret, jamais par un zéro
-  /// qui ferait croire à une valeur réelle.
   String _compteur(int? valeur) => valeur?.toString() ?? '—';
 
   Widget _buildClientStatCard(String value, String label, IconData icon, Color iconColor) {
@@ -606,19 +569,12 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const DemandesScreen(estArtisan: false)),
           );
         }),
-        // Les entrées sans destination ont été retirées plutôt que laissées
-        // inertes : « Boutiques de matériaux », « Conseils & astuces »,
-        // « Mes enregistrements », « Mes avis » et le choix de langue n'ont
-        // aucun service derrière eux. Un bouton qui ne répond pas est pire
-        // qu'une absence : il fait douter du reste de l'application.
         _buildMenuItem(Icons.favorite_border, "Mes artisans de confiance", onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const FavorisScreen()),
           );
         }),
-        // Historique des courses Allô Chauffeur (§5.1.10) : l'API le renvoyait
-        // deja, mais aucun ecran client ne l'affichait.
         _buildMenuItem(Icons.local_taxi_outlined, "Mes courses Allô Chauffeur", onTap: () {
           Navigator.push(
             context,
@@ -631,16 +587,107 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const MoyensPaiementScreen()),
           );
         }),
+
+        // ⬇️⬇️ NOUVELLES ENTRÉES CLIENT ⬇️⬇️
+        _buildMenuItem(Icons.star_outline_rounded, "Mes avis", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const MesAvisScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.bookmark_border_rounded, "Mes enregistrements", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const EnregistrementsScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.storefront_outlined, "Boutiques et matériaux", onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Bientôt disponible.')),
+          );
+        }),
+        _buildMenuItem(Icons.tips_and_updates_outlined, "Conseils et assistances", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ConseilsScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.emergency_outlined, "Contacts d’urgence", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ContactsUrgenceScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.videocam_outlined, "Mes témoignages vidéos", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const TemoignagesVideoScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.menu_book_outlined, "Mon journal personnel", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const JournalPersonnelScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.wb_sunny_outlined, "Préservation saisonnière", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const PreservationSaisonniereScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.museum_outlined, "Musée du savoir-faire", onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Bientôt disponible.')),
+          );
+        }),
+        _buildMenuItem(Icons.record_voice_over_outlined, "Assistant vocal", onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Bientôt disponible.')),
+          );
+        }),
+        _buildMenuItem(Icons.link_rounded, "Mes comptes liés", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ComptesLiesScreen()),
+          );
+        }),
+        // ⬆️⬆️ FIN DES NOUVELLES ENTRÉES ⬆️⬆️
+
         _buildMenuItem(Icons.notifications_none, "Notifications", onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const NotificationsScreen()),
           );
         }),
-        _buildMenuItem(Icons.help_outline, "Aide & Support", onTap: () {
+        _buildMenuItem(Icons.data_saver_on_outlined, "Paramètres data", onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const ConversationsScreen()),
+            MaterialPageRoute(builder: (context) => const ParametresDataScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.language_outlined, "Langue", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const LangueScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.accessibility_new_rounded, "Accessibilité", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AccessibiliteScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.lock_outline_rounded, "Confidentialité", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ConfidentialiteScreen()),
+          );
+        }),
+        _buildMenuItem(Icons.support_agent_rounded, "Aide et support", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AideSupportScreen()),
           );
         }),
         _buildMenuItem(Icons.settings_outlined, "Paramètres avancés", onTap: () {
@@ -710,8 +757,6 @@ class _HomePageState extends State<HomePage> {
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PortfolioScreen())),
         ),
         const Divider(height: 1),
-        // Le metier choisi a l'inscription n'etait plus modifiable ensuite :
-        // un artisan qui ajoutait une corde a son arc restait catalogue.
         ListTile(
           leading: const Icon(Icons.handyman_outlined, color: Color(0xFFB35B28)),
           title: const Text("Mes métiers et ma zone"),
@@ -767,13 +812,8 @@ class _HomePageState extends State<HomePage> {
       ],
     );
   }
-
 }
 
-/// Carte de métier de l'accueil.
-///
-/// Les couleurs viennent du thème : la même carte doit rester lisible en clair
-/// comme en sombre, ce que ne permettait pas un fond blanc écrit en dur.
 class _CarteMetierAccueil extends StatelessWidget {
   const _CarteMetierAccueil({required this.metier, required this.rang});
 

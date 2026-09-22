@@ -44,6 +44,7 @@ dependencies:
   flutter_local_notifications: ^17.0.0
   image_picker: ^1.2.3
   google_sign_in: ^6.2.1
+  video_player: ^2.11.1
 
 dev_dependencies:
   flutter_test:
