@@ -48,6 +48,7 @@ import 'preservation_saisonniere_screen.dart';
 import 'temoignages_video_screen.dart';
 import 'confidentialite_screen.dart';
 import 'langue_screen.dart';
+import 'musee_savoir_faire_screen.dart';
 // ⬆️⬆️ FIN IMPORTS CLIENT ⬆️⬆️
 
 // ⬇️⬇️ NOUVEAUX IMPORTS — Role ARTISAN ⬇️⬇️
@@ -648,9 +649,11 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const PreservationSaisonniereScreen()),
           );
         }),
+        // ← Musée du savoir-faire : branché sur le vrai écran
         _buildMenuItem(Icons.museum_outlined, "Musée du savoir-faire", onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Bientôt disponible.')),
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const MuseeSavoirFaireScreen()),
           );
         }),
         _buildMenuItem(Icons.record_voice_over_outlined, "Assistant vocal", onTap: () {
@@ -734,7 +737,7 @@ class _HomePageState extends State<HomePage> {
           );
           await _chargerTableauBord();
         }),
-        _buildMenuItem(Icons.payments_rounded, "Paiements et revenus", onTap: () {
+        _buildMenuItem(Icons.account_balance_wallet_rounded, "Paiements et revenus", onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const PaiementsRevenusScreen()),
@@ -742,19 +745,19 @@ class _HomePageState extends State<HomePage> {
         }),
 
         // ===== OUTILS MÉTIER =====
-        _buildMenuItem(Icons.calculate_outlined, "Calculateur de devis", onTap: () {
+        _buildMenuItem(Icons.calculate_rounded, "Calculateur de devis", onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const CalculateurDevisScreen()),
           );
         }),
-        _buildMenuItem(Icons.checklist_rounded, "Rappels et relances", onTap: () {
+        _buildMenuItem(Icons.check_circle_outline_rounded, "Rappels et relances", onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const RappelsRelancesScreen()),
           );
         }),
-        _buildMenuItem(Icons.construction_outlined, "Caisse à outils", onTap: () {
+        _buildMenuItem(Icons.build_outlined, "Caisse à outils", onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const CaisseAOutilsScreen()),
@@ -793,7 +796,7 @@ class _HomePageState extends State<HomePage> {
         }),
 
         // ===== COMPTE PRO =====
-        _buildMenuItem(Icons.folder_outlined, "Mes documents", onTap: () {
+        _buildMenuItem(Icons.folder_open_rounded, "Mes documents", onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const MesDocumentsScreen()),
@@ -811,7 +814,7 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const AbonnementScreen()),
           );
         }),
-        _buildMenuItem(Icons.work_outline_rounded, "Mode samedi", onTap: () {
+        _buildMenuItem(Icons.work_outline, "Mode samedi", onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const ModeSamediScreen()),
@@ -819,7 +822,7 @@ class _HomePageState extends State<HomePage> {
         }),
 
         // ===== RÉSEAU =====
-        _buildMenuItem(Icons.groups_outlined, "Réseau d’entraide", onTap: () {
+        _buildMenuItem(Icons.group_outlined, "Réseau d’entraide", onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const ReseauEntraideScreen()),
@@ -833,19 +836,19 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const NotificationsScreen()),
           );
         }),
-        _buildMenuItem(Icons.data_saver_on_outlined, "Paramètres data", onTap: () {
+        _buildMenuItem(Icons.storage_rounded, "Paramètres data", onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const ParametresDataScreen()),
           );
         }),
-        _buildMenuItem(Icons.language_outlined, "Langue", onTap: () {
+        _buildMenuItem(Icons.language_rounded, "Langue", onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const LangueScreen()),
           );
         }),
-        _buildMenuItem(Icons.accessibility_new_rounded, "Accessibilité", onTap: () {
+        _buildMenuItem(Icons.accessibility_rounded, "Accessibilité", onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AccessibiliteScreen()),
