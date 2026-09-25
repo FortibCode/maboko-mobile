@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/maboko_theme.dart';
-import 'artisan_ville_screen.dart';
+import 'artisan_ville_quartier_screen.dart';
 import 'inscription_artisan_data.dart';
 
 /// Étape 1 du parcours d'inscription artisan : l'expérience.
@@ -58,7 +58,7 @@ class _ArtisanExperienceScreenState extends State<ArtisanExperienceScreen> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ArtisanVilleScreen(nomComplet: widget.nomComplet),
+        builder: (_) => ArtisanVilleQuartierScreen(nomComplet: widget.nomComplet),
       ),
     );
   }

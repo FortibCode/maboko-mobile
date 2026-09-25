@@ -15,10 +15,10 @@ import 'inscription/inscription_artisan_data.dart';
 /// L'inscription crée le compte mais pas la fiche. Sans elle, l'artisan
 /// n'apparaît dans aucune recherche et son tableau de bord n'affiche que
 /// « Votre fiche artisan est incomplète » — sans rien pour y remédier.
-/// La route existait côté serveur, aucun écran ne l'appelait.
 ///
-/// Depuis le nouveau parcours, les infos ville/quartier/bio collectées aux
-/// étapes précédentes sont pré-remplies ici.
+/// Depuis le nouveau parcours, la ville, le quartier et la bio sont déjà
+/// collectés dans les étapes précédentes. Il ne reste ici que :
+/// les métiers, l'adresse de l'atelier et le rayon de déplacement.
 class FicheArtisanScreen extends StatefulWidget {
   const FicheArtisanScreen({
     super.key,
@@ -62,8 +62,6 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
 
   final _cleFormulaire = GlobalKey<FormState>();
   final _adresse = TextEditingController();
-  final _zone = TextEditingController();
-  final _bio = TextEditingController();
 
   List<Metier>? _metiers;
   String? _erreurChargement;
@@ -71,6 +69,9 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
 
   /// Fiche existante, en mode modification.
   Artisan? _existante;
+
+  /// Infos du parcours d'inscription (ville, quartier, bio).
+  InscriptionArtisanData? _parcours;
 
   /// Ville affichée par défaut dans le dropdown.
   late String _ville;
@@ -89,8 +90,6 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
   @override
   void dispose() {
     _adresse.dispose();
-    _zone.dispose();
-    _bio.dispose();
     super.dispose();
   }
 
@@ -111,7 +110,7 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
       final fiche = widget.modification ? await _artisans.maFiche() : null;
 
       // En mode première fois, on relit les infos du parcours d'inscription
-      // pour pré-remplir la ville, le quartier (dans zone) et la bio.
+      // pour pré-remplir la ville et récupérer quartier + bio à envoyer.
       InscriptionArtisanData? parcours;
       if (widget.premiereFois) {
         parcours = await InscriptionArtisanData.charger();
@@ -122,6 +121,7 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
       setState(() {
         _metiers = liste;
         _existante = fiche;
+        _parcours = parcours;
 
         if (fiche != null) {
           // Mode modification : on utilise la fiche existante.
@@ -129,8 +129,6 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
             ..clear()
             ..addAll(fiche.metiersSlugs);
           _adresse.text = fiche.adresse ?? '';
-          _zone.text = fiche.zoneIntervention ?? '';
-          _bio.text = fiche.bio ?? '';
           _rayon = fiche.rayonKm ?? _rayon;
           if (fiche.zoneIntervention != null &&
               _villes.containsKey(fiche.zoneIntervention)) {
@@ -140,12 +138,6 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
           // Mode première fois : on pré-remplit avec le parcours.
           if (parcours.ville != null && _villes.containsKey(parcours.ville)) {
             _ville = parcours.ville!;
-          }
-          if (parcours.quartier != null && parcours.quartier!.isNotEmpty) {
-            _zone.text = parcours.quartier!;
-          }
-          if (parcours.bio != null && parcours.bio!.isNotEmpty) {
-            _bio.text = parcours.bio!;
           }
         }
       });
@@ -171,6 +163,16 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
 
     final metierChoisi = _metiers!.firstWhere((m) => m.slug == _choisis.first);
 
+    // On utilise le quartier du parcours comme zone d'intervention.
+    // En mode modification, on garde la zone existante.
+    final zone = _existante != null
+        ? _existante!.zoneIntervention
+        : (_parcours?.quartier ?? _ville);
+
+    final bio = _existante != null
+        ? _existante!.bio
+        : _parcours?.bio;
+
     try {
       if (_existante != null) {
         await _artisans.mettreAJourFiche(
@@ -178,9 +180,8 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
           specialite: metierChoisi.nom,
           adresse: _adresse.text.trim(),
           metiers: _choisis.toList(),
-          bio: _bio.text.trim(),
-          zoneIntervention:
-              _zone.text.trim().isEmpty ? _ville : _zone.text.trim(),
+          bio: bio ?? '',
+          zoneIntervention: zone ?? _ville,
           rayonKm: _rayon,
         );
       } else {
@@ -190,9 +191,8 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
           latitude: position?.latitude ?? repere.lat,
           longitude: position?.longitude ?? repere.lon,
           metiers: _choisis.toList(),
-          bio: _bio.text.trim(),
-          zoneIntervention:
-              _zone.text.trim().isEmpty ? _ville : _zone.text.trim(),
+          bio: bio ?? '',
+          zoneIntervention: zone ?? _ville,
           rayonKm: _rayon,
         );
       }
@@ -291,8 +291,8 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
                     'C’est ce que les clients verront en vous cherchant.'
                 : 'Cette fiche est ce que les clients voient quand ils '
                     'cherchent un artisan. Ajoutez ou retirez un métier, '
-                    'ajustez votre zone : les changements sont visibles tout '
-                    'de suite.',
+                    'ajustez votre adresse et votre rayon : les changements '
+                    'sont visibles tout de suite.',
           ),
           const SizedBox(height: 20),
 
@@ -305,7 +305,7 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
           ),
           const SizedBox(height: 22),
 
-          _titre('Où intervenez-vous ?', null),
+          _titre('Où se trouve votre atelier ?', null),
           const SizedBox(height: 10),
           DropdownButtonFormField<String>(
             initialValue: _ville,
@@ -324,13 +324,6 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
                 ? 'Indiquez où vous travaillez.'
                 : null,
           ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _zone,
-            decoration: _decoration('Quartiers desservis (facultatif)',
-                Icons.travel_explore_outlined,
-                indice: 'Ex. : Bacongo, Makélékélé'),
-          ),
           const SizedBox(height: 18),
 
           _titre('Rayon de déplacement', '$_rayon km autour de votre atelier'),
@@ -342,17 +335,6 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
             activeColor: MabokoCouleurs.secondaire,
             label: '$_rayon km',
             onChanged: (v) => setState(() => _rayon = v.round()),
-          ),
-          const SizedBox(height: 6),
-
-          _titre('Présentez votre travail', 'Facultatif, mais ça rassure les clients.'),
-          const SizedBox(height: 10),
-          TextFormField(
-            controller: _bio,
-            maxLines: 4,
-            maxLength: 2000,
-            decoration: _decoration('Quelques mots sur votre savoir-faire',
-                Icons.notes_outlined),
           ),
           const SizedBox(height: 12),
 

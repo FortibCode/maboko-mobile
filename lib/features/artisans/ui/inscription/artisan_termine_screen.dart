@@ -4,10 +4,10 @@ import '../../../../core/theme/maboko_theme.dart';
 import '../fiche_artisan_screen.dart';
 import 'inscription_artisan_data.dart';
 
-/// Étape 6 du parcours d'inscription artisan : récapitulatif.
+/// Étape 5 du parcours d'inscription artisan : récapitulatif.
 ///
 /// Montre à l'artisan ce qu'il a renseigné avant la dernière étape (métiers,
-/// zone, adresse). Le bouton finalise et ouvre la fiche artisan, dernière
+/// adresse, rayon). Le bouton finalise et ouvre la fiche artisan, dernière
 /// pièce à compléter pour être visible dans les recherches.
 class ArtisanTermineScreen extends StatefulWidget {
   const ArtisanTermineScreen({super.key, required this.nomComplet});
@@ -147,7 +147,7 @@ class _ArtisanTermineScreenState extends State<ArtisanTermineScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Dernière étape : dites-nous vos métiers et où vous intervenez.',
+          'Dernière étape : dites-nous vos métiers et votre rayon d’intervention.',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 14,
@@ -247,9 +247,9 @@ class _ArtisanTermineScreenState extends State<ArtisanTermineScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'À l’étape suivante, choisissez vos métiers (jusqu’à 5) et '
-              'votre rayon d’intervention. C’est ce que les clients verront '
-              'en vous cherchant.',
+              'À l’étape suivante, choisissez vos métiers (jusqu’à 5), '
+              'votre adresse d’atelier et votre rayon d’intervention. '
+              'C’est ce que les clients verront en vous cherchant.',
               style: TextStyle(
                 fontSize: 12.5,
                 height: 1.45,
