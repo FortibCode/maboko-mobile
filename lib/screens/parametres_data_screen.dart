@@ -242,7 +242,7 @@ class _ParametresDataScreenState extends State<ParametresDataScreen> {
           Switch(
             value: valeur,
             onChanged: onChanged,
-            activeThumbColor: MabokoCouleurs.secondaire,
+            activeColor: MabokoCouleurs.secondaire,
           ),
         ],
       ),

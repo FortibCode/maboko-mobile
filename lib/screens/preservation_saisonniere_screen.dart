@@ -172,7 +172,7 @@ class _PreservationSaisonniereScreenState
         .toList();
   }
 
-  Widget _carteConseil(_ConseilSaison conseil) {
+  Widget _carteConseil(ConseilSaison conseil) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -284,14 +284,14 @@ enum Saison {
   final IconData icone;
   final Color couleur;
 
-  List<_ConseilSaison> get conseils => switch (this) {
+  List<ConseilSaison> get conseils => switch (this) {
         Saison.pluies => _conseilsPluies,
         Saison.seche => _conseilsSeche,
       };
 }
 
-const _conseilsPluies = <_ConseilSaison>[
-  _ConseilSaison(
+const _conseilsPluies = <ConseilSaison>[
+  ConseilSaison(
     icone: Icons.roofing_rounded,
     titre: 'Toiture et gouttières',
     resume: 'Vérifier avant que la première grosse pluie ne tombe.',
@@ -302,7 +302,7 @@ const _conseilsPluies = <_ConseilSaison>[
         'les solins autour de la cheminée ou des évacuations.',
     frequence: 'Une fois par mois pendant la saison',
   ),
-  _ConseilSaison(
+  ConseilSaison(
     icone: Icons.water_damage_rounded,
     titre: 'Murs et infiltrations',
     resume: 'Repérer les traces d’humidité avant que le plâtre ne tombe.',
@@ -313,7 +313,7 @@ const _conseilsPluies = <_ConseilSaison>[
         'atteint coûte dix fois plus cher à réparer qu’un mur surveillé.',
     frequence: 'Inspection toutes les deux semaines',
   ),
-  _ConseilSaison(
+  ConseilSaison(
     icone: Icons.chair_rounded,
     titre: 'Meubles en bois',
     resume: 'Le bois gonfle, les tiroirs coincent, les pieds pourrissent.',
@@ -324,7 +324,7 @@ const _conseilsPluies = <_ConseilSaison>[
         'brut tous les deux mois.',
     frequence: 'Tous les deux mois',
   ),
-  _ConseilSaison(
+  ConseilSaison(
     icone: Icons.electrical_services_rounded,
     titre: 'Installations électriques',
     resume: 'L’eau et l’électricité ne font pas bon ménage.',
@@ -335,7 +335,7 @@ const _conseilsPluies = <_ConseilSaison>[
         'pluies signale souvent une infiltration dans un câble.',
     frequence: 'Avant chaque grosse pluie annoncée',
   ),
-  _ConseilSaison(
+  ConseilSaison(
     icone: Icons.kitchen_rounded,
     titre: 'Outils et artisanat',
     resume: 'La rouille s’installe en quelques jours sur l’acier.',
@@ -348,8 +348,8 @@ const _conseilsPluies = <_ConseilSaison>[
   ),
 ];
 
-const _conseilsSeche = <_ConseilSaison>[
-  _ConseilSaison(
+const _conseilsSeche = <ConseilSaison>[
+  ConseilSaison(
     icone: Icons.forest_rounded,
     titre: 'Bois et menuiseries',
     resume: 'Le bois se fend et travaille à cause de la sécheresse.',
@@ -360,7 +360,7 @@ const _conseilsSeche = <_ConseilSaison>[
         'fendriez le bois. Vérifiez les joints autour des vitres.',
     frequence: 'Tous les deux mois',
   ),
-  _ConseilSaison(
+  ConseilSaison(
     icone: Icons.format_paint_rounded,
     titre: 'Peintures et enduits',
     resume: 'C’est la saison idéale pour repeindre.',
@@ -371,7 +371,7 @@ const _conseilsSeche = <_ConseilSaison>[
         'les plus chaudes (12h–15h) : la peinture sèche trop vite et marque.',
     frequence: 'Une fois dans la saison',
   ),
-  _ConseilSaison(
+  ConseilSaison(
     icone: Icons.cleaning_services_rounded,
     titre: 'Poussière et aération',
     resume: 'La poussière fine s’infiltre partout, surtout en fin de saison.',
@@ -382,7 +382,7 @@ const _conseilsSeche = <_ConseilSaison>[
         'en suspension. Pensez aux climatiseurs : nettoyez les filtres.',
     frequence: 'Aération quotidienne, nettoyage hebdomadaire',
   ),
-  _ConseilSaison(
+  ConseilSaison(
     icone: Icons.local_florist_rounded,
     titre: 'Plantes et extérieurs',
     resume: 'Arroser tôt ou tard, jamais en plein soleil.',
@@ -393,7 +393,7 @@ const _conseilsSeche = <_ConseilSaison>[
         'ils seront prêts pour la première pluie.',
     frequence: 'Arrosage quotidien, curage une fois',
   ),
-  _ConseilSaison(
+  ConseilSaison(
     icone: Icons.electrical_services_rounded,
     titre: 'Ventilation et climatisation',
     resume: 'Les appareils forcent plus quand il fait chaud.',
@@ -406,8 +406,13 @@ const _conseilsSeche = <_ConseilSaison>[
   ),
 ];
 
-class _ConseilSaison {
-  const _ConseilSaison({
+/// Conseil de préservation affiché dans un onglet de saison.
+///
+/// Classe **publique** : elle est utilisée comme type de retour par l'enum
+/// `Saison`, qui est public. La rendre privée provoquait un avertissement
+/// `library_private_types_in_public_api`.
+class ConseilSaison {
+  const ConseilSaison({
     required this.icone,
     required this.titre,
     required this.resume,
