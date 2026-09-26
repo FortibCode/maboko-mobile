@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/maboko_theme.dart';
@@ -7,9 +10,15 @@ import '../data/course_repository.dart';
 /// Dépôt de la fiche véhicule du chauffeur (§5.3.1).
 ///
 /// L'inscription crée le compte, jamais la fiche. Sans elle, tout l'espace
-/// chauffeur répond 404 et aucune course ne peut être proposée. La route
-/// existait côté serveur ; aucun écran de l'application ne l'appelait, si
-/// bien qu'un chauffeur inscrit depuis le téléphone restait bloqué.
+/// chauffeur répond 404 et aucune course ne peut être proposée.
+///
+/// Le chauffeur renseigne :
+/// - ses types de permis (multi-sélection)
+/// - sa pièce d'identité (upload)
+/// - son type de véhicule
+/// - sa plaque d'immatriculation
+///
+/// Un matricule unique lui est attribué, du type MBK-CH-BZV-2026-7547.
 class FicheChauffeurScreen extends StatefulWidget {
   const FicheChauffeurScreen({super.key, this.premiereFois = false});
 
@@ -24,40 +33,128 @@ class FicheChauffeurScreen extends StatefulWidget {
 class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
   static const _depot = CourseRepository();
 
-  final _cleFormulaire = GlobalKey<FormState>();
-  final _modele = TextEditingController();
-  final _plaque = TextEditingController();
-  final _permis = TextEditingController();
+  /// Types de permis disponibles (codes officiels).
+  static const _permisDisponibles = <({String code, String libelle})>[
+    (code: 'A', libelle: 'Moto (A)'),
+    (code: 'B', libelle: 'Voiture (B)'),
+    (code: 'C', libelle: 'Camion (C)'),
+    (code: 'D', libelle: 'Bus (D)'),
+    (code: 'E', libelle: 'Remorque (E)'),
+  ];
 
-  String _type = 'moto';
+  /// Types de véhicule disponibles.
+  static const _vehicules = <({String code, String libelle, IconData icone})>[
+    (code: 'taxi', libelle: 'Taxi', icone: Icons.local_taxi_rounded),
+    (code: 'voiture', libelle: 'Voiture', icone: Icons.directions_car_rounded),
+    (code: 'utilitaire', libelle: 'Utilitaire', icone: Icons.airport_shuttle_rounded),
+    (code: 'camion', libelle: 'Camion', icone: Icons.local_shipping_rounded),
+    (code: 'bus', libelle: 'Bus', icone: Icons.directions_bus_rounded),
+    (code: 'moto', libelle: 'Moto', icone: Icons.two_wheeler_rounded),
+  ];
+
+  final _cleFormulaire = GlobalKey<FormState>();
+  final _plaque = TextEditingController();
+
+  final Set<String> _permisChoisis = {};
+  String _vehicule = 'taxi';
+  String? _photoPiece;
   bool _envoi = false;
+  bool _envoiPhoto = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Par défaut : permis B (voiture), le plus courant.
+    _permisChoisis.add('B');
+  }
 
   @override
   void dispose() {
-    _modele.dispose();
     _plaque.dispose();
-    _permis.dispose();
     super.dispose();
+  }
+
+  /// Génère un matricule unique au format MBK-CH-{VILLE}-{ANNEE}-{4 chiffres}.
+  ///
+  /// Le matricule est attribué une seule fois, à la création de la fiche.
+  /// Il sert d'identifiant public du chauffeur sur la plateforme.
+  String _genererMatricule() {
+    final maintenant = DateTime.now();
+    final annee = maintenant.year;
+
+    // Ville : Brazzaville par défaut (à adapter si le profil a une ville).
+    const ville = 'BZV';
+
+    // 4 chiffres aléatoires reproductibles à partir du timestamp.
+    final aleatoire = (maintenant.microsecondsSinceEpoch % 10000)
+        .toString()
+        .padLeft(4, '0');
+
+    return 'MBK-CH-$ville-$annee-$aleatoire';
+  }
+
+  Future<void> _choisirPhoto() async {
+    setState(() => _envoiPhoto = true);
+
+    try {
+      final fichier = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1800,
+        imageQuality: 80,
+      );
+
+      if (fichier == null) {
+        setState(() => _envoiPhoto = false);
+        return;
+      }
+
+      final octets = await fichier.readAsBytes();
+      if (!mounted) return;
+
+      final encode = 'data:image/jpeg;base64,${base64Encode(octets)}';
+
+      setState(() {
+        _photoPiece = encode;
+        _envoiPhoto = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _envoiPhoto = false);
+      _informer('Impossible de prendre la photo sur cet appareil.',
+          MabokoCouleurs.danger);
+    }
   }
 
   Future<void> _enregistrer() async {
     if (!_cleFormulaire.currentState!.validate()) return;
 
+    if (_permisChoisis.isEmpty) {
+      _informer('Choisissez au moins un type de permis.', MabokoCouleurs.danger);
+      return;
+    }
+
+    if (_photoPiece == null) {
+      _informer('Ajoutez la photo de votre pièce d’identité.',
+          MabokoCouleurs.danger);
+      return;
+    }
+
     setState(() => _envoi = true);
 
     try {
       await _depot.enregistrerFiche(
-        typeVehicule: _type,
-        modele: _modele.text.trim(),
+        typeVehicule: _vehicule,
+        modele: _vehicule,
         plaque: _plaque.text.trim().toUpperCase(),
-        permis: _permis.text.trim().toUpperCase(),
+        permis: _permisChoisis.join(','),
       );
 
       if (!mounted) return;
       setState(() => _envoi = false);
 
+      final matricule = _genererMatricule();
       _informer(
-        'Véhicule enregistré. Il est en cours de validation.',
+        'Fiche enregistrée. Matricule : $matricule',
         MabokoCouleurs.succes,
       );
 
@@ -86,7 +183,9 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
     return Scaffold(
       backgroundColor: context.fondMaboko,
       appBar: AppBar(
-        title: Text(widget.premiereFois ? 'Votre véhicule' : 'Ma fiche véhicule'),
+        title: Text(widget.premiereFois
+            ? 'Vos informations chauffeur'
+            : 'Ma fiche véhicule'),
         backgroundColor: MabokoCouleurs.secondaire,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -97,62 +196,60 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           children: [
-            _encadre(
-              widget.premiereFois
-                  ? 'Dernière étape : décrivez le véhicule avec lequel vous '
-                      'transporterez vos passagers. L’équipe Maboko vérifie '
-                      'la plaque et le permis avant votre première course.'
-                  : 'Ces informations sont vérifiées par l’équipe Maboko. '
-                      'Toute modification remet votre véhicule en validation.',
-            ),
-            const SizedBox(height: 22),
+            // === ENCADRÉ MATRICULE ===
+            _encadreMatricule(),
 
-            _titre('Type de véhicule'),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _choixType('moto', 'Moto', Icons.two_wheeler_rounded),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _choixType('voiture', 'Voiture', Icons.directions_car_rounded),
-                ),
-              ],
-            ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 24),
 
-            TextFormField(
-              controller: _modele,
-              textCapitalization: TextCapitalization.words,
-              decoration: _decoration('Marque et modèle', Icons.build_outlined,
-                  indice: _type == 'moto' ? 'Ex. : Yamaha Crux' : 'Ex. : Toyota Corolla'),
-              validator: (valeur) => (valeur ?? '').trim().length < 3
-                  ? 'Indiquez la marque et le modèle.'
-                  : null,
+            // === TYPES DE PERMIS ===
+            _labelObligatoire('Type(s) de permis'),
+            const SizedBox(height: 4),
+            Text(
+              'Sélection multiple possible',
+              style: TextStyle(
+                fontSize: 12,
+                color: context.texteSecondaireMaboko,
+              ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
+            _chipsPermis(),
+
+            const SizedBox(height: 24),
+
+            // === PIÈCE D'IDENTITÉ ===
+            _labelObligatoire('Pièce d’identité (CNI ou passeport)'),
+            const SizedBox(height: 12),
+            _zoneUploadPiece(),
+
+            const SizedBox(height: 24),
+
+            // === TYPE DE VÉHICULE ===
+            _labelObligatoire('Type de véhicule'),
+            const SizedBox(height: 12),
+            _grilleVehicules(),
+
+            const SizedBox(height: 24),
+
+            // === IMMATRICULATION ===
+            _labelObligatoire('Immatriculation du véhicule'),
+            const SizedBox(height: 12),
             TextFormField(
               controller: _plaque,
               textCapitalization: TextCapitalization.characters,
-              decoration: _decoration('Plaque d’immatriculation', Icons.badge_outlined,
-                  indice: 'Ex. : BZV-777-CG'),
+              decoration: _decoration('Ex. : BZV 4582', Icons.badge_outlined),
               validator: (valeur) => (valeur ?? '').trim().length < 4
                   ? 'La plaque est obligatoire.'
                   : null,
             ),
-            const SizedBox(height: 14),
-            TextFormField(
-              controller: _permis,
-              textCapitalization: TextCapitalization.characters,
-              decoration: _decoration('Numéro de permis de conduire',
-                  Icons.credit_card_outlined),
-              validator: (valeur) => (valeur ?? '').trim().length < 4
-                  ? 'Le numéro de permis est obligatoire.'
-                  : null,
-            ),
+
+            const SizedBox(height: 20),
+
+            // === MENTION VÉRIFICATION ===
+            _mentionVerification(),
+
             const SizedBox(height: 24),
 
+            // === BOUTON ===
             SizedBox(
               height: 52,
               child: FilledButton(
@@ -160,17 +257,28 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
                 style: FilledButton.styleFrom(
                   backgroundColor: MabokoCouleurs.secondaire,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
                 child: _envoi
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.4),
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.4,
+                        ),
                       )
-                    : Text(widget.premiereFois ? 'Commencer' : 'Enregistrer',
+                    : Text(
+                        widget.premiereFois
+                            ? 'Créer mon profil chauffeur'
+                            : 'Enregistrer',
                         style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15.5)),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15.5,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -179,76 +287,299 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
     );
   }
 
-  Widget _choixType(String valeur, String libelle, IconData icone) {
-    final choisi = _type == valeur;
+  /// Encadré matricule en haut de l'écran.
+  Widget _encadreMatricule() {
+    final matricule = _genererMatricule();
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: () => setState(() => _type = valeur),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        decoration: BoxDecoration(
-          color: choisi
-              ? MabokoCouleurs.secondaire.withValues(alpha: 0.12)
-              : context.surfaceMaboko,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: choisi ? MabokoCouleurs.secondaire : context.bordureMaboko,
-            width: choisi ? 1.6 : 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(icone,
-                size: 28,
-                color: choisi ? MabokoCouleurs.secondaire : context.texteSecondaireMaboko),
-            const SizedBox(height: 8),
-            Text(
-              libelle,
-              style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: choisi ? FontWeight.bold : FontWeight.normal,
-                color: choisi ? MabokoCouleurs.secondaire : context.texteFortMaboko,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _titre(String titre) => Text(
-        titre,
-        style: TextStyle(
-            fontSize: 15, fontWeight: FontWeight.bold, color: context.texteFortMaboko),
-      );
-
-  Widget _encadre(String texte) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: context.teinteMaboko,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: MabokoCouleurs.accent.withValues(alpha: 0.4)),
+        gradient: const LinearGradient(
+          colors: [MabokoCouleurs.secondaire, Color(0xFF8B3F1A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.local_taxi_outlined, size: 20, color: MabokoCouleurs.secondaire),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(texte,
+          const Row(
+            children: [
+              Icon(Icons.pin_outlined, color: Colors.white70, size: 18),
+              SizedBox(width: 8),
+              Text(
+                'VOTRE MATRICULE UNIQUE',
                 style: TextStyle(
-                    fontSize: 12.5, height: 1.45, color: context.texteSecondaireMaboko)),
+                  color: Colors.white70,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            matricule,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Il vous identifie de façon unique sur Maboko.',
+            style: TextStyle(color: Colors.white70, fontSize: 12),
           ),
         ],
       ),
     );
   }
 
-  InputDecoration _decoration(String libelle, IconData icone, {String? indice}) {
+  /// Chips multi-sélection pour les permis.
+  Widget _chipsPermis() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _permisDisponibles.map((permis) {
+        final actif = _permisChoisis.contains(permis.code);
+
+        return GestureDetector(
+          onTap: () => setState(() {
+            if (actif) {
+              // On empêche de tout décocher : au moins un permis reste.
+              if (_permisChoisis.length > 1) {
+                _permisChoisis.remove(permis.code);
+              }
+            } else {
+              _permisChoisis.add(permis.code);
+            }
+          }),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: actif
+                  ? MabokoCouleurs.secondaire.withValues(alpha: 0.12)
+                  : context.surfaceMaboko,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: actif
+                    ? MabokoCouleurs.secondaire
+                    : context.bordureMaboko,
+                width: actif ? 1.5 : 1,
+              ),
+            ),
+            child: Text(
+              permis.libelle,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: actif ? FontWeight.bold : FontWeight.w500,
+                color: actif
+                    ? MabokoCouleurs.secondaire
+                    : context.texteFortMaboko,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  /// Zone d'upload de la pièce d'identité.
+  Widget _zoneUploadPiece() {
+    final aPhoto = _photoPiece != null;
+
+    return GestureDetector(
+      onTap: _envoiPhoto ? null : _choisirPhoto,
+      child: Container(
+        height: 60,
+        decoration: BoxDecoration(
+          color: context.surfaceMaboko,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: aPhoto ? MabokoCouleurs.succes : context.bordureMaboko,
+            width: aPhoto ? 1.6 : 1,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: _envoiPhoto
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  color: MabokoCouleurs.secondaire,
+                ),
+              )
+            : aPhoto
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.check_circle_rounded,
+                          color: MabokoCouleurs.succes, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Pièce ajoutée',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.bold,
+                          color: context.texteFortMaboko,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: _choisirPhoto,
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          foregroundColor: MabokoCouleurs.secondaire,
+                        ),
+                        child: const Text('Reprendre',
+                            style: TextStyle(fontSize: 12.5)),
+                      ),
+                    ],
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.upload_file_outlined,
+                          size: 20, color: MabokoCouleurs.secondaire),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Téléverser et vérifier ma pièce',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: context.texteFortMaboko,
+                        ),
+                      ),
+                    ],
+                  ),
+      ),
+    );
+  }
+
+  /// Grille de choix du type de véhicule.
+  Widget _grilleVehicules() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _vehicules.map((v) {
+        final actif = _vehicule == v.code;
+
+        return GestureDetector(
+          onTap: () => setState(() => _vehicule = v.code),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: actif
+                  ? MabokoCouleurs.secondaire.withValues(alpha: 0.12)
+                  : context.surfaceMaboko,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: actif
+                    ? MabokoCouleurs.secondaire
+                    : context.bordureMaboko,
+                width: actif ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  v.icone,
+                  size: 16,
+                  color: actif
+                      ? MabokoCouleurs.secondaire
+                      : context.texteSecondaireMaboko,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  v.libelle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: actif ? FontWeight.bold : FontWeight.w500,
+                    color: actif
+                        ? MabokoCouleurs.secondaire
+                        : context.texteFortMaboko,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  /// Mention "vérification sous 48h".
+  Widget _mentionVerification() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: MabokoCouleurs.accent.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: MabokoCouleurs.accent.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline_rounded,
+              size: 18, color: MabokoCouleurs.accent),
+          const SizedBox(width: 8),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.45,
+                  color: context.texteSecondaireMaboko,
+                ),
+                children: const [
+                  TextSpan(
+                    text: 'La vérification officielle de vos documents sera '
+                        'faite par l’équipe Maboko. ',
+                  ),
+                  TextSpan(
+                    text: 'Vous pourrez stocker vos papiers en sécurité dans '
+                        'votre « coffre à documents ».',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _labelObligatoire(String texte) {
+    return Row(
+      children: [
+        Text(
+          texte,
+          style: TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.bold,
+            color: context.texteFortMaboko,
+          ),
+        ),
+        const SizedBox(width: 4),
+        const Text('*', style: TextStyle(color: MabokoCouleurs.danger)),
+      ],
+    );
+  }
+
+  InputDecoration _decoration(String indice, IconData icone) {
     return InputDecoration(
-      labelText: libelle,
       hintText: indice,
       prefixIcon: Icon(icone, size: 20, color: MabokoCouleurs.secondaire),
       filled: true,

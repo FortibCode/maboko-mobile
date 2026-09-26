@@ -332,7 +332,7 @@ class _RappelsRelancesScreenState extends State<RappelsRelancesScreen> {
     final heure =
         '${date.hour.toString().padLeft(2, '0')}h${date.minute.toString().padLeft(2, '0')}';
 
-    if (diff < 0) return 'En retard · ${-diff} j (${heure})';
+    if (diff < 0) return 'En retard · ${-diff} j ($heure)';
     if (diff == 0) return 'Aujourd’hui à $heure';
     if (diff == 1) return 'Demain à $heure';
     if (diff < 7) return 'Dans $diff jours ($heure)';

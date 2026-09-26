@@ -255,7 +255,7 @@ class _ArtisanBioScreenState extends State<ArtisanBioScreen> {
         ),
         if (tropLong) ...[
           const SizedBox(width: 8),
-          Expanded(
+          const Expanded(
             child: Text(
               'Retirez quelques mots pour continuer.',
               style: TextStyle(

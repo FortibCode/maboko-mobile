@@ -707,7 +707,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.file_upload_outlined,
+                      const Icon(Icons.file_upload_outlined,
                           size: 20, color: MabokoCouleurs.secondaire),
                       const SizedBox(width: 8),
                       Text(
