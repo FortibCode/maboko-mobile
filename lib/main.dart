@@ -14,9 +14,10 @@ import 'profile_choice.dart';
 import 'forgot_password.dart';
 import 'register_page.dart';
 import 'screens/home_page.dart';
-import 'artisan_onboarding_screen.dart'; 
+import 'artisan_onboarding_screen.dart';
 import 'features/courses/ui/chauffeur_shell.dart';
 import 'services/storage_service.dart';
+import 'services/notification_service.dart';
 import 'core/session/role_utilisateur.dart';
 import 'core/theme/controleur_theme.dart';
 
@@ -51,6 +52,11 @@ Future<void> main() async {
 
   await controleurTheme.charger();
 
+  // Prepare le canal de notifications de course. Sans cette initialisation,
+  // aucune notification ne peut etre levee : le chauffeur qui attend une
+  // course doit etre prevenu meme s'il est sur un autre ecran.
+  await NotificationService.initialiser();
+
   runApp(const MabokoApp());
 }
 
@@ -76,7 +82,7 @@ class MabokoApp extends StatelessWidget {
           "/onboarding2": (context) => const Onboarding2(),
           "/onboarding3": (context) => const Onboarding3(),
           "/profile-choice": (context) => const ProfileChoice(),
-        
+
           "/artisan-onboarding": (context) => const ArtisanOnboarding(),
           "/forgot": (context) => const ForgotPasswordPage(),
           "/register": (context) => const RegisterPage(),

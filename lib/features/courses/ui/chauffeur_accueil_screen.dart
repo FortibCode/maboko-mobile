@@ -6,6 +6,7 @@ import '../../../core/localisation/service_position.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/maboko_theme.dart';
 import '../../../core/widgets/etats.dart';
+import '../../../services/notification_service.dart';
 import '../data/course_repository.dart';
 import '../models/course.dart';
 import 'course_chauffeur_screen.dart';
@@ -13,6 +14,9 @@ import 'fiche_chauffeur_screen.dart';
 
 /// Accueil du chauffeur (§5.3.1 et §5.3.4) : bascule en ligne / hors ligne,
 /// courses proposées, et revenus du jour.
+///
+/// Une notification locale est levée à chaque nouvelle course proposée :
+/// le chauffeur peut vaquer à ses occupations, il sera prévenu.
 class ChauffeurAccueilScreen extends StatefulWidget {
   const ChauffeurAccueilScreen({super.key});
 
@@ -28,6 +32,13 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
   RevenusChauffeur? _revenus;
   List<Course> _propositions = const [];
   Course? _courseEnCours;
+
+  /// Ids des courses déjà vues : sert à ne pas renotifier deux fois.
+  final Set<int> _coursesVues = {};
+
+  /// Le premier chargement remplit la liste : il ne doit pas déclencher
+  /// de notification pour des courses déjà en attente.
+  bool _premierChargement = true;
 
   Timer? _minuterie;
   StreamSubscription<dynamic>? _suiviPosition;
@@ -63,12 +74,14 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
       if (!mounted) return;
 
       final historique = resultats[2] as List<Course>;
+      final propositions = resultats[1] as List<Course>;
+
+      await _notifierNouvellesCourses(propositions);
 
       setState(() {
         _etat = etat;
         _revenus = resultats[0] as RevenusChauffeur;
-        _propositions = resultats[1] as List<Course>;
-        // Une course active passe devant tout le reste.
+        _propositions = propositions;
         _courseEnCours = historique.where((c) => c.estActive).firstOrNull;
         _chargement = false;
         _erreur = null;
@@ -81,6 +94,36 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
         _erreur = e.message;
         _chargement = false;
       });
+    }
+  }
+
+  /// Compare les propositions reçues avec celles déjà vues : toute nouvelle
+  /// course déclenche une notification. Le premier chargement ne notifie pas.
+  Future<void> _notifierNouvellesCourses(List<Course> propositions) async {
+    if (_premierChargement) {
+      _premierChargement = false;
+      _coursesVues.addAll(propositions.map((c) => c.id));
+
+      return;
+    }
+
+    final nouvelles =
+        propositions.where((c) => !_coursesVues.contains(c.id)).toList();
+
+    if (nouvelles.isNotEmpty) {
+      final course = nouvelles.first;
+
+      await NotificationService.notifierCourse(
+        id: course.id,
+        titre: 'Nouvelle course disponible',
+        corps:
+            '${course.depart.adresse} → ${course.arrivee.adresse} · ${formaterFcfa(course.tarifEstime)}',
+      );
+    }
+
+    // On mémorise toutes les courses vues, même refusées depuis.
+    for (final c in propositions) {
+      _coursesVues.add(c.id);
     }
   }
 
@@ -106,9 +149,6 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
   Future<void> _basculer(bool enLigne) async {
     setState(() => _bascule = true);
 
-    // Sans position transmise, le chauffeur reste invisible à l'appariement :
-    // on en envoie une immédiatement plutôt que d'attendre le premier
-    // déplacement.
     if (enLigne) {
       final position = await ServicePosition.actuelle();
 
@@ -150,25 +190,25 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
 
       await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => CourseChauffeurScreen(courseId: acceptee.id)),
+        MaterialPageRoute(
+          builder: (_) => CourseChauffeurScreen(courseId: acceptee.id),
+        ),
       );
       await _charger();
     } on ApiException catch (e) {
       if (!mounted) return;
-      // 409 : un autre chauffeur a été plus rapide. Cas courant, pas une erreur.
-      _informer(e.message, e.statusCode == 409 ? MabokoCouleurs.accent : MabokoCouleurs.danger);
+      _informer(
+        e.message,
+        e.statusCode == 409 ? MabokoCouleurs.accent : MabokoCouleurs.danger,
+      );
       await _charger();
     }
   }
 
-  /// Refus d'une course proposée (§5.3.1).
-  ///
-  /// Seul « Accepter » existait : une course sans intérêt revenait dans la
-  /// liste à chaque relecture, toutes les dix secondes, jusqu'à expiration.
   Future<void> _refuser(Course course) async {
-    // Retrait immédiat : le chauffeur conduit, il ne doit pas attendre le
-    // serveur pour voir la carte disparaître.
-    setState(() => _propositions = _propositions.where((c) => c.id != course.id).toList());
+    setState(
+      () => _propositions = _propositions.where((c) => c.id != course.id).toList(),
+    );
 
     try {
       await _repository.refuser(course.id);
@@ -203,14 +243,15 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
     if (_chargement) return const ChargementEnCours();
 
     if (_erreur != null) {
-      return EtatErreur(message: _erreur!, onReessayer: () => _charger(premiereFois: true));
+      return EtatErreur(
+        message: _erreur!,
+        onReessayer: () => _charger(premiereFois: true),
+      );
     }
 
     final etat = _etat!;
 
     if (etat.ficheManquante) {
-      // Le message renvoyait vers « l'equipe Maboko » sans aucun moyen de la
-      // joindre ni de deposer quoi que ce soit : le compte etait fige la.
       return EtatVide(
         icone: Icons.no_transfer_outlined,
         titre: 'Votre fiche chauffeur est incomplète',
@@ -230,8 +271,10 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
             if (depose == true) await _charger(premiereFois: true);
           },
           icon: const Icon(Icons.directions_car_outlined, size: 19),
-          label: const Text('Enregistrer mon véhicule',
-              style: TextStyle(fontWeight: FontWeight.bold)),
+          label: const Text(
+            'Enregistrer mon véhicule',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
         ),
       );
     }
@@ -262,7 +305,9 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
       decoration: BoxDecoration(
         color: etat.enLigne ? MabokoCouleurs.succes : context.surfaceMaboko,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: etat.enLigne ? MabokoCouleurs.succes : context.bordureMaboko),
+        border: Border.all(
+          color: etat.enLigne ? MabokoCouleurs.succes : context.bordureMaboko,
+        ),
       ),
       child: Row(
         children: [
@@ -291,7 +336,9 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
                       : 'Passez en ligne pour recevoir des courses.',
                   style: TextStyle(
                     fontSize: 12.5,
-                    color: etat.enLigne ? Colors.white70 : context.texteSecondaireMaboko,
+                    color: etat.enLigne
+                        ? Colors.white70
+                        : context.texteSecondaireMaboko,
                   ),
                 ),
               ],
@@ -301,7 +348,10 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
               ? const SizedBox(
                   width: 22,
                   height: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 )
               : Switch(
                   value: etat.enLigne,
@@ -323,7 +373,9 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
         onTap: () async {
           await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => CourseChauffeurScreen(courseId: course.id)),
+            MaterialPageRoute(
+              builder: (_) => CourseChauffeurScreen(courseId: course.id),
+            ),
           );
           await _charger();
         },
@@ -335,20 +387,32 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
           ),
           child: Row(
             children: [
-              const Icon(Icons.navigation_rounded, color: MabokoCouleurs.accent, size: 28),
+              const Icon(
+                Icons.navigation_rounded,
+                color: MabokoCouleurs.accent,
+                size: 28,
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Course en cours',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    const Text(
+                      'Course en cours',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       '${course.depart.adresse} → ${course.arrivee.adresse}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 12.5, color: context.texteSecondaireMaboko),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: context.texteSecondaireMaboko,
+                      ),
                     ),
                   ],
                 ),
@@ -374,7 +438,10 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Aujourd’hui', style: TextStyle(fontSize: 13, color: context.texteSecondaireMaboko)),
+          Text(
+            'Aujourd’hui',
+            style: TextStyle(fontSize: 13, color: context.texteSecondaireMaboko),
+          ),
           const SizedBox(height: 4),
           Text(
             formaterFcfa(revenus?.aujourdhui ?? 0),
@@ -384,7 +451,10 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
           Text(
             '${revenus?.coursesAujourdhui ?? 0} course(s) · '
             '${formaterFcfa(revenus?.totalSemaine ?? 0)} cette semaine',
-            style: TextStyle(fontSize: 12.5, color: context.texteSecondaireMaboko),
+            style: TextStyle(
+              fontSize: 12.5,
+              color: context.texteSecondaireMaboko,
+            ),
           ),
           if (revenus != null && revenus.semaine.isNotEmpty) ...[
             const SizedBox(height: 16),
@@ -395,10 +465,10 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
     );
   }
 
-  /// Graphique des sept derniers jours (§5.3.4). Barres proportionnelles au
-  /// meilleur jour : un chauffeur voit d'un coup d'œil ses jours forts.
   Widget _graphiqueSemaine(RevenusChauffeur revenus) {
-    final maximum = revenus.semaine.map((j) => j.total).fold<double>(0, (a, b) => a > b ? a : b);
+    final maximum = revenus.semaine
+        .map((j) => j.total)
+        .fold<double>(0, (a, b) => a > b ? a : b);
 
     return SizedBox(
       height: 78,
@@ -416,14 +486,19 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
                   height: hauteur < 3 ? 3 : hauteur,
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: jour.total > 0 ? MabokoCouleurs.secondaire : context.bordureMaboko,
+                    color: jour.total > 0
+                        ? MabokoCouleurs.secondaire
+                        : context.bordureMaboko,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   date == null ? '' : _jourCourt(date.weekday),
-                  style: TextStyle(fontSize: 10, color: context.texteSecondaireMaboko),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: context.texteSecondaireMaboko,
+                  ),
                 ),
               ],
             ),
@@ -440,7 +515,8 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
         child: EtatVide(
           icone: Icons.wifi_tethering_off,
           titre: 'Hors ligne',
-          message: 'Passez en ligne pour voir les courses proposées près de vous.',
+          message:
+              'Passez en ligne pour voir les courses proposées près de vous.',
         ),
       );
     }
@@ -484,7 +560,9 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
           Row(
             children: [
               Icon(
-                course.typeVehicule == 'moto' ? Icons.two_wheeler : Icons.directions_car,
+                course.typeVehicule == 'moto'
+                    ? Icons.two_wheeler
+                    : Icons.directions_car,
                 color: MabokoCouleurs.secondaire,
                 size: 20,
               ),
@@ -492,7 +570,10 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
               Expanded(
                 child: Text(
                   course.clientNom ?? 'Client Maboko',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14.5,
+                  ),
                 ),
               ),
               Text(
@@ -513,14 +594,15 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
             'Trajet : ${course.distanceKm.toStringAsFixed(1)} km · environ ${course.dureeEstimeeMin} min',
             style: TextStyle(fontSize: 12, color: context.texteSecondaireMaboko),
           ),
-          // La distance du trajet ne dit pas si le client est a deux rues ou
-          // a l'autre bout de la ville : c'est pourtant ce qui decide d'y
-          // aller ou non (§5.3.1).
           if (course.distancePriseEnChargeKm != null) ...[
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.near_me_outlined, size: 14, color: MabokoCouleurs.secondaire),
+                const Icon(
+                  Icons.near_me_outlined,
+                  size: 14,
+                  color: MabokoCouleurs.secondaire,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   'Client à ${course.distancePriseEnChargeKm!.toStringAsFixed(1)} km de vous',
@@ -544,7 +626,9 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: context.texteSecondaireMaboko,
                       side: BorderSide(color: context.bordureMaboko),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: const Text('Refuser'),
                   ),
@@ -560,10 +644,14 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: MabokoCouleurs.secondaire,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    child: const Text('Accepter',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Accepter',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ),

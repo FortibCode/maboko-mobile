@@ -12,6 +12,13 @@
     <!-- Photos de profil, portfolio et pieces d'identite. -->
     <uses-permission android:name="android.permission.CAMERA"/>
 
+    <!-- Notifications de course (Android 13+). Sans cette declaration, le
+         chauffeur ne recoit aucune alerte quand une course lui est proposee. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <!-- Sonnerie et vibration des notifications de course. -->
+    <uses-permission android:name="android.permission.VIBRATE"/>
+
     <!-- L'appareil photo est un confort, pas une condition d'installation :
          un telephone sans camera doit pouvoir utiliser la galerie. -->
     <uses-feature android:name="android.hardware.camera" android:required="false"/>

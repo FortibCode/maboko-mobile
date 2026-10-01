@@ -40,8 +40,8 @@ class NotificationService {
     await _plugin.initialize(reglages);
 
     // Crée le canal Android et demande la permission (Android 13+).
-    final androidPlugin = _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
 
     if (androidPlugin != null) {
       await androidPlugin.createNotificationChannel(_canalCourses);
