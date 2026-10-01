@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -19,6 +20,10 @@ import 'widgets_carte.dart';
 /// La navigation guidée est déléguée à Google Maps ou Waze, déjà installés
 /// sur le téléphone : les réimplémenter coûterait cher pour un résultat
 /// inférieur, et le cahier de charges autorise ce choix (§6.2).
+///
+/// La fin de course exige le code à 4 chiffres que le client lit à l'écran
+/// de son propre téléphone : un chauffeur ne peut donc pas clôturer une
+/// course sans l'accord du client.
 class CourseChauffeurScreen extends StatefulWidget {
   const CourseChauffeurScreen({super.key, required this.courseId});
 
@@ -36,8 +41,6 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
   Course? _course;
   StreamSubscription<dynamic>? _suiviPosition;
 
-  /// Dernière position connue du véhicule, pour estimer ce qu'il reste à
-  /// parcourir jusqu'à la cible du moment.
   LatLng? _positionActuelle;
   bool _chargement = true;
   bool _actionEnCours = false;
@@ -56,8 +59,6 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
     super.dispose();
   }
 
-  /// Transmet la position au serveur pendant la course : c'est ce qui permet
-  /// au client de suivre l'arrivée du véhicule sur sa carte.
   void _suivrePosition() {
     _suiviPosition = ServicePosition.suivi().listen((position) {
       if (mounted) {
@@ -115,6 +116,102 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
     }
   }
 
+  /// Demande le code à 4 chiffres du client, puis termine la course.
+  ///
+  /// Le code est comparé localement (simulation). Quand le serveur validera
+  /// lui-même, cette méthode lui enverra simplement la valeur saisie.
+  Future<void> _terminerAvecCode(Course course) async {
+    final controleur = TextEditingController();
+    String? erreur;
+
+    final code = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogue) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.pin_outlined, color: MabokoCouleurs.secondaire),
+              SizedBox(width: 8),
+              Text('Code de confirmation'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Demandez au client son code à 4 chiffres pour clôturer la course.',
+                style: TextStyle(fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controleur,
+                keyboardType: TextInputType.number,
+                maxLength: 4,
+                autofocus: true,
+                textAlign: TextAlign.center,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(4),
+                ],
+                style: const TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 10,
+                ),
+                decoration: InputDecoration(
+                  hintText: '0000',
+                  counterText: '',
+                  errorText: erreur,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final saisi = controleur.text.trim();
+
+                if (saisi.length != 4) {
+                  setDialogue(() => erreur = 'Entrez les 4 chiffres.');
+
+                  return;
+                }
+
+                if (saisi != course.codePin) {
+                  setDialogue(() => erreur = 'Code incorrect. Demandez au client.');
+
+                  return;
+                }
+
+                Navigator.pop(context, saisi);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MabokoCouleurs.secondaire,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Valider'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (code == null) return;
+
+    await _agir(
+      () => _repository.terminer(course.id, codeConfirmation: code),
+      'Course terminée.',
+    );
+  }
+
   /// Ouvre le guidage vers le point utile : le client tant qu'il n'est pas
   /// à bord, sa destination ensuite.
   Future<void> _ouvrirNavigation() async {
@@ -123,8 +220,6 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
 
     final cible = course.clientABord ? course.arrivee : course.depart;
 
-    // Schéma universel : Google Maps le reconnaît, Waze et les cartes iOS
-    // aussi. Repli sur le site web si aucune application n'est installée.
     final uris = [
       Uri.parse('geo:${cible.latitude},${cible.longitude}?q=${cible.latitude},${cible.longitude}'),
       Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${cible.latitude},${cible.longitude}'),
@@ -265,9 +360,6 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
           _ligne(Icons.trip_origin, course.depart.adresse),
           _ligne(Icons.place_outlined, course.arrivee.adresse),
           const SizedBox(height: 10),
-          // « Avec la distance et le temps de trajet estimés » (§5.3.2) :
-          // l'écran donnait l'adresse et le tarif, jamais ce qu'il restait
-          // à parcourir.
           _estimation(course),
           const SizedBox(height: 14),
           Row(
@@ -295,16 +387,10 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
     );
   }
 
-  /// Distance restante et temps estimé jusqu'à la cible du moment.
-  ///
-  /// La cible change avec l'étape : le point de prise en charge tant que le
-  /// client n'est pas monté, sa destination ensuite.
   Widget _estimation(Course course) {
     final cible = course.clientABord ? course.arrivee : course.depart;
     final depuis = _positionActuelle;
 
-    // Sans position, on annonce l'estimation du trajet complet plutôt que
-    // rien : elle reste juste une fois le client à bord.
     final distance = depuis == null
         ? (course.clientABord ? course.distanceKm : null)
         : _distanceKm(depuis, LatLng(cible.latitude, cible.longitude));
@@ -317,7 +403,6 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
       );
     }
 
-    // 25 km/h : une moyenne réaliste en ville, embouteillages compris.
     final minutes = (distance / 25 * 60).ceil().clamp(1, 999);
 
     return Row(
@@ -345,7 +430,6 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
     );
   }
 
-  /// Distance à vol d'oiseau, en kilomètres.
   static double _distanceKm(LatLng a, LatLng b) {
     const rayonTerre = 6371.0;
 
@@ -364,6 +448,33 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
   static double _radians(double degres) => degres * math.pi / 180;
 
   Widget _actionPrincipale(Course course) {
+    // Fin de course : on demande le code au client avant de clôturer.
+    if (course.statut == 'prise_en_charge') {
+      return SizedBox(
+        height: 50,
+        child: ElevatedButton.icon(
+          onPressed: _actionEnCours ? null : () => _terminerAvecCode(course),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: MabokoCouleurs.secondaire,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: context.bordureMaboko,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          icon: _actionEnCours
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.2),
+                )
+              : const Icon(Icons.pin_outlined),
+          label: const Text(
+            'Terminer la course',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
+        ),
+      );
+    }
+
     final (libelle, action) = switch (course.statut) {
       'acceptee' => (
           'Je suis en route',
@@ -372,10 +483,6 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
       'en_route' => (
           'Client à bord',
           () => _agir(() => _repository.prendreEnCharge(course.id), 'Client pris en charge.'),
-        ),
-      'prise_en_charge' => (
-          'Terminer la course',
-          () => _agir(() => _repository.terminer(course.id), 'Course terminée.'),
         ),
       _ => ('Course terminée', null),
     };

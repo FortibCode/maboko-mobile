@@ -73,6 +73,7 @@ class Course {
     this.annuleePar,
     this.termineeLe,
     this.creeeLe,
+    this.codeConfirmation,
   });
 
   final int id;
@@ -92,6 +93,13 @@ class Course {
   final String? clientNom;
   final String? annuleePar;
 
+  /// Code à 4 chiffres fourni par le serveur quand il l'expose.
+  ///
+  /// En simulation, il est dérivé de l'identifiant de course via
+  /// [codeConfirmation] : les deux téléphones voient le même code sans
+  /// backend. Quand l'API sera prête, ce champ viendra de la réponse JSON.
+  final String? codeConfirmation;
+
   /// Horodatages exposés par l'API, utiles à l'historique du chauffeur.
   final DateTime? termineeLe;
   final DateTime? creeeLe;
@@ -104,6 +112,15 @@ class Course {
   bool get estCloturee => const ['terminee', 'annulee'].contains(statut);
 
   bool get clientABord => statut == 'prise_en_charge';
+
+  /// Code à 4 chiffres que le client communique au chauffeur en fin de course.
+  ///
+  /// Simulation : dérivé de façon déterministe de l'identifiant de course,
+  /// donc identique sur le téléphone du client et celui du chauffeur. Quand
+  /// le serveur produira le code, le champ [codeConfirmation] prendra le
+  /// relais automatiquement.
+  String get codePin =>
+      codeConfirmation ?? ((id * 7919) % 10000).toString().padLeft(4, '0');
 
   factory Course.depuisJson(Map<String, dynamic> json) {
     final chauffeur = json['chauffeur'] as Map<String, dynamic>?;
@@ -125,6 +142,7 @@ class Course {
       annuleePar: json['annuleePar'] as String?,
       termineeLe: DateTime.tryParse(json['termineeLe'] as String? ?? ''),
       creeeLe: DateTime.tryParse(json['creeeLe'] as String? ?? ''),
+      codeConfirmation: json['codeConfirmation'] as String?,
     );
   }
 }

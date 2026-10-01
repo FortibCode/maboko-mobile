@@ -19,6 +19,8 @@ import 'widgets_carte.dart';
 /// du véhicule sur la carte jusqu'à la dépose.
 ///
 /// Une notification locale prévient le client dès qu'un chauffeur accepte.
+/// Pendant la course, un code à 4 chiffres est affiché au client : il le
+/// communique au chauffeur pour confirmer la fin.
 class SuiviCourseScreen extends StatefulWidget {
   const SuiviCourseScreen({super.key, required this.courseId});
 
@@ -37,7 +39,6 @@ class _SuiviCourseScreenState extends State<SuiviCourseScreen> {
   CanalReverb? _canal;
   Timer? _minuterie;
 
-  /// Statut précédent, pour détecter la transition recherche → acceptée.
   String? _statutPrecedent;
 
   bool _chargement = true;
@@ -83,7 +84,6 @@ class _SuiviCourseScreenState extends State<SuiviCourseScreen> {
     canal.connecter();
   }
 
-  /// Prévient le client quand le chauffeur accepte la course.
   Future<void> _detecterChangementStatut(Course course) async {
     final precedent = _statutPrecedent;
     _statutPrecedent = course.statut;
@@ -283,6 +283,13 @@ class _SuiviCourseScreenState extends State<SuiviCourseScreen> {
               backgroundColor: context.bordureMaboko,
             ),
           ],
+
+          // Pendant la course : le code à communiquer au chauffeur.
+          if (course.clientABord) ...[
+            const SizedBox(height: 16),
+            _carteCodeConfirmation(course),
+          ],
+
           if (course.chauffeur != null) ...[
             const SizedBox(height: 16),
             _ficheChauffeur(course.chauffeur!),
@@ -326,6 +333,65 @@ class _SuiviCourseScreenState extends State<SuiviCourseScreen> {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  /// Carte du code à 4 chiffres, affichée pendant la course.
+  ///
+  /// Le client lit ce code au chauffeur à l'arrivée : c'est ce qui évite
+  /// qu'une course soit terminée sans son accord.
+  Widget _carteCodeConfirmation(Course course) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: MabokoCouleurs.accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: MabokoCouleurs.accent.withValues(alpha: 0.55)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.pin_outlined, size: 16, color: MabokoCouleurs.accent),
+              SizedBox(width: 6),
+              Text(
+                'CODE DE CONFIRMATION',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1,
+                  color: Color(0xFF9A6A0F),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Center(
+            child: Text(
+              course.codePin,
+              style: const TextStyle(
+                fontSize: 38,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 14,
+                color: MabokoCouleurs.secondaire,
+                height: 1,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Communiquez ce code au chauffeur pour confirmer la fin de la course.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.4,
+              color: context.texteSecondaireMaboko,
+            ),
+          ),
         ],
       ),
     );

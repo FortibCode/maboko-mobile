@@ -81,9 +81,6 @@ class CourseRepository {
 
       return EtatChauffeur.depuisJson(reponse as Map<String, dynamic>);
     } on ApiException catch (e) {
-      // Un chauffeur sans fiche reçoit un 404 porteur de « ficheManquante ».
-      // Sans ce rattrapage, l'écran l'annonçait comme une panne de chargement
-      // assortie d'un bouton « Réessayer » qui ne pouvait rien changer.
       if (e.statusCode == 404) return const EtatChauffeur(ficheManquante: true);
 
       rethrow;
@@ -91,9 +88,6 @@ class CourseRepository {
   }
 
   /// Dépôt de la fiche véhicule du chauffeur connecté (§5.3.1).
-  ///
-  /// Sans elle, le compte reçoit un 404 sur tout l'espace chauffeur et ne peut
-  /// recevoir aucune course. La route existait, aucun écran ne l'appelait.
   Future<EtatChauffeur> enregistrerFiche({
     required String typeVehicule,
     required String modele,
@@ -111,9 +105,6 @@ class CourseRepository {
   }
 
   /// Refus d'une course proposée (§5.3.1).
-  ///
-  /// Elle sort des propositions de ce chauffeur sans être annulée : les
-  /// autres chauffeurs continuent de la voir.
   Future<void> refuser(int courseId) async {
     await api.post('/courses/$courseId/refuser');
   }
@@ -156,8 +147,20 @@ class CourseRepository {
 
   Future<Course> prendreEnCharge(int id) => _transition(id, 'prise-en-charge', {});
 
-  Future<Course> terminer(int id, {double? tarifFinal}) =>
-      _transition(id, 'terminer', tarifFinal == null ? {} : {'tarif_final': tarifFinal});
+  /// Fin de course (§5.3.3).
+  ///
+  /// Le [codeConfirmation] est le code à 4 chiffres que le client communique
+  /// au chauffeur. Le serveur le valide ; en simulation locale, l'écran
+  /// chauffeur le compare avant d'appeler cette méthode.
+  Future<Course> terminer(
+    int id, {
+    required String codeConfirmation,
+    double? tarifFinal,
+  }) =>
+      _transition(id, 'terminer', {
+        'code_confirmation': codeConfirmation,
+        if (tarifFinal != null) 'tarif_final': tarifFinal,
+      });
 
   Future<Course> _transition(int id, String action, Map<String, dynamic> corps) async {
     final reponse = await api.post('/courses/$id/$action', corps: corps);
