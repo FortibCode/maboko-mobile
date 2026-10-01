@@ -88,17 +88,23 @@ class CourseRepository {
   }
 
   /// Dépôt de la fiche véhicule du chauffeur connecté (§5.3.1).
+  ///
+  /// [permisCategories] = codes des catégories (A, B, C...) séparés par
+  /// des virgules. [permisNumero] = numéro unique du document, qui seul
+  /// doit être unique : plusieurs chauffeurs partagent la même catégorie.
   Future<EtatChauffeur> enregistrerFiche({
     required String typeVehicule,
     required String modele,
     required String plaque,
-    required String permis,
+    required String permisCategories,
+    required String permisNumero,
   }) async {
     final reponse = await api.post('/chauffeur', corps: {
       'type_vehicule': typeVehicule,
       'vehicule_modele': modele,
       'plaque_immatriculation': plaque,
-      'permis_conduire': permis,
+      'permis_conduire': permisNumero,
+      'permis_categories': permisCategories,
     });
 
     return EtatChauffeur.depuisJson(reponse as Map<String, dynamic>);

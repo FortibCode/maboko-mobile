@@ -13,12 +13,11 @@ import '../data/course_repository.dart';
 /// chauffeur répond 404 et aucune course ne peut être proposée.
 ///
 /// Le chauffeur renseigne :
-/// - ses types de permis (multi-sélection)
+/// - ses types de permis (catégories A, B, C...)
+/// - le numéro unique de son permis
 /// - sa pièce d'identité (upload)
 /// - son type de véhicule
 /// - sa plaque d'immatriculation
-///
-/// Un matricule unique lui est attribué, du type MBK-CH-BZV-2026-7547.
 class FicheChauffeurScreen extends StatefulWidget {
   const FicheChauffeurScreen({super.key, this.premiereFois = false});
 
@@ -55,6 +54,12 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
   final _cleFormulaire = GlobalKey<FormState>();
   final _plaque = TextEditingController();
 
+  /// Numéro unique du document de permis (ex: AB123456).
+  ///
+  /// C'est ce numéro qui est unique par personne, contrairement aux
+  /// catégories (plusieurs chauffeurs ont la catégorie B).
+  final _permisNumero = TextEditingController();
+
   final Set<String> _permisChoisis = {};
   String _vehicule = 'taxi';
   String? _photoPiece;
@@ -71,26 +76,8 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
   @override
   void dispose() {
     _plaque.dispose();
+    _permisNumero.dispose();
     super.dispose();
-  }
-
-  /// Génère un matricule unique au format MBK-CH-{VILLE}-{ANNEE}-{4 chiffres}.
-  ///
-  /// Le matricule est attribué une seule fois, à la création de la fiche.
-  /// Il sert d'identifiant public du chauffeur sur la plateforme.
-  String _genererMatricule() {
-    final maintenant = DateTime.now();
-    final annee = maintenant.year;
-
-    // Ville : Brazzaville par défaut (à adapter si le profil a une ville).
-    const ville = 'BZV';
-
-    // 4 chiffres aléatoires reproductibles à partir du timestamp.
-    final aleatoire = (maintenant.microsecondsSinceEpoch % 10000)
-        .toString()
-        .padLeft(4, '0');
-
-    return 'MBK-CH-$ville-$annee-$aleatoire';
   }
 
   Future<void> _choisirPhoto() async {
@@ -146,15 +133,15 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
         typeVehicule: _vehicule,
         modele: _vehicule,
         plaque: _plaque.text.trim().toUpperCase(),
-        permis: _permisChoisis.join(','),
+        permisCategories: _permisChoisis.join(','),
+        permisNumero: _permisNumero.text.trim().toUpperCase(),
       );
 
       if (!mounted) return;
       setState(() => _envoi = false);
 
-      final matricule = _genererMatricule();
       _informer(
-        'Fiche enregistrée. Matricule : $matricule',
+        'Fiche enregistrée. En cours de vérification.',
         MabokoCouleurs.succes,
       );
 
@@ -196,11 +183,6 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           children: [
-            // === ENCADRÉ MATRICULE ===
-            _encadreMatricule(),
-
-            const SizedBox(height: 24),
-
             // === TYPES DE PERMIS ===
             _labelObligatoire('Type(s) de permis'),
             const SizedBox(height: 4),
@@ -213,6 +195,37 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
             ),
             const SizedBox(height: 12),
             _chipsPermis(),
+
+            const SizedBox(height: 20),
+
+            // === NUMÉRO DE PERMIS ===
+            _labelObligatoire('Numéro de permis de conduire'),
+            const SizedBox(height: 4),
+            Text(
+              'Il figure sur votre permis (ex. : AB123456).',
+              style: TextStyle(
+                fontSize: 12,
+                color: context.texteSecondaireMaboko,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _permisNumero,
+              textCapitalization: TextCapitalization.characters,
+              decoration: _decoration(
+                'Ex. : AB123456',
+                Icons.credit_card_outlined,
+              ),
+              validator: (valeur) {
+                final propre = (valeur ?? '').trim();
+
+                if (propre.length < 6) {
+                  return 'Entrez le numéro complet du permis.';
+                }
+
+                return null;
+              },
+            ),
 
             const SizedBox(height: 24),
 
@@ -232,6 +245,14 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
 
             // === IMMATRICULATION ===
             _labelObligatoire('Immatriculation du véhicule'),
+            const SizedBox(height: 4),
+            Text(
+              'La plaque physique de votre véhicule.',
+              style: TextStyle(
+                fontSize: 12,
+                color: context.texteSecondaireMaboko,
+              ),
+            ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _plaque,
@@ -287,59 +308,7 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
     );
   }
 
-  /// Encadré matricule en haut de l'écran.
-  Widget _encadreMatricule() {
-    final matricule = _genererMatricule();
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [MabokoCouleurs.secondaire, Color(0xFF8B3F1A)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.pin_outlined, color: Colors.white70, size: 18),
-              SizedBox(width: 8),
-              Text(
-                'VOTRE MATRICULE UNIQUE',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            matricule,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Il vous identifie de façon unique sur Maboko.',
-            style: TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Chips multi-sélection pour les permis.
+  /// Chips multi-sélection pour les catégories de permis.
   Widget _chipsPermis() {
     return Wrap(
       spacing: 8,
@@ -350,7 +319,7 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
         return GestureDetector(
           onTap: () => setState(() {
             if (actif) {
-              // On empêche de tout décocher : au moins un permis reste.
+              // On empêche de tout décocher : au moins une catégorie reste.
               if (_permisChoisis.length > 1) {
                 _permisChoisis.remove(permis.code);
               }
