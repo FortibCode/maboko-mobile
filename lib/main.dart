@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import 'core/config/adresse_api.dart';
@@ -74,7 +75,21 @@ class MabokoApp extends StatelessWidget {
         themeMode: controleurTheme.mode,
         darkTheme: MabokoThemes.sombre,
         theme: MabokoThemes.clair,
-        initialRoute: "/",
+
+        // ⚠️ CORRECTION IMPORTANTE
+        //
+        // Sur le Web, l'application doit demarrer sur la route presente
+        // dans le fragment de l'URL (#/register, #/login, #/chauffeur…).
+        // Sans cela, Flutter ignore completement ce fragment et demarre
+        // toujours sur le splash, qui redirige aussitot vers l'espace
+        // correspondant au jeton stocke. Impossible alors d'ouvrir un lien
+        // direct comme #/register : l'utilisateur connecte est toujours
+        // ramene sur son tableau de bord.
+        //
+        // Sur mobile, il n'y a pas de fragment : on retombe sur "/", qui
+        // est bien declare ci-dessous → l'ecran de demarrage reste le splash.
+        initialRoute: kIsWeb ? null : '/',
+
         routes: {
           "/": (context) => const SplashScreenWithTimer(),
           "/login": (context) => const LoginPage(),
@@ -82,14 +97,16 @@ class MabokoApp extends StatelessWidget {
           "/onboarding2": (context) => const Onboarding2(),
           "/onboarding3": (context) => const Onboarding3(),
           "/profile-choice": (context) => const ProfileChoice(),
-
           "/artisan-onboarding": (context) => const ArtisanOnboarding(),
           "/forgot": (context) => const ForgotPasswordPage(),
           "/register": (context) => const RegisterPage(),
           // Espace chauffeur : meme application, coquille dediee.
           "/chauffeur": (context) => const ChauffeurShell(),
         },
-        // Gestion dynamique de la HomePage avec transmission des arguments
+
+        // Gestion dynamique de la HomePage avec transmission des arguments.
+        // Sert aussi de filet de securite sur le Web : si l'URL ne correspond
+        // a aucune route connue, on renvoie vers le splash.
         onGenerateRoute: (settings) {
           if (settings.name == '/home') {
             final args = settings.arguments as Map<String, dynamic>?;
@@ -101,6 +118,16 @@ class MabokoApp extends StatelessWidget {
               ),
             );
           }
+
+          // Route inconnue sur le Web : on revient au splash pour que la
+          // logique d'authentification reprenne la main.
+          if (kIsWeb) {
+            return MaterialPageRoute(
+              settings: const RouteSettings(name: '/'),
+              builder: (context) => const SplashScreenWithTimer(),
+            );
+          }
+
           return null;
         },
       ),
