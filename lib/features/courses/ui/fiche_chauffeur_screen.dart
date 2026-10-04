@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/network/api.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/maboko_theme.dart';
+import '../../../services/storage_service.dart';
 import '../data/course_repository.dart';
 
 /// Dépôt de la fiche véhicule du chauffeur (§5.3.1).
@@ -18,6 +20,10 @@ import '../data/course_repository.dart';
 /// - sa pièce d'identité (upload)
 /// - son type de véhicule
 /// - sa plaque d'immatriculation
+///
+/// Un bouton « Quitter » est présent dans la barre d'application, même en
+/// mode `premiereFois`, pour offrir une sortie si l'enregistrement échoue
+/// de façon répétée.
 class FicheChauffeurScreen extends StatefulWidget {
   const FicheChauffeurScreen({super.key, this.premiereFois = false});
 
@@ -147,7 +153,6 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
 
       if (widget.premiereFois) {
         Navigator.pushNamedAndRemoveUntil(context, '/chauffeur', (route) => false);
-
         return;
       }
 
@@ -157,6 +162,46 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
       setState(() => _envoi = false);
       _informer(e.message, MabokoCouleurs.danger);
     }
+  }
+
+  /// Déconnexion rapide : utile si l'enregistrement échoue en boucle ou si
+  /// l'utilisateur veut simplement abandonner la création de la fiche.
+  Future<void> _quitter() async {
+    final confirme = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('Quitter la création de la fiche ?'),
+        content: const Text(
+          'Votre compte existe déjà, mais sans fiche vous ne pourrez pas '
+          'recevoir de courses. Vous pourrez reprendre plus tard depuis '
+          'votre profil.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Rester'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: MabokoCouleurs.danger,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Quitter et se déconnecter'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirme != true || !mounted) return;
+
+    // Purge locale — on ne révoque pas côté serveur, l'utilisateur peut
+    // revenir terminer sa fiche depuis le même appareil.
+    await StorageService.deconnecter();
+
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
   }
 
   void _informer(String message, Color couleur) {
@@ -177,6 +222,13 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         automaticallyImplyLeading: !widget.premiereFois,
+        actions: [
+          IconButton(
+            tooltip: 'Se déconnecter',
+            onPressed: _envoi ? null : _quitter,
+            icon: const Icon(Icons.logout_rounded),
+          ),
+        ],
       ),
       body: Form(
         key: _cleFormulaire,
@@ -218,11 +270,9 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
               ),
               validator: (valeur) {
                 final propre = (valeur ?? '').trim();
-
                 if (propre.length < 6) {
                   return 'Entrez le numéro complet du permis.';
                 }
-
                 return null;
               },
             ),
@@ -319,7 +369,6 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
         return GestureDetector(
           onTap: () => setState(() {
             if (actif) {
-              // On empêche de tout décocher : au moins une catégorie reste.
               if (_permisChoisis.length > 1) {
                 _permisChoisis.remove(permis.code);
               }

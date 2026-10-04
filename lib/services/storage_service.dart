@@ -30,6 +30,16 @@ class StorageService {
     return prefs.getString(_tokenKey);
   }
 
+  /// Vrai si un jeton est présent localement.
+  ///
+  /// Attention : ce n'est qu'un indice. Un jeton expiré côté serveur
+  /// reste présent ici tant qu'il n'a pas été nettoyé. Les appels API
+  /// renverront 401 et `ApiClient.onSessionExpiree` fera le ménage.
+  static Future<bool> estConnecte() async {
+    final token = await getToken();
+    return token != null && token.isNotEmpty;
+  }
+
   // ----------------------------------------------------
   // GESTION DE L'E-MAIL
   // ----------------------------------------------------
@@ -60,9 +70,6 @@ class StorageService {
 
   // ----------------------------------------------------
   // NUMÉRO DE TÉLÉPHONE
-  //
-  // Prérempli dans la feuille de paiement Mobile Money : l'artisan
-  // débite le plus souvent le numéro de son compte.
   // ----------------------------------------------------
 
   static Future<bool> saveUserTelephone(String telephone) async {
@@ -76,7 +83,7 @@ class StorageService {
   }
 
   // ----------------------------------------------------
-  // GESTION DU RÔLE DE L'UTILISATEUR (Client / Artisan)
+  // GESTION DU RÔLE DE L'UTILISATEUR
   // ----------------------------------------------------
 
   static Future<bool> saveUserRole(String role) async {
@@ -90,13 +97,7 @@ class StorageService {
   }
 
   // ----------------------------------------------------
-  // GESTION DE L'AVATAR SELECTIONNÉ
-  // ----------------------------------------------------
-
-
-
-  // ----------------------------------------------------
-  // METHODE PRATIQUE POUR SAUVEGARDER TOUTES LES INFOS PROFIL D'UN COUP
+  // SAUVEGARDE PROFIL EN UN COUP
   // ----------------------------------------------------
 
   static Future<void> saveUserData({
@@ -126,7 +127,7 @@ class StorageService {
   }
 
   // ----------------------------------------------------
-  // GESTION DU PARCOURS D'ONBOARDING (première ouverture)
+  // GESTION DU PARCOURS D'ONBOARDING
   // ----------------------------------------------------
 
   static Future<bool> saveOnboardingCompleted(bool completed) async {
@@ -164,25 +165,40 @@ class StorageService {
   }
 
   // ----------------------------------------------------
-  // DÉCONNEXION (Nettoyage des données de session)
+  // DÉCONNEXION
   // ----------------------------------------------------
 
+  /// Efface le jeton et les données de session locales.
+  ///
+  /// Le cache (photos, réponses API) est vidé en même temps : sur un
+  /// téléphone partagé, le compte suivant ne doit rien voir du précédent.
+  ///
+  /// L'appel réseau `POST /logout` est fait par l'appelant : cette méthode
+  /// ne s'occupe que du stockage local, elle est donc utilisable même
+  /// hors ligne.
   static Future<bool> clearToken() async {
-    // Le contenu mis en cache pour un compte ne doit pas rester visible du
-    // suivant sur un téléphone partagé.
     await CacheLocal.viderTout();
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_emailKey); 
+    await prefs.remove(_emailKey);
     await prefs.remove(_nameKey);
     await prefs.remove(_roleKey);
     await prefs.remove(_telephoneKey);
     return await prefs.remove(_tokenKey);
   }
 
-  // Nettoyage complet de toutes les préférences locales
+  /// Nettoyage complet de toutes les préférences locales.
   static Future<bool> clearAll() async {
+    await CacheLocal.viderTout();
     final prefs = await SharedPreferences.getInstance();
     return await prefs.clear();
+  }
+
+  /// Déconnexion complète : à appeler depuis un bouton « Se déconnecter ».
+  ///
+  /// Elle ne fait *que* le stockage local. Le contrôleur qui appelle cette
+  /// méthode se charge, s'il le souhaite, d'appeler `/logout` au préalable.
+  static Future<void> deconnecter() async {
+    await clearToken();
   }
 }
