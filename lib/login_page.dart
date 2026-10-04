@@ -138,9 +138,12 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryOrange = Color(0xFFEB6E14);
+    // Palette marron & beige — alignée sur la page de connexion du web.
+    const Color primaryBrown = Color(0xFFB35B28); // terracotta principal
     const Color hintGrey = Color(0xFFB6B6B6);
     const Color iconColor = Color(0xFFB35B28);
+    const Color beigeFond = Color(0xFFFFFDF8); // fond de carte beige
+    const Color texteMarron = Color(0xFF4A2A18); // texte foncé marron
 
     return Scaffold(
       body: Container(
@@ -149,9 +152,9 @@ class _LoginPageState extends State<LoginPage> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFFF9F1C),
-              Color(0xFFE67718),
-              Color(0xFFB35B28),
+              Color(0xFF4A2A18), // marron foncé (haut)
+              Color(0xFF7A3F1D), // marron moyen (milieu)
+              Color(0xFFB35B28), // terracotta (bas)
             ],
             stops: [0.1, 0.4, 1.0],
           ),
@@ -167,7 +170,7 @@ class _LoginPageState extends State<LoginPage> {
                   Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white,
+                      color: beigeFond,
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.2),
@@ -222,11 +225,11 @@ class _LoginPageState extends State<LoginPage> {
                   const BasculeAcces(surConnexion: true, roleInscription: null),
                   const SizedBox(height: 22),
 
-                  // La Carte Blanche Flottante
+                  // La Carte Beige Flottante
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: beigeFond,
                       borderRadius: BorderRadius.circular(30),
                       boxShadow: [
                         BoxShadow(
@@ -242,7 +245,7 @@ class _LoginPageState extends State<LoginPage> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           TextFormField(
-                            style: const TextStyle(color: Color(0xFF2B2B2B), fontSize: 15),
+                            style: const TextStyle(color: texteMarron, fontSize: 15),
                             controller: _emailController,
                             decoration: InputDecoration(
                               labelText: "Email ou téléphone",
@@ -255,7 +258,7 @@ class _LoginPageState extends State<LoginPage> {
                                 borderSide: BorderSide(color: hintGrey.withValues(alpha: 0.3)),
                               ),
                               focusedBorder: const UnderlineInputBorder(
-                                borderSide: BorderSide(color: primaryOrange),
+                                borderSide: BorderSide(color: primaryBrown),
                               ),
                             ),
                             validator: (value) => (value == null || value.trim().isEmpty)
@@ -265,7 +268,7 @@ class _LoginPageState extends State<LoginPage> {
                           const SizedBox(height: 12),
 
                           TextFormField(
-                            style: const TextStyle(color: Color(0xFF2B2B2B), fontSize: 15),
+                            style: const TextStyle(color: texteMarron, fontSize: 15),
                             controller: _passwordController,
                             obscureText: _obscurePassword,
                             decoration: InputDecoration(
@@ -284,7 +287,7 @@ class _LoginPageState extends State<LoginPage> {
                                 borderSide: BorderSide(color: hintGrey.withValues(alpha: 0.3)),
                               ),
                               focusedBorder: const UnderlineInputBorder(
-                                borderSide: BorderSide(color: primaryOrange),
+                                borderSide: BorderSide(color: primaryBrown),
                               ),
                             ),
                             validator: (value) => (value == null || value.isEmpty)
@@ -310,9 +313,9 @@ class _LoginPageState extends State<LoginPage> {
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _handleLogin,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: primaryOrange,
+                                backgroundColor: primaryBrown,
                                 elevation: 5,
-                                shadowColor: primaryOrange.withValues(alpha: 0.4),
+                                shadowColor: primaryBrown.withValues(alpha: 0.4),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(30),
                                 ),
@@ -373,7 +376,7 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: const Color(0xFF3C4043),
-                                backgroundColor: Colors.white,
+                                backgroundColor: beigeFond,
                                 side: BorderSide(color: hintGrey.withValues(alpha: 0.4)),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(30),
