@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 class Onboarding1 extends StatelessWidget {
   const Onboarding1({super.key});
 
+  // Palette marron & beige — alignée sur les autres écrans.
+  static const Color terracotta = Color(0xFFB35B28);
+  static const Color beigeFond = Color(0xFFFFFDF8);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -12,9 +16,9 @@ class Onboarding1 extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFFF9F1C), // Orange lumineux en haut
-              Color(0xFFD46A00), // Orange ambré intermédiaire
-              Color(0xFF4A1E04), // Brun/Orange très sombre en bas
+              Color(0xFF4A2A18), // Marron foncé en haut
+              Color(0xFF7A3F1D), // Marron moyen intermédiaire
+              Color(0xFFB35B28), // Terracotta en bas
             ],
             stops: [0.0, 0.5, 1.0],
           ),
@@ -26,13 +30,13 @@ class Onboarding1 extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Spacer(),
-                
+
                 // Image agrandie avec cercle de fond et ombre douce
                 Container(
                   width: 210,
                   height: 210,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFDFBF7), // Fond crème chaleureux
+                    color: beigeFond, // Fond beige chaleureux
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
@@ -47,7 +51,7 @@ class Onboarding1 extends StatelessWidget {
                     child: Icon(
                       Icons.search_rounded,
                       size: 96,
-                      color: Color(0xFFB35B28),
+                      color: terracotta,
                     ),
                   ),
                 ),
@@ -109,7 +113,7 @@ class Onboarding1 extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 const Spacer(),
 
                 // Bouton Suivant en bas aux bords arrondis harmonisés
@@ -119,10 +123,10 @@ class Onboarding1 extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () => Navigator.pushNamed(context, "/onboarding2"),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF8C00),
+                      backgroundColor: terracotta,
                       foregroundColor: Colors.white,
                       elevation: 5,
-                      shadowColor: Colors.orange.withValues(alpha: 0.4),
+                      shadowColor: terracotta.withValues(alpha: 0.4),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(26),
                       ),

@@ -6,9 +6,15 @@ import 'core/theme/maboko_theme.dart';
 class ProfileChoice extends StatelessWidget {
   const ProfileChoice({super.key});
 
+  // Palette marron & beige — alignée sur les autres écrans d'authentification.
+  static const Color terracotta = Color(0xFFB35B28);
+  static const Color orMaboko = Color(0xFFEAA023);
+  static const Color beigeFond = Color(0xFFFFFDF8);
+  static const Color beigeChaud = Color(0xFFF3E5D8);
+  static const Color grisChaud = Color(0xFF7A6A5C);
+
   @override
   Widget build(BuildContext context) {
-    const Color primaryBrown = Color(0xFFB35B28);
     final Color backgroundColor = context.fondMaboko;
 
     return Scaffold(
@@ -25,13 +31,14 @@ class ProfileChoice extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF3E5D8).withValues(alpha: 0.6),
+                    color: beigeFond,
                     shape: BoxShape.circle,
+                    border: Border.all(color: beigeChaud, width: 1.5),
                   ),
                   child: const Icon(
                     Icons.explore_outlined,
                     size: 36,
-                    color: primaryBrown,
+                    color: terracotta,
                   ),
                 ),
               ),
@@ -48,8 +55,8 @@ class ProfileChoice extends StatelessWidget {
                       letterSpacing: -0.5,
                     ),
                     children: [
-                      TextSpan(text: "mabok", style: TextStyle(color: primaryBrown)),
-                      TextSpan(text: "o", style: TextStyle(color: Color(0xFFEAA023))),
+                      TextSpan(text: "mabok", style: TextStyle(color: terracotta)),
+                      TextSpan(text: "o", style: TextStyle(color: orMaboko)),
                     ],
                   ),
                 ),
@@ -74,7 +81,7 @@ class ProfileChoice extends StatelessWidget {
                 title: "Je suis à la recherche d'un artisan",
                 subtitle: "Je cherche des professionnels qualifiés pour mes projets",
                 icon: Icons.search_rounded,
-                primaryColor: primaryBrown,
+                primaryColor: terracotta,
                 onTap: () {
                   Navigator.pushNamed(context, '/onboarding1');
                 },
@@ -87,7 +94,7 @@ class ProfileChoice extends StatelessWidget {
                 title: "Je suis un Artisan",
                 subtitle: "Je propose mes services et gère mon portfolio",
                 icon: Icons.handyman_rounded,
-                primaryColor: primaryBrown,
+                primaryColor: terracotta,
                 onTap: () {
                   Navigator.pushNamed(context, '/artisan-onboarding');
                 },
@@ -101,7 +108,7 @@ class ProfileChoice extends StatelessWidget {
                 title: "Je suis Chauffeur",
                 subtitle: "Je transporte des passagers avec Allô Chauffeur",
                 icon: Icons.local_taxi_rounded,
-                primaryColor: primaryBrown,
+                primaryColor: terracotta,
                 onTap: () {
                   Navigator.pushNamed(
                     context,
@@ -150,7 +157,7 @@ class ProfileChoice extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF3E5D8),
+                    color: beigeChaud,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(icon, color: primaryColor, size: 28),
@@ -171,9 +178,9 @@ class ProfileChoice extends StatelessWidget {
                       const SizedBox(height: 6),
                       Text(
                         subtitle,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 13,
-                          color: Colors.grey.shade600,
+                          color: grisChaud,
                           height: 1.3,
                         ),
                       ),
@@ -183,8 +190,8 @@ class ProfileChoice extends StatelessWidget {
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
+                  decoration: const BoxDecoration(
+                    color: beigeFond,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(

@@ -43,6 +43,12 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    // Palette marron & beige — alignée sur la page de connexion du web.
+    const Color beigeFond = Color(0xFFFFFDF8);      // fond clair / cercle du logo
+    const Color beigeChaud = Color(0xFFE8D5C0);     // sous-titre
+    const Color orMaboko = Color(0xFFEAA023);       // accent doré
+    const Color terracotta = Color(0xFFB35B28);     // marron principal
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -50,9 +56,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFFF9F1C), // Orange lumineux en haut
-              Color(0xFFD46A00), // Orange ambré intermédiaire
-              Color(0xFF4A1E04), // Brun/Orange très sombre en bas
+              Color(0xFF4A2A18), // Marron foncé en haut
+              Color(0xFF7A3F1D), // Marron moyen intermédiaire
+              Color(0xFFB35B28), // Terracotta en bas
             ],
             stops: [0.0, 0.5, 1.0],
           ),
@@ -87,7 +93,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFFFDF3E7),
+                          color: beigeFond,
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.25),
@@ -105,7 +111,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                             errorBuilder: (context, error, stackTrace) => const Icon(
                               Icons.handshake,
                               size: 80,
-                              color: Colors.orange,
+                              color: terracotta,
                             ),
                           ),
                         ),
@@ -125,12 +131,12 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       ),
                       const SizedBox(height: 8),
                       
-                      // Sous-titre "Les mains qui font le Congo" avec la petite barre orange
-                      Text(
+                      // Sous-titre "Les mains qui font le Congo" avec la petite barre dorée
+                      const Text(
                         "Les mains qui font le Congo",
                         style: TextStyle(
                           fontSize: 15,
-                          color: Colors.orange.shade100,
+                          color: beigeChaud,
                           letterSpacing: 0.3,
                         ),
                       ),
@@ -139,7 +145,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                         width: 35,
                         height: 3,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFB74D),
+                          color: orMaboko,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -179,7 +185,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                         width: 32,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
-                          valueColor: AlwaysStoppedAnimation(Color(0xFFFF8C00)),
+                          valueColor: AlwaysStoppedAnimation(orMaboko),
                         ),
                       ),
                       const SizedBox(height: 20),

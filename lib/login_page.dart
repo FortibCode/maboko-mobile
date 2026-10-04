@@ -20,10 +20,16 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _googleEnCours = false;
   bool _obscurePassword = true;
+
+  // Palette marron & beige — alignée sur les autres écrans d'authentification.
+  static const Color terracotta = Color(0xFFB35B28); // terracotta principal
+  static const Color hintGrey = Color(0xFFB6B6B6);
+  static const Color beigeFond = Color(0xFFFFFDF8); // fond de carte beige
+  static const Color texteMarron = Color(0xFF4A2A18); // texte foncé marron
 
   String _formatIdentifier(String input) {
     final String trimmed = input.trim();
@@ -138,13 +144,6 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Palette marron & beige — alignée sur la page de connexion du web.
-    const Color primaryBrown = Color(0xFFB35B28); // terracotta principal
-    const Color hintGrey = Color(0xFFB6B6B6);
-    const Color iconColor = Color(0xFFB35B28);
-    const Color beigeFond = Color(0xFFFFFDF8); // fond de carte beige
-    const Color texteMarron = Color(0xFF4A2A18); // texte foncé marron
-
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -189,13 +188,13 @@ class _LoginPageState extends State<LoginPage> {
                         errorBuilder: (context, error, stackTrace) => const Icon(
                           Icons.handshake_outlined,
                           size: 50,
-                          color: iconColor,
+                          color: terracotta,
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Textes "Bon retour !"
                   const Text(
                     "Bon retour !",
@@ -252,13 +251,13 @@ class _LoginPageState extends State<LoginPage> {
                               labelStyle: const TextStyle(color: hintGrey),
                               helperText: "Ex : 06 666 66 66 ou votre email",
                               helperStyle: TextStyle(color: hintGrey.withValues(alpha: 0.8), fontSize: 11),
-                              prefixIcon: const Icon(Icons.person_outline, color: iconColor),
+                              prefixIcon: const Icon(Icons.person_outline, color: terracotta),
                               border: InputBorder.none,
                               enabledBorder: UnderlineInputBorder(
                                 borderSide: BorderSide(color: hintGrey.withValues(alpha: 0.3)),
                               ),
                               focusedBorder: const UnderlineInputBorder(
-                                borderSide: BorderSide(color: primaryBrown),
+                                borderSide: BorderSide(color: terracotta),
                               ),
                             ),
                             validator: (value) => (value == null || value.trim().isEmpty)
@@ -274,7 +273,7 @@ class _LoginPageState extends State<LoginPage> {
                             decoration: InputDecoration(
                               labelText: "Mot de passe",
                               labelStyle: const TextStyle(color: hintGrey),
-                              prefixIcon: const Icon(Icons.lock_outline, color: iconColor),
+                              prefixIcon: const Icon(Icons.lock_outline, color: terracotta),
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
@@ -287,7 +286,7 @@ class _LoginPageState extends State<LoginPage> {
                                 borderSide: BorderSide(color: hintGrey.withValues(alpha: 0.3)),
                               ),
                               focusedBorder: const UnderlineInputBorder(
-                                borderSide: BorderSide(color: primaryBrown),
+                                borderSide: BorderSide(color: terracotta),
                               ),
                             ),
                             validator: (value) => (value == null || value.isEmpty)
@@ -300,7 +299,7 @@ class _LoginPageState extends State<LoginPage> {
                             child: TextButton(
                               onPressed: () => Navigator.pushNamed(context, '/forgot'),
                               style: TextButton.styleFrom(
-                                foregroundColor: iconColor,
+                                foregroundColor: terracotta,
                                 padding: const EdgeInsets.only(top: 8, bottom: 8),
                               ),
                               child: const Text("Mot de passe oublié ?", style: TextStyle(fontWeight: FontWeight.w600)),
@@ -313,9 +312,9 @@ class _LoginPageState extends State<LoginPage> {
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _handleLogin,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: primaryBrown,
+                                backgroundColor: terracotta,
                                 elevation: 5,
-                                shadowColor: primaryBrown.withValues(alpha: 0.4),
+                                shadowColor: terracotta.withValues(alpha: 0.4),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(30),
                                 ),

@@ -32,6 +32,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   int _start = 50;
   bool _canResend = false;
 
+  // Palette marron & beige — alignée sur la page de connexion du web.
+  static const Color terracotta = Color(0xFFB35B28);
+  static const Color beigeFond = Color(0xFFFFFDF8);
+  static const Color texteMarron = Color(0xFF4A2A18);
 
   @override
   void dispose() {
@@ -119,16 +123,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: const Row(
               children: [
-                Icon(Icons.sms_outlined, color: Color(0xFFD46A00)),
+                Icon(Icons.sms_outlined, color: terracotta),
                 SizedBox(width: 8),
-                Text("Simulation SMS reçu", style: TextStyle(color: Color(0xFFD46A00), fontWeight: FontWeight.bold)),
+                Text("Simulation SMS reçu", style: TextStyle(color: terracotta, fontWeight: FontWeight.bold)),
               ],
             ),
             content: Text("Votre code de confirmation est : $simulatedCode", style: const TextStyle(fontSize: 16)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text("OK", style: TextStyle(color: Color(0xFFD46A00), fontWeight: FontWeight.bold)),
+                child: const Text("OK", style: TextStyle(color: terracotta, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -137,7 +141,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Code de vérification envoyé par SMS"),
-            backgroundColor: Color(0xFFD46A00),
+            backgroundColor: terracotta,
           ),
         );
       }
@@ -183,7 +187,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Code correct. Veuillez définir un nouveau mot de passe"),
-          backgroundColor: Color(0xFFD46A00),
+          backgroundColor: terracotta,
         ),
       );
     } on ApiException catch (e) {
@@ -246,7 +250,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Mot de passe modifié avec succès. Veuillez vous connecter"),
-          backgroundColor: Color(0xFFD46A00),
+          backgroundColor: terracotta,
         ),
       );
       Navigator.pushReplacementNamed(context, "/login");
@@ -273,12 +277,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     return InputDecoration(
       labelText: label,
       labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-      prefixIcon: Icon(icon, color: const Color(0xFFD46A00)),
+      prefixIcon: Icon(icon, color: terracotta),
       prefixText: prefixText,
-      prefixStyle: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFD46A00)),
+      prefixStyle: const TextStyle(fontWeight: FontWeight.bold, color: terracotta),
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor: const Color(0xFFF9F6F0),
+      fillColor: beigeFond,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide.none,
@@ -289,7 +293,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFFD46A00), width: 1.2),
+        borderSide: const BorderSide(color: terracotta, width: 1.2),
       ),
       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
     );
@@ -304,9 +308,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFFF9F1C),
-              Color(0xFFD46A00),
-              Color(0xFF4A1E04),
+              Color(0xFF4A2A18), // marron foncé
+              Color(0xFF7A3F1D), // marron moyen
+              Color(0xFFB35B28), // terracotta
             ],
             stops: [0.0, 0.5, 1.0],
           ),
@@ -321,7 +325,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: const Color(0xFFFDFBF7),
+                      color: beigeFond,
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.25),
@@ -341,7 +345,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         errorBuilder: (context, error, stackTrace) => const Icon(
                           Icons.handshake,
                           size: 60,
-                          color: Colors.orange,
+                          color: terracotta,
                         ),
                       ),
                     ),
@@ -373,7 +377,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: beigeFond,
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
@@ -390,6 +394,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           controller: phoneController,
                           keyboardType: TextInputType.phone,
                           enabled: !otpSent,
+                          style: const TextStyle(color: texteMarron, fontSize: 15),
                           decoration: _inputDecoration(
                             "Numéro de téléphone",
                             Icons.phone_outlined,
@@ -400,16 +405,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
                         if (!otpSent)
                           isLoading
-                              ? const Center(child: CircularProgressIndicator(color: Color(0xFFD46A00)))
+                              ? const Center(child: CircularProgressIndicator(color: terracotta))
                               : SizedBox(
                                   height: 50,
                                   child: ElevatedButton(
                                     onPressed: sendOtp,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFFF8C00),
+                                      backgroundColor: terracotta,
                                       foregroundColor: Colors.white,
                                       elevation: 5,
-                                      shadowColor: Colors.orange.withValues(alpha: 0.4),
+                                      shadowColor: terracotta.withValues(alpha: 0.4),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(25),
                                       ),
@@ -425,6 +430,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           TextField(
                             controller: codeController,
                             keyboardType: TextInputType.number,
+                            style: const TextStyle(color: texteMarron, fontSize: 15),
                             decoration: _inputDecoration("Code reçu par SMS", Icons.lock_clock_outlined),
                           ),
                           const SizedBox(height: 12),
@@ -448,7 +454,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                 child: Text(
                                   "Renvoyer",
                                   style: TextStyle(
-                                    color: _canResend ? const Color(0xFFD46A00) : Colors.grey,
+                                    color: _canResend ? terracotta : Colors.grey,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -458,16 +464,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           const SizedBox(height: 8),
 
                           isLoading
-                              ? const Center(child: CircularProgressIndicator(color: Color(0xFFD46A00)))
+                              ? const Center(child: CircularProgressIndicator(color: terracotta))
                               : SizedBox(
                                   height: 50,
                                   child: ElevatedButton(
                                     onPressed: verifyOtp,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFFF8C00),
+                                      backgroundColor: terracotta,
                                       foregroundColor: Colors.white,
                                       elevation: 5,
-                                      shadowColor: Colors.orange.withValues(alpha: 0.4),
+                                      shadowColor: terracotta.withValues(alpha: 0.4),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(25),
                                       ),
@@ -484,13 +490,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           TextField(
                             controller: newPasswordController,
                             obscureText: _obscurePassword,
+                            style: const TextStyle(color: texteMarron, fontSize: 15),
                             decoration: _inputDecoration(
                               "Nouveau mot de passe",
                               Icons.lock_outline,
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                                  color: const Color(0xFFD46A00),
+                                  color: terracotta,
                                   size: 20,
                                 ),
                                 onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
@@ -501,20 +508,21 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           TextField(
                             controller: confirmPasswordController,
                             obscureText: _obscurePassword,
+                            style: const TextStyle(color: texteMarron, fontSize: 15),
                             decoration: _inputDecoration("Confirmer le mot de passe", Icons.lock_outline),
                           ),
                           const SizedBox(height: 20),
                           isLoading
-                              ? const Center(child: CircularProgressIndicator(color: Color(0xFFD46A00)))
+                              ? const Center(child: CircularProgressIndicator(color: terracotta))
                               : SizedBox(
                                   height: 50,
                                   child: ElevatedButton(
                                     onPressed: resetPassword,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFFF8C00),
+                                      backgroundColor: terracotta,
                                       foregroundColor: Colors.white,
                                       elevation: 5,
-                                      shadowColor: Colors.orange.withValues(alpha: 0.4),
+                                      shadowColor: terracotta.withValues(alpha: 0.4),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(25),
                                       ),

@@ -33,6 +33,12 @@ class _RegisterPageState extends State<RegisterPage> {
   bool hasDigit = false;
   bool hasSpecialChar = false;
 
+  // Palette marron & beige — alignée sur la page de connexion du web.
+  static const Color terracotta = Color(0xFFB35B28);
+  static const Color orMaboko = Color(0xFFEAA023);
+  static const Color beigeFond = Color(0xFFFFFDF8);
+  static const Color texteMarron = Color(0xFF4A2A18);
+
   @override
   void initState() {
     super.initState();
@@ -154,7 +160,7 @@ class _RegisterPageState extends State<RegisterPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Code de validation envoyé par SMS"),
-          backgroundColor: Color(0xFFD46A00),
+          backgroundColor: terracotta,
         ),
       );
     } on ApiException catch (e) {
@@ -179,10 +185,10 @@ class _RegisterPageState extends State<RegisterPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Row(
           children: [
-            Icon(Icons.sms_outlined, color: Color(0xFFD46A00)),
+            Icon(Icons.sms_outlined, color: terracotta),
             SizedBox(width: 8),
             Text("Code de développement",
-                style: TextStyle(color: Color(0xFFD46A00), fontWeight: FontWeight.bold)),
+                style: TextStyle(color: terracotta, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Text("Votre code de validation est : $code",
@@ -191,7 +197,7 @@ class _RegisterPageState extends State<RegisterPage> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text("OK",
-                style: TextStyle(color: Color(0xFFD46A00), fontWeight: FontWeight.bold)),
+                style: TextStyle(color: terracotta, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -213,10 +219,10 @@ class _RegisterPageState extends State<RegisterPage> {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
         decoration: BoxDecoration(
-          color: choisi ? const Color(0xFFB35B28).withValues(alpha: 0.10) : Colors.transparent,
+          color: choisi ? terracotta.withValues(alpha: 0.10) : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: choisi ? const Color(0xFFB35B28) : const Color(0xFFE8DCC8),
+            color: choisi ? terracotta : const Color(0xFFE8DCC8),
             width: choisi ? 1.6 : 1,
           ),
         ),
@@ -224,14 +230,14 @@ class _RegisterPageState extends State<RegisterPage> {
           children: [
             Icon(icone,
                 size: 22,
-                color: choisi ? const Color(0xFFB35B28) : const Color(0xFF7A6A5C)),
+                color: choisi ? terracotta : const Color(0xFF7A6A5C)),
             const SizedBox(height: 6),
             Text(
               role.libelle,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: choisi ? FontWeight.bold : FontWeight.normal,
-                color: choisi ? const Color(0xFFB35B28) : const Color(0xFF7A6A5C),
+                color: choisi ? terracotta : const Color(0xFF7A6A5C),
               ),
             ),
           ],
@@ -273,7 +279,7 @@ class _RegisterPageState extends State<RegisterPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text("Bienvenue sur Maboko !"),
-        backgroundColor: Color(0xFFD46A00),
+        backgroundColor: terracotta,
       ),
     );
 
@@ -336,12 +342,12 @@ class _RegisterPageState extends State<RegisterPage> {
       labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
       helperText: helperText,
       helperStyle: TextStyle(color: Colors.grey.shade500, fontSize: 11),
-      prefixIcon: Icon(icon, color: const Color(0xFFD46A00)),
+      prefixIcon: Icon(icon, color: terracotta),
       prefixText: prefixText,
-      prefixStyle: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFD46A00)),
+      prefixStyle: const TextStyle(fontWeight: FontWeight.bold, color: terracotta),
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor: const Color(0xFFF9F6F0),
+      fillColor: beigeFond,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide.none,
@@ -352,7 +358,7 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFFD46A00), width: 1.2),
+        borderSide: const BorderSide(color: terracotta, width: 1.2),
       ),
       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
     );
@@ -388,9 +394,9 @@ class _RegisterPageState extends State<RegisterPage> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFFF9F1C),
-              Color(0xFFD46A00),
-              Color(0xFF4A1E04),
+              Color(0xFF4A2A18), // marron foncé
+              Color(0xFF7A3F1D), // marron moyen
+              Color(0xFFB35B28), // terracotta
             ],
             stops: [0.0, 0.5, 1.0],
           ),
@@ -405,7 +411,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: const Color(0xFFFDFBF7),
+                      color: beigeFond,
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.25),
@@ -425,7 +431,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         errorBuilder: (context, error, stackTrace) => const Icon(
                           Icons.handshake,
                           size: 60,
-                          color: Colors.orange,
+                          color: terracotta,
                         ),
                       ),
                     ),
@@ -461,7 +467,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: beigeFond,
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
@@ -495,20 +501,20 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                           const SizedBox(height: 18),
                           TextField(
-                            style: const TextStyle(color: Color(0xFF2B2B2B), fontSize: 15),
+                            style: const TextStyle(color: texteMarron, fontSize: 15),
                             controller: nameController,
                             decoration: _inputDecoration("Nom d'utilisateur", Icons.person_outline),
                           ),
                           const SizedBox(height: 14),
                           TextField(
-                            style: const TextStyle(color: Color(0xFF2B2B2B), fontSize: 15),
+                            style: const TextStyle(color: texteMarron, fontSize: 15),
                             controller: emailController,
                             keyboardType: TextInputType.emailAddress,
                             decoration: _inputDecoration("Email", Icons.email_outlined),
                           ),
                           const SizedBox(height: 14),
                           TextField(
-                            style: const TextStyle(color: Color(0xFF2B2B2B), fontSize: 15),
+                            style: const TextStyle(color: texteMarron, fontSize: 15),
                             controller: phoneController,
                             keyboardType: TextInputType.phone,
                             decoration: _inputDecoration(
@@ -520,7 +526,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                           const SizedBox(height: 14),
                           TextField(
-                            style: const TextStyle(color: Color(0xFF2B2B2B), fontSize: 15),
+                            style: const TextStyle(color: texteMarron, fontSize: 15),
                             controller: passwordController,
                             obscureText: _obscurePassword,
                             decoration: _inputDecoration(
@@ -529,7 +535,7 @@ class _RegisterPageState extends State<RegisterPage> {
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                                  color: const Color(0xFFD46A00),
+                                  color: terracotta,
                                   size: 20,
                                 ),
                                 onPressed: () {
@@ -544,9 +550,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF9F6F0),
+                              color: beigeFond,
                               borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: Colors.orange.shade100),
+                              border: Border.all(color: const Color(0xFFE8D5C0)),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -556,7 +562,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                   style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
-                                      color: Color(0xFFD46A00)),
+                                      color: terracotta),
                                 ),
                                 const SizedBox(height: 6),
                                 _buildPasswordRuleRow("Au moins 8 caractères", hasMinLength),
@@ -571,16 +577,16 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                           const SizedBox(height: 22),
                           isLoading
-                              ? const Center(child: CircularProgressIndicator(color: Color(0xFFD46A00)))
+                              ? const Center(child: CircularProgressIndicator(color: terracotta))
                               : SizedBox(
                                   height: 50,
                                   child: ElevatedButton(
                                     onPressed: sendRegisterOtp,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFFF8C00),
+                                      backgroundColor: terracotta,
                                       foregroundColor: Colors.white,
                                       elevation: 5,
-                                      shadowColor: Colors.orange.withValues(alpha: 0.4),
+                                      shadowColor: terracotta.withValues(alpha: 0.4),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(25),
                                       ),
@@ -600,23 +606,23 @@ class _RegisterPageState extends State<RegisterPage> {
                                 ),
                         ] else ...[
                           TextField(
-                            style: const TextStyle(color: Color(0xFF2B2B2B), fontSize: 15),
+                            style: const TextStyle(color: texteMarron, fontSize: 15),
                             controller: codeController,
                             keyboardType: TextInputType.number,
                             decoration: _inputDecoration("Code de validation SMS", Icons.lock_clock_outlined),
                           ),
                           const SizedBox(height: 20),
                           isLoading
-                              ? const Center(child: CircularProgressIndicator(color: Color(0xFFD46A00)))
+                              ? const Center(child: CircularProgressIndicator(color: terracotta))
                               : SizedBox(
                                   height: 50,
                                   child: ElevatedButton(
                                     onPressed: verifyAndRegister,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFFF8C00),
+                                      backgroundColor: terracotta,
                                       foregroundColor: Colors.white,
                                       elevation: 5,
-                                      shadowColor: Colors.orange.withValues(alpha: 0.4),
+                                      shadowColor: terracotta.withValues(alpha: 0.4),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(25),
                                       ),
@@ -640,8 +646,8 @@ class _RegisterPageState extends State<RegisterPage> {
                             child: OutlinedButton(
                               onPressed: resendOtp,
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFFD46A00),
-                                side: const BorderSide(color: Color(0xFFD46A00), width: 1.2),
+                                foregroundColor: terracotta,
+                                side: const BorderSide(color: terracotta, width: 1.2),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(25),
                                 ),
@@ -663,7 +669,7 @@ class _RegisterPageState extends State<RegisterPage> {
                               child: const Text(
                                 "Modifier mes informations",
                                 style: TextStyle(
-                                    color: Color(0xFFD46A00),
+                                    color: terracotta,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 13),
                               ),
