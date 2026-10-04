@@ -19,7 +19,7 @@ import 'artisan_onboarding_screen.dart';
 import 'features/courses/ui/chauffeur_shell.dart';
 import 'services/storage_service.dart';
 import 'services/notification_service.dart';
-import 'core/session/role_utilisateur.dart';
+// import 'core/session/role_utilisateur.dart';  ❌ SUPPRIMÉ
 import 'core/theme/controleur_theme.dart';
 
 /// Cle globale du navigateur, necessaire pour ramener l'utilisateur vers
