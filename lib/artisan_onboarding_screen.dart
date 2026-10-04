@@ -6,9 +6,12 @@ import 'core/theme/maboko_theme.dart';
 class ArtisanOnboarding extends StatelessWidget {
   const ArtisanOnboarding({super.key});
 
+  // Palette marron & beige — alignée sur les autres écrans.
+  static const Color terracotta = Color(0xFFB35B28);
+  static const Color beigeChaud = Color(0xFFF3E5D8);
+
   @override
   Widget build(BuildContext context) {
-    const Color primaryBrown = Color(0xFFB35B28);
     final Color backgroundColor = context.fondMaboko;
 
     return Scaffold(
@@ -24,13 +27,13 @@ class ArtisanOnboarding extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(24),
                   decoration: const BoxDecoration(
-                    color: Color(0xFFF3E5D8),
+                    color: beigeChaud,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.handyman_outlined,
                     size: 64,
-                    color: primaryBrown,
+                    color: terracotta,
                   ),
                 ),
               ),
@@ -74,7 +77,7 @@ class ArtisanOnboarding extends StatelessWidget {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryBrown,
+                    backgroundColor: terracotta,
                     foregroundColor: Colors.white,
                     elevation: 4,
                     shape: RoundedRectangleBorder(

@@ -18,7 +18,8 @@ import 'inscription/inscription_artisan_data.dart';
 ///
 /// Depuis le nouveau parcours, la ville, le quartier et la bio sont déjà
 /// collectés dans les étapes précédentes. Il ne reste ici que :
-/// les métiers, l'adresse de l'atelier et le rayon de déplacement.
+/// les métiers et le rayon de déplacement. L'adresse de l'atelier est
+/// composée automatiquement à partir du quartier et de la ville.
 class FicheArtisanScreen extends StatefulWidget {
   const FicheArtisanScreen({
     super.key,
@@ -61,7 +62,6 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
   };
 
   final _cleFormulaire = GlobalKey<FormState>();
-  final _adresse = TextEditingController();
 
   List<Metier>? _metiers;
   String? _erreurChargement;
@@ -87,12 +87,6 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
     _charger();
   }
 
-  @override
-  void dispose() {
-    _adresse.dispose();
-    super.dispose();
-  }
-
   /// Ville par défaut : celle passée en paramètre si valide, sinon Brazzaville.
   String _villeParDefaut() {
     final connue = widget.villeConnue?.trim();
@@ -100,6 +94,25 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
       return connue;
     }
     return 'Brazzaville';
+  }
+
+  /// Adresse de l'atelier composée à partir des informations déjà collectées.
+  ///
+  /// Le parcours d'inscription demande déjà la ville et le quartier : plutôt
+  /// que de redemander une saisie manuelle ici, on assemble simplement ces
+  /// deux données. En mode modification, on conserve l'adresse existante
+  /// pour ne pas l'écraser sans raison.
+  String _adresseCalculee() {
+    if (_existante != null && (_existante!.adresse?.isNotEmpty ?? false)) {
+      return _existante!.adresse!;
+    }
+
+    final quartier = _parcours?.quartier?.trim();
+    if (quartier != null && quartier.isNotEmpty) {
+      return '$quartier, $_ville';
+    }
+
+    return _ville;
   }
 
   Future<void> _charger() async {
@@ -110,7 +123,7 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
       final fiche = widget.modification ? await _artisans.maFiche() : null;
 
       // En mode première fois, on relit les infos du parcours d'inscription
-      // pour pré-remplir la ville et récupérer quartier + bio à envoyer.
+      // pour récupérer quartier + bio à envoyer.
       InscriptionArtisanData? parcours;
       if (widget.premiereFois) {
         parcours = await InscriptionArtisanData.charger();
@@ -128,7 +141,6 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
           _choisis
             ..clear()
             ..addAll(fiche.metiersSlugs);
-          _adresse.text = fiche.adresse ?? '';
           _rayon = fiche.rayonKm ?? _rayon;
           if (fiche.zoneIntervention != null &&
               _villes.containsKey(fiche.zoneIntervention)) {
@@ -173,12 +185,15 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
         ? _existante!.bio
         : _parcours?.bio;
 
+    // Adresse composée automatiquement (plus de saisie manuelle).
+    final adresse = _adresseCalculee();
+
     try {
       if (_existante != null) {
         await _artisans.mettreAJourFiche(
           _existante!.id,
           specialite: metierChoisi.nom,
-          adresse: _adresse.text.trim(),
+          adresse: adresse,
           metiers: _choisis.toList(),
           bio: bio ?? '',
           zoneIntervention: zone ?? _ville,
@@ -187,7 +202,7 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
       } else {
         await _artisans.creerFiche(
           specialite: metierChoisi.nom,
-          adresse: _adresse.text.trim(),
+          adresse: adresse,
           latitude: position?.latitude ?? repere.lat,
           longitude: position?.longitude ?? repere.lon,
           metiers: _choisis.toList(),
@@ -291,11 +306,12 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
                     'C’est ce que les clients verront en vous cherchant.'
                 : 'Cette fiche est ce que les clients voient quand ils '
                     'cherchent un artisan. Ajoutez ou retirez un métier, '
-                    'ajustez votre adresse et votre rayon : les changements '
+                    'ajustez votre ville et votre rayon : les changements '
                     'sont visibles tout de suite.',
           ),
           const SizedBox(height: 20),
 
+          // === MÉTIERS ===
           _titre('Vos métiers', 'Cinq au maximum. Le premier sera votre spécialité.'),
           const SizedBox(height: 10),
           Wrap(
@@ -305,6 +321,10 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
           ),
           const SizedBox(height: 22),
 
+          // === VILLE ===
+          // Le quartier, lui, vient du parcours d'inscription : il n'est pas
+          // redemandé ici. L'adresse est composée automatiquement à partir
+          // du quartier + de la ville choisie ci-dessous.
           _titre('Où se trouve votre atelier ?', null),
           const SizedBox(height: 10),
           DropdownButtonFormField<String>(
@@ -315,17 +335,9 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
                 .toList(),
             onChanged: (v) => setState(() => _ville = v ?? _ville),
           ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _adresse,
-            decoration: _decoration('Adresse de l’atelier', Icons.place_outlined,
-                indice: 'Ex. : rue Mbochis, Bacongo'),
-            validator: (valeur) => (valeur ?? '').trim().length < 4
-                ? 'Indiquez où vous travaillez.'
-                : null,
-          ),
           const SizedBox(height: 18),
 
+          // === RAYON ===
           _titre('Rayon de déplacement', '$_rayon km autour de votre atelier'),
           Slider(
             value: _rayon.toDouble(),
@@ -338,6 +350,7 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
           ),
           const SizedBox(height: 12),
 
+          // === BOUTON ===
           SizedBox(
             height: 52,
             child: FilledButton(

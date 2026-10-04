@@ -24,6 +24,9 @@ class CreatePostScreen extends StatefulWidget {
 }
 
 class _CreatePostScreenState extends State<CreatePostScreen> {
+  // Palette marron & beige — alignée sur les autres écrans.
+  static const Color terracotta = Color(0xFFB35B28);
+
   final TextEditingController _descriptionController = TextEditingController();
   Uint8List? _imageBytes;
   bool _isLoading = false;
@@ -114,7 +117,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 : const Text(
                     "Publier",
                     style: TextStyle(
-                      color: Color(0xFFB35B28),
+                      color: terracotta,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -145,7 +148,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.add_a_photo, size: 50, color: Color(0xFFB35B28)),
+                          const Icon(Icons.add_a_photo, size: 50, color: terracotta),
                           const SizedBox(height: 8),
                           Text(
                             "Ajouter une photo de votre réalisation",
