@@ -32,30 +32,16 @@ final ControleurTheme controleurTheme = ControleurTheme();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Le controle de securite porte sur l'adresse reellement utilisee : il doit
-  // donc venir apres la lecture du reglage, pas avant.
-
-  // Un jeton expire ou revoque ramene immediatement a la connexion, au lieu
-  // de laisser l'utilisateur sur un ecran qui ne chargera jamais.
   ApiClient.onSessionExpiree = () {
     navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
   };
 
-  // Le mode enregistre est relu avant le premier rendu, pour eviter que
-  // l'application s'ouvre en clair puis bascule sous les yeux de l'utilisateur.
-  // L'adresse du serveur peut avoir ete corrigee depuis les parametres :
-  // le poste de developpement change d'adresse a chaque bail DHCP.
   await AdresseApi.charger();
 
-  // Refuse de demarrer une compilation de production configuree pour parler
-  // a l'API en HTTP : le paragraphe 7.1 impose le chiffrement systematique.
   AppConfig.verifierConfiguration(AdresseApi.valeur);
 
   await controleurTheme.charger();
 
-  // Prepare le canal de notifications de course. Sans cette initialisation,
-  // aucune notification ne peut etre levee : le chauffeur qui attend une
-  // course doit etre prevenu meme s'il est sur un autre ecran.
   await NotificationService.initialiser();
 
   runApp(const MabokoApp());
@@ -76,18 +62,8 @@ class MabokoApp extends StatelessWidget {
         darkTheme: MabokoThemes.sombre,
         theme: MabokoThemes.clair,
 
-        // ⚠️ CORRECTION IMPORTANTE
-        //
-        // Sur le Web, l'application doit demarrer sur la route presente
-        // dans le fragment de l'URL (#/register, #/login, #/chauffeur…).
-        // Sans cela, Flutter ignore completement ce fragment et demarre
-        // toujours sur le splash, qui redirige aussitot vers l'espace
-        // correspondant au jeton stocke. Impossible alors d'ouvrir un lien
-        // direct comme #/register : l'utilisateur connecte est toujours
-        // ramene sur son tableau de bord.
-        //
-        // Sur mobile, il n'y a pas de fragment : on retombe sur "/", qui
-        // est bien declare ci-dessous → l'ecran de demarrage reste le splash.
+        // Sur le Web, l'application demarre sur la route du fragment (#/register…).
+        // Sur mobile, elle demarre sur le splash.
         initialRoute: kIsWeb ? null : '/',
 
         routes: {
@@ -100,13 +76,9 @@ class MabokoApp extends StatelessWidget {
           "/artisan-onboarding": (context) => const ArtisanOnboarding(),
           "/forgot": (context) => const ForgotPasswordPage(),
           "/register": (context) => const RegisterPage(),
-          // Espace chauffeur : meme application, coquille dediee.
           "/chauffeur": (context) => const ChauffeurShell(),
         },
 
-        // Gestion dynamique de la HomePage avec transmission des arguments.
-        // Sert aussi de filet de securite sur le Web : si l'URL ne correspond
-        // a aucune route connue, on renvoie vers le splash.
         onGenerateRoute: (settings) {
           if (settings.name == '/home') {
             final args = settings.arguments as Map<String, dynamic>?;
@@ -119,8 +91,6 @@ class MabokoApp extends StatelessWidget {
             );
           }
 
-          // Route inconnue sur le Web : on revient au splash pour que la
-          // logique d'authentification reprenne la main.
           if (kIsWeb) {
             return MaterialPageRoute(
               settings: const RouteSettings(name: '/'),
@@ -156,33 +126,36 @@ class _SplashScreenWithTimerState extends State<SplashScreenWithTimer> {
 
     if (!mounted) return;
 
-    // Récupération du token sauvegardé dans le StorageService
-    final token = await StorageService.getToken();
+    // ⚠️ MODE TEST — RÉINITIALISATION À CHAQUE DÉMARRAGE
+    //
+    // On efface le jeton stocké pour forcer la reconnexion.
+    // Avantages :
+    //  - On ne peut plus être coincé dans l'espace d'un compte
+    //    dont la fiche est cassée (cas du chauffeur sans fiche).
+    //  - Idéal pour tester plusieurs rôles (client, artisan, chauffeur)
+    //    en se déconnectant/reconnectant rapidement.
+    //
+    // Inconvénient :
+    //  - Les vrais utilisateurs doivent se reconnecter à chaque
+    //    ouverture de l'application.
+    //
+    // 👉 POUR REVENIR AU COMPORTEMENT NORMAL (auto-login) :
+    //    Supprime la ligne `await StorageService.deconnecter();` ci-dessous
+    //    et remets la logique « ouvrirEspace » d'origine.
+    await StorageService.deconnecter();
 
-    if (token != null && token.isNotEmpty) {
-      // Utilisateur DÉJÀ connecté : chargement des préférences enregistrées
-      final name = await StorageService.getUserName() ?? "Utilisateur";
-      final role = await StorageService.getUserRole() ?? "client";
+    if (!mounted) return;
 
-      if (!mounted) return;
-
-      // Le rôle vient du stockage local, qui peut avoir vieilli. L'espace
-      // ouvert se corrige de lui-même dès que le serveur a répondu.
-      ouvrirEspace(context, RoleMaboko.depuis(role), nom: name);
-
-      return;
-    }
-
-    // Utilisateur NON connecté : on regarde si l'onboarding a déjà été vu
+    // On regarde si l'onboarding a déjà été vu
     final onboardingDone = await StorageService.isOnboardingCompleted();
 
     if (!mounted) return;
 
     if (onboardingDone) {
-      // Déjà découvert l'application : connexion directe
+      // L'utilisateur connaît l'app → connexion directe
       Navigator.pushReplacementNamed(context, '/login');
     } else {
-      // Première découverte de l'application
+      // Première visite → choix du profil puis onboarding
       Navigator.pushReplacementNamed(context, '/profile-choice');
     }
   }
