@@ -61,8 +61,8 @@ class MabokoApp extends StatelessWidget {
         darkTheme: MabokoThemes.sombre,
         theme: MabokoThemes.clair,
 
-        // Sur le Web, l'application demarre sur la route du fragment (#/register…).
-        // Sur mobile, elle demarre sur le splash.
+        // Sur le Web, l'application demarre sur la route du fragment
+        // (#/register, #/login…). Sur mobile, elle demarre sur le splash.
         initialRoute: kIsWeb ? null : '/',
 
         routes: {
@@ -128,35 +128,26 @@ class _SplashScreenWithTimerState extends State<SplashScreenWithTimer> {
     // ⚠️ MODE TEST — RÉINITIALISATION À CHAQUE DÉMARRAGE
     //
     // On efface le jeton stocké pour forcer la reconnexion.
-    // Avantages :
-    //  - On ne peut plus être coincé dans l'espace d'un compte
-    //    dont la fiche est cassée (cas du chauffeur sans fiche).
-    //  - Idéal pour tester plusieurs rôles (client, artisan, chauffeur)
-    //    en se déconnectant/reconnectant rapidement.
-    //
-    // Inconvénient :
-    //  - Les vrais utilisateurs doivent se reconnecter à chaque
-    //    ouverture de l'application.
-    //
     // 👉 POUR REVENIR AU COMPORTEMENT NORMAL (auto-login) :
-    //    Supprime la ligne `await StorageService.deconnecter();` ci-dessous
-    //    et remets la logique « ouvrirEspace » d'origine.
+    //    Supprime la ligne ci-dessous et remets la logique
+    //    « ouvrirEspace » d'origine.
     await StorageService.deconnecter();
 
     if (!mounted) return;
 
-    // On regarde si l'onboarding a déjà été vu
-    final onboardingDone = await StorageService.isOnboardingCompleted();
-
-    if (!mounted) return;
-
-    if (onboardingDone) {
-      // L'utilisateur a déjà vu l'onboarding → inscription directe
-      Navigator.pushReplacementNamed(context, '/register');
-    } else {
-      // ⚠️ NOUVEAU FLUX : on démarre par l'onboarding
-      Navigator.pushReplacementNamed(context, '/onboarding1');
-    }
+    // ⚠️ MODE TEST — On force l'onboarding à chaque lancement.
+    //
+    // 👉 POUR LA PRODUCTION : remplace la ligne ci-dessous par le bloc
+    //    conditionnel commenté, pour ne montrer l'onboarding qu'une fois.
+    //
+    // final onboardingDone = await StorageService.isOnboardingCompleted();
+    // if (!mounted) return;
+    // if (onboardingDone) {
+    //   Navigator.pushReplacementNamed(context, '/register');
+    // } else {
+    //   Navigator.pushReplacementNamed(context, '/onboarding1');
+    // }
+    Navigator.pushReplacementNamed(context, '/onboarding1');
   }
 
   @override
