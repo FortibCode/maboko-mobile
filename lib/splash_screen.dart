@@ -40,181 +40,119 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     super.dispose();
   }
 
-
   @override
   Widget build(BuildContext context) {
-    // Palette marron & beige — alignée sur la page de connexion du web.
-    const Color beigeFond = Color(0xFFFFFDF8);      // fond clair / cercle du logo
-    const Color beigeChaud = Color(0xFFE8D5C0);     // sous-titre
+    // Palette crème clair — alignée sur les onboardings.
+    const Color beigeFond = Color(0xFFFAF4E7);      // fond général
+    const Color beigeChaud = Color(0xFFE8D5C0);     // cercle derrière le logo
     const Color orMaboko = Color(0xFFEAA023);       // accent doré
-    const Color terracotta = Color(0xFFB35B28);     // marron principal
+    const Color texteFort = Color(0xFF4A2A18);      // marron foncé
+    const Color texteDoux = Color(0xFF7A6A5C);      // gris chaud
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF4A2A18), // Marron foncé en haut
-              Color(0xFF7A3F1D), // Marron moyen intermédiaire
-              Color(0xFFB35B28), // Terracotta en bas
-            ],
-            stops: [0.0, 0.5, 1.0],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: ScaleTransition(
-                  scale: _scaleAnimation,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Spacer(),
-                      // Le logo entier, dans son cercle.
-                      Container(
-                        width: 210,
-                        height: 210,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: beigeFond,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 25,
-                              spreadRadius: 5,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/images/maboko_logo_carre.png',
-                            width: 152,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) => const Icon(
-                              Icons.handshake,
-                              size: 80,
-                              color: terracotta,
-                            ),
+      backgroundColor: beigeFond,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: ScaleTransition(
+                scale: _scaleAnimation,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Spacer(),
+
+                    // Logo dans son cercle beige chaud
+                    Container(
+                      width: 220,
+                      height: 220,
+                      alignment: Alignment.center,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: beigeChaud,
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/maboko_logo_carre.png',
+                          width: 160,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) => const Icon(
+                            Icons.handshake_rounded,
+                            size: 90,
+                            color: texteFort,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 30),
+                    ),
+                    const SizedBox(height: 40),
 
-                      // Titre principal
-                      const Text(
-                        "Bienvenue sur\nMaboko",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          height: 1.2,
-                        ),
+                    // Titre principal — marron foncé
+                    const Text(
+                      "Bienvenue sur\nMaboko",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        color: texteFort,
+                        height: 1.15,
                       ),
-                      const SizedBox(height: 8),
+                    ),
+                    const SizedBox(height: 12),
 
-                      // Sous-titre "Les mains qui font le Congo" avec la petite barre dorée
-                      const Text(
-                        "Les mains qui font le Congo",
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: beigeChaud,
-                          letterSpacing: 0.3,
-                        ),
+                    // Sous-titre
+                    const Text(
+                      "Les mains qui font le Congo",
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: texteDoux,
+                        letterSpacing: 0.3,
                       ),
-                      const SizedBox(height: 6),
-                      Container(
-                        width: 35,
-                        height: 3,
-                        decoration: BoxDecoration(
-                          color: orMaboko,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Petite barre dorée
+                    Container(
+                      width: 40,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: orMaboko,
+                        borderRadius: BorderRadius.circular(2),
                       ),
-                      const SizedBox(height: 16),
+                    ),
+                    const SizedBox(height: 20),
 
-                      // Description
-                      Text(
-                        "La plateforme qui connecte les artisans\net leurs clients partout au Congo.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.85),
-                          height: 1.4,
-                        ),
+                    // Description
+                    const Text(
+                      "La plateforme qui connecte les artisans\net leurs clients partout au Congo.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: texteDoux,
+                        height: 1.5,
                       ),
+                    ),
 
-                      const Spacer(),
+                    const Spacer(),
 
-                      // 3 Badges de fonctionnalités en bas
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildFeatureItem(Icons.verified_user_rounded, "Fiable\net sécurisé"),
-                          _buildFeatureItem(Icons.groups_rounded, "Artisans\nde confiance"),
-                          _buildFeatureItem(Icons.favorite_rounded, "Un Congo\nqui avance"),
-                        ],
+                    // Indicateur de chargement (doré)
+                    const SizedBox(
+                      height: 32,
+                      width: 32,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation(orMaboko),
                       ),
-
-                      const SizedBox(height: 30),
-
-                      // Indicateur de chargement (la redirection est automatique)
-                      const SizedBox(
-                        height: 32,
-                        width: 32,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          valueColor: AlwaysStoppedAnimation(orMaboko),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      const SizedBox(height: 25),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 40),
+                  ],
                 ),
               ),
             ),
           ),
         ),
       ),
-    );
-  }
-
-  // Widget utilitaire pour les 3 petites icônes du bas
-  Widget _buildFeatureItem(IconData icon, String label) {
-    return Column(
-      children: [
-        Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white.withValues(alpha: 0.15),
-          ),
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: 24,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.white.withValues(alpha: 0.9),
-            height: 1.2,
-          ),
-        ),
-      ],
     );
   }
 }

@@ -104,7 +104,13 @@ class MabokoApp extends StatelessWidget {
   }
 }
 
-// SplashScreen avec vérification de la session utilisateur
+// SplashScreen avec vérification de la session utilisateur.
+//
+// FLUX UNIQUE AU LANCEMENT :
+//   SplashScreen (4s) → Onboarding1 → Onboarding2 → Onboarding3 → Register
+//
+// Aucun autre écran ne s'intercale. Le splash est affiché par cette classe,
+// et la redirection se fait à la fin du délai.
 class SplashScreenWithTimer extends StatefulWidget {
   const SplashScreenWithTimer({super.key});
 
@@ -129,24 +135,15 @@ class _SplashScreenWithTimerState extends State<SplashScreenWithTimer> {
     //
     // On efface le jeton stocké pour forcer la reconnexion.
     // 👉 POUR REVENIR AU COMPORTEMENT NORMAL (auto-login) :
-    //    Supprime la ligne ci-dessous et remets la logique
+    //    Supprime la ligne ci-dessous et remplace-la par la logique
     //    « ouvrirEspace » d'origine.
     await StorageService.deconnecter();
 
     if (!mounted) return;
 
-    // ⚠️ MODE TEST — On force l'onboarding à chaque lancement.
-    //
-    // 👉 POUR LA PRODUCTION : remplace la ligne ci-dessous par le bloc
-    //    conditionnel commenté, pour ne montrer l'onboarding qu'une fois.
-    //
-    // final onboardingDone = await StorageService.isOnboardingCompleted();
-    // if (!mounted) return;
-    // if (onboardingDone) {
-    //   Navigator.pushReplacementNamed(context, '/register');
-    // } else {
-    //   Navigator.pushReplacementNamed(context, '/onboarding1');
-    // }
+    // Redirection directe vers l'onboarding1.
+    // De là, les boutons « Suivant » enchaînent :
+    //   onboarding1 → onboarding2 → onboarding3 → register
     Navigator.pushReplacementNamed(context, '/onboarding1');
   }
 
