@@ -37,10 +37,7 @@ class MessagerieRepository {
         .toList();
   }
 
-  /// Envoi d'un message : du texte, une photo, ou les deux.
-  ///
-  /// L'API acceptait un media depuis le debut ; la conversation savait
-  /// l'afficher mais pas en envoyer un.
+  /// Envoi d'un message texte, d'une photo, ou des deux.
   Future<MessageChat> envoyer(
     int conversationId,
     String contenu, {
@@ -51,6 +48,26 @@ class MessagerieRepository {
       corps: {
         if (contenu.isNotEmpty) 'contenu': contenu,
         if (media != null) 'media': media,
+        if (media != null) 'type_media': 'image',
+      },
+    );
+
+    return MessageChat.depuisJson(reponse['donnees'] as Map<String, dynamic>);
+  }
+
+  /// Envoi d'un message vocal.
+  ///
+  /// Le fichier audio est encodé en base64 côté mobile, comme les photos.
+  /// Le serveur le décode et le stocke sur son disque.
+  Future<MessageChat> envoyerAudio(
+    int conversationId,
+    String audioBase64,
+  ) async {
+    final reponse = await api.post(
+      '/conversations/$conversationId/messages',
+      corps: {
+        'media': audioBase64,
+        'type_media': 'audio',
       },
     );
 

@@ -51,6 +51,9 @@ class Conversation {
 }
 
 /// Message d'une conversation.
+///
+/// `typeMedia` distingue les messages texte, image et audio : la bulle
+/// affiche soit du texte, soit une photo, soit un lecteur audio.
 class MessageChat {
   const MessageChat({
     required this.id,
@@ -58,6 +61,7 @@ class MessageChat {
     required this.deMoi,
     this.contenu,
     this.mediaUrl,
+    this.type = 'texte',
     this.envoyeLe,
   });
 
@@ -66,7 +70,15 @@ class MessageChat {
   final bool deMoi;
   final String? contenu;
   final String? mediaUrl;
+
+  /// « texte », « image » ou « audio ».
+  final String type;
+
   final DateTime? envoyeLe;
+
+  bool get estAudio => type == 'audio';
+  bool get estImage => type == 'image';
+  bool get estTexte => type == 'texte';
 
   factory MessageChat.depuisJson(Map<String, dynamic> json, {int? moiId}) {
     final expediteur = json['expediteur'] as Map<String, dynamic>?;
@@ -80,6 +92,7 @@ class MessageChat {
       deMoi: json['deMoi'] as bool? ?? (moiId != null && moiId == expediteurId),
       contenu: json['contenu'] as String?,
       mediaUrl: json['mediaUrl'] as String?,
+      type: json['type'] as String? ?? 'texte',
       envoyeLe: DateTime.tryParse(json['envoyeLe'] as String? ?? ''),
     );
   }

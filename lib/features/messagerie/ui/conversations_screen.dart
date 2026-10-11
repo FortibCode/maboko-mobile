@@ -10,7 +10,8 @@ import 'conversation_screen.dart';
 /// Liste des conversations en cours avec les artisans contactés et le
 /// support Maboko (§5.1.9).
 ///
-/// Remplace le libellé « Page Messages ».
+/// Affiche un aperçu adapté au type du dernier message : texte, photo
+/// ou message vocal.
 class ConversationsScreen extends StatefulWidget {
   const ConversationsScreen({super.key});
 
@@ -142,6 +143,39 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     );
   }
 
+  /// Aperçu lisible du dernier message : texte normal, ou indication du
+  /// type de média pour les photos et messages vocaux.
+  ///
+  /// Sans accès au vrai type du dernier message (l'API renvoie une chaîne
+  /// unique), on déduit le type à partir de son contenu : une URL d'image
+  /// pour une photo, une URL audio ou un base64 audio pour un vocal.
+  String _apercuDernierMessage(Conversation conversation) {
+    final message = conversation.dernierMessage;
+    if (message == null || message.isEmpty) return 'Conversation ouverte';
+
+    // Détection d'un message vocal : data URI audio, ou extension audio.
+    if (message.startsWith('data:audio') ||
+        message.contains('.m4a') ||
+        message.contains('.mp3') ||
+        message.contains('.ogg') ||
+        message.contains('.webm') ||
+        message.contains('.aac') ||
+        message.contains('.wav')) {
+      return '🎤 Message vocal';
+    }
+
+    // Détection d'une photo : data URI image, ou extension image.
+    if (message.startsWith('data:image') ||
+        message.endsWith('.jpg') ||
+        message.endsWith('.jpeg') ||
+        message.endsWith('.png') ||
+        message.endsWith('.webp')) {
+      return '📷 Photo';
+    }
+
+    return message;
+  }
+
   Widget _ligne(Conversation conversation) {
     final aDuNonLu = conversation.nonLus > 0;
 
@@ -171,7 +205,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         ),
       ),
       subtitle: Text(
-        conversation.dernierMessage ?? 'Conversation ouverte',
+        _apercuDernierMessage(conversation),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(

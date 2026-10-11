@@ -1,6 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart' as rec;
 
 import '../../../core/config/app_config.dart';
 import '../../../core/network/api_exception.dart';
@@ -10,15 +15,10 @@ import '../../../core/widgets/choix_photo.dart';
 import '../../../core/widgets/etats.dart';
 import '../data/messagerie_repository.dart';
 import '../models/conversation.dart';
+import 'audio_io_stub.dart' if (dart.library.io) 'audio_io_native.dart';
 import 'conversations_screen.dart' show horodatageCourt;
 
-/// Fil d'une conversation (§5.1.9).
-///
-/// Les messages arrivent par le canal privé Reverb : le délai d'affichage
-/// tient alors la seconde, comme l'exige le §7.2. Une interrogation
-/// périodique reste active en filet — lente quand le temps réel fonctionne,
-/// rapprochée quand il est indisponible (compilation sans clé Reverb, ou
-/// réseau qui bloque les WebSockets).
+/// Fil d'une conversation (§5.1.9) avec support des messages vocaux.
 class ConversationScreen extends StatefulWidget {
   const ConversationScreen({super.key, required this.conversation});
 
@@ -31,8 +31,6 @@ class ConversationScreen extends StatefulWidget {
 class _ConversationScreenState extends State<ConversationScreen> {
   static const _repository = MessagerieRepository();
 
-  /// Sans temps réel, l'interrogation doit être rapprochée pour rester
-  /// utilisable ; avec, elle n'est qu'un filet de sécurité.
   static const _intervalleSansTempsReel = Duration(seconds: 5);
   static const _intervalleAvecTempsReel = Duration(seconds: 45);
 
@@ -46,6 +44,12 @@ class _ConversationScreenState extends State<ConversationScreen> {
   bool _envoiEnCours = false;
   String? _erreur;
 
+  // ── Enregistrement audio ────────────────────────────────────────────
+  final rec.AudioRecorder _enregistreur = rec.AudioRecorder();
+  bool _enregistrementEnCours = false;
+  int _secondesEnregistrees = 0;
+  Timer? _chronoEnregistrement;
+
   @override
   void initState() {
     super.initState();
@@ -56,15 +60,24 @@ class _ConversationScreenState extends State<ConversationScreen> {
       AppConfig.tempsReelDisponible ? _intervalleAvecTempsReel : _intervalleSansTempsReel,
       (_) => _charger(),
     );
+
+    _saisie.addListener(_rafraichirBoutons);
   }
 
   @override
   void dispose() {
     _minuterie?.cancel();
+    _chronoEnregistrement?.cancel();
     _canal?.fermer();
+    _enregistreur.dispose();
+    _saisie.removeListener(_rafraichirBoutons);
     _saisie.dispose();
     _defilement.dispose();
     super.dispose();
+  }
+
+  void _rafraichirBoutons() {
+    if (mounted) setState(() {});
   }
 
   void _brancherTempsReel() {
@@ -81,8 +94,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
       final message = MessageChat.depuisJson(charge, moiId: _moiId);
 
-      // Le message que l'on vient d'envoyer revient aussi par le canal :
-      // il est déjà affiché, inutile de le dupliquer.
       if (_messages.any((m) => m.id == message.id)) return;
 
       setState(() => _messages = [message, ..._messages]);
@@ -92,14 +103,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
     canal.connecter();
   }
 
-  /// Identifiant du compte connecté, déduit du premier message que l'API a
-  /// marqué comme étant de nous. Le canal temps réel, lui, ne connaît pas son
-  /// destinataire et ne peut donc pas fournir « deMoi ».
   int? get _moiId {
     for (final message in _messages) {
       if (message.deMoi) return message.expediteurId;
     }
-
     return null;
   }
 
@@ -108,8 +115,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
       final messages = await _repository.messages(widget.conversation.id);
       if (!mounted) return;
 
-      // Ne redessine que si quelque chose a changé : sinon l'écran clignote
-      // toutes les cinq secondes.
       final aChange = messages.length != _messages.length ||
           (messages.isNotEmpty && _messages.isNotEmpty && messages.first.id != _messages.first.id);
 
@@ -133,12 +138,137 @@ class _ConversationScreenState extends State<ConversationScreen> {
     }
   }
 
-  /// Envoi d'une photo dans la conversation.
+  // ── Enregistrement audio ────────────────────────────────────────────
+
+  Future<void> _demarrerEnregistrement() async {
+    if (_enregistrementEnCours || _envoiEnCours) return;
+
+    final permission = await _enregistreur.hasPermission();
+    if (!permission) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Autorisez le microphone pour envoyer un message vocal.'),
+          backgroundColor: MabokoCouleurs.danger,
+        ),
+      );
+      return;
+    }
+
+    final dossier = await getTemporaryDirectory();
+    final chemin = '${dossier.path}/vocal_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+    await _enregistreur.start(
+      const rec.RecordConfig(
+        encoder: rec.AudioEncoder.aacLc,
+        bitRate: 64000,
+        sampleRate: 44100,
+      ),
+      path: chemin,
+    );
+
+    setState(() {
+      _enregistrementEnCours = true;
+      _secondesEnregistrees = 0;
+    });
+
+    _chronoEnregistrement = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _secondesEnregistrees++);
+
+      if (_secondesEnregistrees >= 180) {
+        _arreterEtEnvoyer();
+      }
+    });
+  }
+
+  Future<void> _arreterEtEnvoyer() async {
+    if (!_enregistrementEnCours) return;
+
+    _chronoEnregistrement?.cancel();
+    final chemin = await _enregistreur.stop();
+
+    setState(() {
+      _enregistrementEnCours = false;
+      _secondesEnregistrees = 0;
+    });
+
+    if (chemin == null) return;
+
+    setState(() => _envoiEnCours = true);
+
+    try {
+      final fichier = await _lireFichierAudio(chemin);
+      if (fichier == null) throw Exception('Fichier audio illisible.');
+
+      final base64Audio = 'data:${fichier.mime};base64,${base64Encode(fichier.octets)}';
+
+      final message = await _repository.envoyerAudio(
+        widget.conversation.id,
+        base64Audio,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _messages = [message, ..._messages];
+        _envoiEnCours = false;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _envoiEnCours = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: MabokoCouleurs.danger),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _envoiEnCours = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Impossible d'envoyer le message vocal."),
+          backgroundColor: MabokoCouleurs.danger,
+        ),
+      );
+    }
+  }
+
+  Future<void> _annulerEnregistrement() async {
+    if (!_enregistrementEnCours) return;
+
+    _chronoEnregistrement?.cancel();
+    await _enregistreur.stop();
+
+    setState(() {
+      _enregistrementEnCours = false;
+      _secondesEnregistrees = 0;
+    });
+  }
+
+  /// Lit un fichier audio et devine son type MIME à partir de l'extension.
   ///
-  /// Le bouton n'existait pas : on pouvait recevoir une image, jamais en
-  /// joindre une — alors qu'un chantier se decrit surtout en photos.
+  /// La lecture est déléguée à un stub (Web) ou à une implémentation
+  /// native (mobile) via un import conditionnel. Sur Web, le stub
+  /// retourne null : l'envoi vocal y est donc simplement désactivé.
+  Future<_AudioPrepare?> _lireFichierAudio(String chemin) async {
+    final octets = await lireFichierAudio(chemin);
+    if (octets == null) return null;
+
+    final extension = chemin.split('.').last.toLowerCase();
+    final mime = switch (extension) {
+      'm4a' || 'mp4' || 'aac' => 'audio/mp4',
+      'mp3' => 'audio/mpeg',
+      'ogg' || 'opus' => 'audio/ogg',
+      'webm' => 'audio/webm',
+      'wav' => 'audio/wav',
+      _ => 'audio/mp4',
+    };
+
+    return _AudioPrepare(mime, octets);
+  }
+
+  // ── Envoi photo ─────────────────────────────────────────────────────
+
   Future<void> _envoyerPhoto() async {
-    if (_envoiEnCours) return;
+    if (_envoiEnCours || _enregistrementEnCours) return;
 
     final photo = await choisirPhoto(context);
     if (photo == null || !mounted) return;
@@ -170,7 +300,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
       if (!mounted) return;
       setState(() {
         _envoiEnCours = false;
-        // Le texte est rendu à l'utilisateur : rien n'est perdu.
         _saisie.text = contenu;
       });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -178,6 +307,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
       );
     }
   }
+
+  // ── Build ───────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -223,7 +354,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
       body: Column(
         children: [
           Expanded(child: _corps()),
-          _barreSaisie(),
+          _enregistrementEnCours ? _barreEnregistrement() : _barreSaisie(),
         ],
       ),
     );
@@ -246,7 +377,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
     return ListView.builder(
       controller: _defilement,
-      // Le fil part du bas : les messages les plus récents sont sous les yeux.
       reverse: true,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       itemCount: _messages.length,
@@ -276,7 +406,12 @@ class _ConversationScreenState extends State<ConversationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            if (message.mediaUrl != null)
+            if (message.estAudio && message.mediaUrl != null)
+              _LecteurAudio(
+                url: message.mediaUrl!,
+                surFondColore: deMoi,
+              ),
+            if (message.estImage && message.mediaUrl != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(message.mediaUrl!, fit: BoxFit.cover),
@@ -305,6 +440,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
   }
 
   Widget _barreSaisie() {
+    final champVide = _saisie.text.trim().isEmpty;
+
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
@@ -331,23 +468,234 @@ class _ConversationScreenState extends State<ConversationScreen> {
             IconButton(
               tooltip: 'Joindre une photo',
               onPressed: _envoiEnCours ? null : _envoyerPhoto,
-              icon: Icon(Icons.photo_camera_outlined,
-                  color: _envoiEnCours
-                      ? context.texteSecondaireMaboko
-                      : MabokoCouleurs.secondaire),
+              icon: Icon(
+                Icons.photo_camera_outlined,
+                color: _envoiEnCours
+                    ? context.texteSecondaireMaboko
+                    : MabokoCouleurs.secondaire,
+              ),
+            ),
+            if (_envoiEnCours)
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: MabokoCouleurs.secondaire,
+                  ),
+                ),
+              )
+            else if (champVide)
+              IconButton(
+                tooltip: 'Enregistrer un message vocal',
+                onPressed: _demarrerEnregistrement,
+                icon: const Icon(Icons.mic_rounded, color: MabokoCouleurs.secondaire),
+              )
+            else
+              IconButton(
+                tooltip: 'Envoyer',
+                onPressed: () => _envoyer(),
+                icon: const Icon(Icons.send_rounded, color: MabokoCouleurs.secondaire),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _barreEnregistrement() {
+    final minutes = (_secondesEnregistrees ~/ 60).toString().padLeft(1, '0');
+    final secondes = (_secondesEnregistrees % 60).toString().padLeft(2, '0');
+
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+        decoration: BoxDecoration(
+          color: MabokoCouleurs.danger.withValues(alpha: 0.08),
+          border: Border(top: BorderSide(color: context.bordureMaboko)),
+        ),
+        child: Row(
+          children: [
+            IconButton(
+              tooltip: 'Annuler',
+              onPressed: _annulerEnregistrement,
+              icon: const Icon(Icons.close_rounded, color: MabokoCouleurs.danger),
+            ),
+            Expanded(
+              child: Row(
+                children: [
+                  const Icon(Icons.fiber_manual_record,
+                      size: 12, color: MabokoCouleurs.danger),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Enregistrement  $minutes:$secondes',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: MabokoCouleurs.danger,
+                    ),
+                  ),
+                ],
+              ),
             ),
             IconButton(
-              onPressed: _envoiEnCours ? null : () => _envoyer(),
-              icon: _envoiEnCours
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: MabokoCouleurs.secondaire),
-                    )
-                  : const Icon(Icons.send_rounded, color: MabokoCouleurs.secondaire),
+              tooltip: 'Envoyer',
+              onPressed: _arreterEtEnvoyer,
+              icon: const Icon(Icons.send_rounded, color: MabokoCouleurs.secondaire),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Résultat de la préparation d'un fichier audio : type MIME et octets.
+///
+/// On n'utilise pas un record Dart (`(String, Uint8List)`) pour éviter
+/// les incompatibilités de compilation sur les versions plus anciennes
+/// de Dart, ni les surprises du Web où le tuple est parfois mal inféré.
+class _AudioPrepare {
+  const _AudioPrepare(this.mime, this.octets);
+
+  final String mime;
+  final Uint8List octets;
+}
+
+/// Lecteur audio intégré à une bulle.
+class _LecteurAudio extends StatefulWidget {
+  const _LecteurAudio({required this.url, required this.surFondColore});
+
+  final String url;
+  final bool surFondColore;
+
+  @override
+  State<_LecteurAudio> createState() => _LecteurAudioState();
+}
+
+class _LecteurAudioState extends State<_LecteurAudio> {
+  late final AudioPlayer _lecteur;
+  bool _enLecture = false;
+  Duration _duree = Duration.zero;
+  Duration _position = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _lecteur = AudioPlayer();
+
+    _lecteur.playerStateStream.listen((etat) {
+      if (!mounted) return;
+      setState(() => _enLecture = etat.playing);
+    });
+
+    _lecteur.durationStream.listen((d) {
+      if (!mounted || d == null) return;
+      setState(() => _duree = d);
+    });
+
+    _lecteur.positionStream.listen((p) {
+      if (!mounted) return;
+      setState(() => _position = p);
+    });
+
+    _charger();
+  }
+
+  Future<void> _charger() async {
+    try {
+      await _lecteur.setUrl(widget.url);
+    } catch (_) {
+      // URL invalide ou réseau : la bulle affiche juste le bouton play.
+    }
+  }
+
+  @override
+  void dispose() {
+    _lecteur.dispose();
+    super.dispose();
+  }
+
+  Future<void> _basculerLecture() async {
+    if (_enLecture) {
+      await _lecteur.pause();
+    } else {
+      if (_lecteur.processingState == ProcessingState.completed) {
+        await _lecteur.seek(Duration.zero);
+      }
+      await _lecteur.play();
+    }
+  }
+
+  String _formatDuree(Duration d) {
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(1, '0');
+    final secondes = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$secondes';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final couleur = widget.surFondColore ? Colors.white : MabokoCouleurs.secondaire;
+    final couleurFond = widget.surFondColore
+        ? Colors.white.withValues(alpha: 0.2)
+        : MabokoCouleurs.secondaire.withValues(alpha: 0.1);
+
+    final progression = _duree.inMilliseconds == 0
+        ? 0.0
+        : _position.inMilliseconds / _duree.inMilliseconds;
+
+    return Container(
+      constraints: const BoxConstraints(minWidth: 200),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: _basculerLecture,
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: couleurFond,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _enLecture ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                color: couleur,
+                size: 22,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: progression.clamp(0.0, 1.0),
+                    minHeight: 3,
+                    backgroundColor: couleurFond,
+                    valueColor: AlwaysStoppedAnimation(couleur),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _enLecture || _position > Duration.zero
+                      ? _formatDuree(_position)
+                      : _formatDuree(_duree),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: couleur,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

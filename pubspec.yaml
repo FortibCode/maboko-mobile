@@ -14,8 +14,6 @@ dependencies:
   # Librairie HTTP pour les appels API Laravel
   http: ^1.2.0
 
-  # Génération de données fictives (utile pour tests)
-
   # Stockage local (ex: SharedPreferences)
   shared_preferences: ^2.2.2
 
@@ -45,6 +43,11 @@ dependencies:
   image_picker: ^1.2.3
   google_sign_in: ^6.2.1
   video_player: ^2.11.1
+
+  # Messages vocaux
+  record: ^5.1.2
+  just_audio: ^0.9.42
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:

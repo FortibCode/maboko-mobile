@@ -34,24 +34,20 @@ import '../main.dart' show controleurTheme;
 import '../features/compte/ui/moyens_paiement_screen.dart';
 import '../core/widgets/carte_pressable.dart';
 
-// ⬇️⬇️ NOUVEAUX IMPORTS — Role CLIENT ⬇️⬇️
+// ⬇️⬇️ IMPORTS — Role CLIENT ⬇️⬇️
 import '../features/compte/ui/mes_avis_screen.dart';
 import 'contacts_urgence_screen.dart';
 import 'parametres_data_screen.dart';
-import 'comptes_lies_screen.dart';
 import 'enregistrements_screen.dart';
 import 'conseils_screen.dart';
 import 'aide_support_screen.dart';
 import 'accessibilite_screen.dart';
 import 'journal_personnel_screen.dart';
-import 'preservation_saisonniere_screen.dart';
-import 'temoignages_video_screen.dart';
 import 'confidentialite_screen.dart';
-import 'langue_screen.dart';
 import 'musee_savoir_faire_screen.dart';
 // ⬆️⬆️ FIN IMPORTS CLIENT ⬆️⬆️
 
-// ⬇️⬇️ NOUVEAUX IMPORTS — Role ARTISAN ⬇️⬇️
+// ⬇️⬇️ IMPORTS — Role ARTISAN ⬇️⬇️
 import '../features/artisans/ui/avis_recus_screen.dart';
 import '../features/artisans/ui/mes_documents_screen.dart';
 import '../features/artisans/ui/mode_samedi_screen.dart';
@@ -196,6 +192,62 @@ class _HomePageState extends State<HomePage> {
     await StorageService.clearToken();
     if (!mounted) return;
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+  }
+
+  /// Choix de la langue d'affichage.
+  ///
+  /// ⚠️ Le choix est enregistré mais n'a aucun effet pour l'instant :
+  /// l'application n'est pas encore internationalisée. Ce sélecteur est
+  /// posé pour préparer le terrain, et n'entrave rien tant qu'il ne
+  /// modifie pas la langue courante.
+  Future<void> _choisirLangue() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.surfaceMaboko,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: context.bordureMaboko,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Choisir la langue',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: context.texteFortMaboko,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.language_rounded,
+                  color: MabokoCouleurs.secondaire),
+              title: const Text('Français'),
+              onTap: () => Navigator.pop(ctx),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.language_rounded,
+                  color: MabokoCouleurs.secondaire),
+              title: const Text('Lingala'),
+              onTap: () => Navigator.pop(ctx),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
   }
 
   String _getFormattedRoleLabel() {
@@ -631,25 +683,13 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const ContactsUrgenceScreen()),
           );
         }),
-        _buildMenuItem(Icons.videocam_outlined, "Mes témoignages vidéos", onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const TemoignagesVideoScreen()),
-          );
-        }),
         _buildMenuItem(Icons.menu_book_outlined, "Mon journal personnel", onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const JournalPersonnelScreen()),
           );
         }),
-        _buildMenuItem(Icons.wb_sunny_outlined, "Préservation saisonnière", onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const PreservationSaisonniereScreen()),
-          );
-        }),
-        // ← Musée du savoir-faire : branché sur le vrai écran
+        // ← Musée du savoir-faire : contenu géré par l'admin, vide pour l'instant
         _buildMenuItem(Icons.museum_outlined, "Musée du savoir-faire", onTap: () {
           Navigator.push(
             context,
@@ -659,12 +699,6 @@ class _HomePageState extends State<HomePage> {
         _buildMenuItem(Icons.record_voice_over_outlined, "Assistant vocal", onTap: () {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Bientôt disponible.')),
-          );
-        }),
-        _buildMenuItem(Icons.link_rounded, "Mes comptes liés", onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const ComptesLiesScreen()),
           );
         }),
         _buildMenuItem(Icons.notifications_none, "Notifications", onTap: () {
@@ -679,12 +713,8 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const ParametresDataScreen()),
           );
         }),
-        _buildMenuItem(Icons.language_outlined, "Langue", onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const LangueScreen()),
-          );
-        }),
+        // ← Langue : bottom sheet Français / Lingala (aucun effet pour l'instant)
+        _buildMenuItem(Icons.language_outlined, "Langue", onTap: _choisirLangue),
         _buildMenuItem(Icons.accessibility_new_rounded, "Accessibilité", onTap: () {
           Navigator.push(
             context,
@@ -703,9 +733,6 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const AideSupportScreen()),
           );
         }),
-        _buildMenuItem(Icons.settings_outlined, "Paramètres avancés", onTap: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
-        }),
         const Divider(height: 1),
         ListTile(
           leading: const Icon(Icons.logout_rounded, color: Colors.red),
@@ -718,12 +745,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ===========================================================================
-  // MENU ARTISAN
+  // MENU ARTISAN (inchangé)
   // ===========================================================================
   Widget _buildArtisanProfileMenu() {
     return Column(
       children: [
-        // ===== MISSIONS & ACTIVITÉ =====
         _buildMenuItem(Icons.assignment_outlined, "Missions reçues", onTap: () {
           Navigator.push(
             context,
@@ -743,8 +769,6 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const PaiementsRevenusScreen()),
           );
         }),
-
-        // ===== OUTILS MÉTIER =====
         _buildMenuItem(Icons.calculate_rounded, "Calculateur de devis", onTap: () {
           Navigator.push(
             context,
@@ -769,16 +793,12 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const BoutiqueMateriauxScreen()),
           );
         }),
-
-        // ===== RÉPUTATION =====
         _buildMenuItem(Icons.star_outline_rounded, "Avis reçus", onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AvisRecusScreen()),
           );
         }),
-
-        // ===== PORTFOLIO & FICHE =====
         _buildMenuItem(Icons.photo_library_rounded, "Mon Portfolio", onTap: () {
           Navigator.push(
             context,
@@ -794,8 +814,6 @@ class _HomePageState extends State<HomePage> {
           );
           await _chargerTableauBord();
         }),
-
-        // ===== COMPTE PRO =====
         _buildMenuItem(Icons.folder_open_rounded, "Mes documents", onTap: () {
           Navigator.push(
             context,
@@ -820,16 +838,12 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const ModeSamediScreen()),
           );
         }),
-
-        // ===== RÉSEAU =====
         _buildMenuItem(Icons.group_outlined, "Réseau d’entraide", onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const ReseauEntraideScreen()),
           );
         }),
-
-        // ===== NOTIFICATIONS & PRÉFÉRENCES =====
         _buildMenuItem(Icons.notifications_none, "Notifications", onTap: () {
           Navigator.push(
             context,
@@ -842,12 +856,7 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const ParametresDataScreen()),
           );
         }),
-        _buildMenuItem(Icons.language_rounded, "Langue", onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const LangueScreen()),
-          );
-        }),
+        _buildMenuItem(Icons.language_rounded, "Langue", onTap: _choisirLangue),
         _buildMenuItem(Icons.accessibility_rounded, "Accessibilité", onTap: () {
           Navigator.push(
             context,
@@ -860,8 +869,6 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const AideSupportScreen()),
           );
         }),
-
-        // ===== PARAMÈTRES & DÉCONNEXION =====
         _buildMenuItem(Icons.settings_outlined, "Paramètres", onTap: () {
           Navigator.push(
             context,
