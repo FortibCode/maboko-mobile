@@ -19,7 +19,6 @@ import 'artisan_onboarding_screen.dart';
 import 'features/courses/ui/chauffeur_shell.dart';
 import 'services/storage_service.dart';
 import 'services/notification_service.dart';
-// import 'core/session/role_utilisateur.dart';  ❌ SUPPRIMÉ
 import 'core/theme/controleur_theme.dart';
 
 /// Cle globale du navigateur, necessaire pour ramener l'utilisateur vers
@@ -152,11 +151,11 @@ class _SplashScreenWithTimerState extends State<SplashScreenWithTimer> {
     if (!mounted) return;
 
     if (onboardingDone) {
-      // L'utilisateur connaît l'app → connexion directe
-      Navigator.pushReplacementNamed(context, '/login');
+      // L'utilisateur a déjà vu l'onboarding → inscription directe
+      Navigator.pushReplacementNamed(context, '/register');
     } else {
-      // Première visite → choix du profil puis onboarding
-      Navigator.pushReplacementNamed(context, '/profile-choice');
+      // ⚠️ NOUVEAU FLUX : on démarre par l'onboarding
+      Navigator.pushReplacementNamed(context, '/onboarding1');
     }
   }
 

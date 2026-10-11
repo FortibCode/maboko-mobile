@@ -76,17 +76,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     children: [
                       const Spacer(),
                       // Le logo entier, dans son cercle.
-                      //
-                      // Le probleme n'etait pas le cercle mais le rognage :
-                      // « cover » remplissait le disque avec le symbole et
-                      // poussait le mot « maboko » et la signature hors
-                      // cadre. « contain » a l'interieur d'un carre inscrit
-                      // dans le cercle — cote = diametre / racine de 2 —
-                      // laisse le logo complet.
-                      //
-                      // Le disque reprend le creme du logo lui-meme : le bord
-                      // carre de l'image se fond dedans, on ne voit que le
-                      // cercle.
                       Container(
                         width: 210,
                         height: 210,
@@ -117,7 +106,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                         ),
                       ),
                       const SizedBox(height: 30),
-                      
+
                       // Titre principal
                       const Text(
                         "Bienvenue sur\nMaboko",
@@ -130,7 +119,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                         ),
                       ),
                       const SizedBox(height: 8),
-                      
+
                       // Sous-titre "Les mains qui font le Congo" avec la petite barre dorée
                       const Text(
                         "Les mains qui font le Congo",
@@ -150,7 +139,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Description
                       Text(
                         "La plateforme qui connecte les artisans\net leurs clients partout au Congo.",
@@ -161,7 +150,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                           height: 1.4,
                         ),
                       ),
-                      
+
                       const Spacer(),
 
                       // 3 Badges de fonctionnalités en bas
@@ -173,13 +162,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                           _buildFeatureItem(Icons.favorite_rounded, "Un Congo\nqui avance"),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 30),
 
-                      // Un indicateur, pas un bouton : la redirection est automatique
-                      // (voir SplashScreenWithTimer). Le bouton « Découvrir »
-                      // qui se trouvait ici appelait clearAll() : il deconnectait
-                      // l'utilisateur deja identifie s'il y touchait.
+                      // Indicateur de chargement (la redirection est automatique)
                       const SizedBox(
                         height: 32,
                         width: 32,
