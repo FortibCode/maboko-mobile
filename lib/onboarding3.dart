@@ -49,7 +49,7 @@ class Onboarding3 extends StatelessWidget {
 
               const Spacer(),
 
-              // Cercle vert sauge avec l'image message
+              // Cercle vert sauge avec l'image message, posée au centre
               Container(
                 width: 200,
                 height: 200,
@@ -57,19 +57,16 @@ class Onboarding3 extends StatelessWidget {
                   color: vertSauge,
                   shape: BoxShape.circle,
                 ),
-                child: Center(
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/message.jpeg',
-                      width: 130,
-                      height: 130,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
-                        Icons.chat_bubble_outline_rounded,
-                        size: 100,
-                        color: Colors.white,
-                      ),
-                    ),
+                alignment: Alignment.center,
+                child: Image.asset(
+                  'assets/images/message.jpeg',
+                  width: 120,
+                  height: 120,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.chat_bubble_outline_rounded,
+                    size: 100,
+                    color: Colors.white,
                   ),
                 ),
               ),

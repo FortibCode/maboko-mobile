@@ -38,7 +38,7 @@ class Onboarding2 extends StatelessWidget {
 
               const Spacer(),
 
-              // Cercle jaune doré avec l'image appareil photo
+              // Cercle jaune doré avec l'image appareil photo, posée au centre
               Container(
                 width: 200,
                 height: 200,
@@ -46,19 +46,16 @@ class Onboarding2 extends StatelessWidget {
                   color: jauneDore,
                   shape: BoxShape.circle,
                 ),
-                child: Center(
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/Appareil.jpeg',
-                      width: 130,
-                      height: 130,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
-                        Icons.photo_camera_rounded,
-                        size: 100,
-                        color: Colors.white,
-                      ),
-                    ),
+                alignment: Alignment.center,
+                child: Image.asset(
+                  'assets/images/Appareil.jpeg',
+                  width: 120,
+                  height: 120,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.photo_camera_rounded,
+                    size: 100,
+                    color: Colors.white,
                   ),
                 ),
               ),
