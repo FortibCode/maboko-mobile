@@ -57,15 +57,13 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # Déclaration explicite de toutes les images de ton application
+  # Déclaration explicite de toutes les images de l'application
   assets:
-      assets:
     - assets/images/Maboko.jpeg
     - assets/images/maboko_logo_carre.png
     - assets/images/google_g.png
     - assets/images/bricolage.png
     - assets/images/voiture.png
-    - assets/images/Appareil.jpeg    # ← À AJOUTER
-    - assets/images/loupe.jpeg        # ← À AJOUTER
-    - assets/images/message.jpeg      # ← À AJOUTER
-    
+    - assets/images/Appareil.jpeg
+    - assets/images/loupe.jpeg
+    - assets/images/message.jpeg
