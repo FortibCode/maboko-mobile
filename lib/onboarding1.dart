@@ -38,7 +38,7 @@ class Onboarding1 extends StatelessWidget {
 
               const Spacer(),
 
-              // Cercle pastel avec la loupe
+              // Cercle pastel avec l'image loupe
               Container(
                 width: 200,
                 height: 200,
@@ -46,14 +46,19 @@ class Onboarding1 extends StatelessWidget {
                   color: rosePeche,
                   shape: BoxShape.circle,
                 ),
-                child: const Center(
-                  // ⚠️ À REMPLACER PAR UNE IMAGE
-                  // Remplacer par :
-                  // Image.asset('assets/images/loupe.png', width: 110)
-                  child: Icon(
-                    Icons.search_rounded,
-                    size: 100,
-                    color: Colors.white,
+                child: Center(
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/loupe.jpeg',
+                      width: 130,
+                      height: 130,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.search_rounded,
+                        size: 100,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
               ),
