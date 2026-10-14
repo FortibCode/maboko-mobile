@@ -1,17 +1,14 @@
-// Fichier : lib/onboarding3.dart
 import 'package:flutter/material.dart';
 import 'services/storage_service.dart';
 
 class Onboarding3 extends StatelessWidget {
   const Onboarding3({super.key});
 
-  // Palette crème clair — fidèle à la maquette.
-  static const Color beigeFond = Color(0xFFFAF4E7);      // fond général
-  static const Color vertSauge = Color(0xFFC8D6C0);      // cercle
-  static const Color terracotta = Color(0xFFC15A2A);     // bouton + point actif
-  static const Color texteFort = Color(0xFF4A2A18);      // titres
-  static const Color texteDoux = Color(0xFF7A6A5C);      // sous-titres
-  static const Color pointInactif = Color(0xFFD5C4B0);   // pagination
+  static const Color beigeFond = Color(0xFFFAF4E7);
+  static const Color terracotta = Color(0xFFC15A2A);
+  static const Color texteFort = Color(0xFF4A2A18);
+  static const Color texteDoux = Color(0xFF7A6A5C);
+  static const Color pointInactif = Color(0xFFD5C4B0);
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +19,6 @@ class Onboarding3 extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
           child: Column(
             children: [
-              // Lien "Passer" en haut à droite
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -49,30 +45,15 @@ class Onboarding3 extends StatelessWidget {
 
               const Spacer(),
 
-              // Cercle vert sauge avec l'image message, posée au centre
-              Container(
-                width: 200,
-                height: 200,
-                decoration: const BoxDecoration(
-                  color: vertSauge,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Image.asset(
-                  'assets/images/message.jpeg',
-                  width: 120,
-                  height: 120,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.chat_bubble_outline_rounded,
-                    size: 100,
-                    color: Colors.white,
-                  ),
-                ),
+              // L'image contient déjà son cercle pastel.
+              Image.asset(
+                'assets/images/message.jpeg',
+                width: 220,
+                height: 220,
+                fit: BoxFit.contain,
               ),
               const SizedBox(height: 48),
 
-              // Titre
               const Text(
                 "Contactez-les\ndirectement",
                 textAlign: TextAlign.center,
@@ -85,7 +66,6 @@ class Onboarding3 extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Sous-titre
               const Text(
                 "Messagerie intégrée ou WhatsApp. Avis\nvérifiés. Travail garanti.",
                 textAlign: TextAlign.center,
@@ -98,7 +78,6 @@ class Onboarding3 extends StatelessWidget {
 
               const Spacer(),
 
-              // Pagination — troisième point actif
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -132,7 +111,6 @@ class Onboarding3 extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Bouton Commencer
               SizedBox(
                 width: double.infinity,
                 height: 52,

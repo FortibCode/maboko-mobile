@@ -4,12 +4,11 @@ class Onboarding1 extends StatelessWidget {
   const Onboarding1({super.key});
 
   // Palette crème clair — fidèle à la maquette.
-  static const Color beigeFond = Color(0xFFFAF4E7);      // fond général
-  static const Color rosePeche = Color(0xFFEFB39D);      // cercle
-  static const Color terracotta = Color(0xFFC15A2A);     // bouton + point actif
-  static const Color texteFort = Color(0xFF4A2A18);      // titres
-  static const Color texteDoux = Color(0xFF7A6A5C);      // sous-titres
-  static const Color pointInactif = Color(0xFFD5C4B0);   // pagination
+  static const Color beigeFond = Color(0xFFFAF4E7);
+  static const Color terracotta = Color(0xFFC15A2A);
+  static const Color texteFort = Color(0xFF4A2A18);
+  static const Color texteDoux = Color(0xFF7A6A5C);
+  static const Color pointInactif = Color(0xFFD5C4B0);
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +19,6 @@ class Onboarding1 extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
           child: Column(
             children: [
-              // Lien "Passer" en haut à droite
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -38,30 +36,16 @@ class Onboarding1 extends StatelessWidget {
 
               const Spacer(),
 
-              // Cercle pastel avec l'image loupe, posée au centre
-              Container(
-                width: 200,
-                height: 200,
-                decoration: const BoxDecoration(
-                  color: rosePeche,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Image.asset(
-                  'assets/images/loupe.jpeg',
-                  width: 120,
-                  height: 120,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.search_rounded,
-                    size: 100,
-                    color: Colors.white,
-                  ),
-                ),
+              // L'image contient déjà son cercle pastel : on l'affiche
+              // telle quelle, sans Container autour.
+              Image.asset(
+                'assets/images/loupe.jpeg',
+                width: 220,
+                height: 220,
+                fit: BoxFit.contain,
               ),
               const SizedBox(height: 48),
 
-              // Titre
               const Text(
                 "Trouvez les meilleurs\nartisans",
                 textAlign: TextAlign.center,
@@ -74,7 +58,6 @@ class Onboarding1 extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Sous-titre
               const Text(
                 "Peintres, mécaniciens, couturiers,\nélectriciens... tous près de chez vous.",
                 textAlign: TextAlign.center,
@@ -121,7 +104,6 @@ class Onboarding1 extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Bouton Suivant
               SizedBox(
                 width: double.infinity,
                 height: 52,
