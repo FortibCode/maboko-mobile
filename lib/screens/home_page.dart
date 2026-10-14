@@ -36,7 +36,6 @@ import '../core/widgets/carte_pressable.dart';
 
 // ⬇️⬇️ IMPORTS — Role CLIENT ⬇️⬇️
 import '../features/compte/ui/mes_avis_screen.dart';
-import 'contacts_urgence_screen.dart';
 import 'parametres_data_screen.dart';
 import 'enregistrements_screen.dart';
 import 'conseils_screen.dart';
@@ -625,6 +624,8 @@ class _HomePageState extends State<HomePage> {
 
   // ===========================================================================
   // MENU CLIENT
+  //
+  // Note : « Contacts d'urgence » et « Assistant vocal » ont été retirés.
   // ===========================================================================
   Widget _buildClientProfileMenu() {
     return Column(
@@ -677,12 +678,6 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const ConseilsScreen()),
           );
         }),
-        _buildMenuItem(Icons.emergency_outlined, "Contacts d’urgence", onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const ContactsUrgenceScreen()),
-          );
-        }),
         _buildMenuItem(Icons.menu_book_outlined, "Mon journal personnel", onTap: () {
           Navigator.push(
             context,
@@ -694,11 +689,6 @@ class _HomePageState extends State<HomePage> {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const MuseeSavoirFaireScreen()),
-          );
-        }),
-        _buildMenuItem(Icons.record_voice_over_outlined, "Assistant vocal", onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Bientôt disponible.')),
           );
         }),
         _buildMenuItem(Icons.notifications_none, "Notifications", onTap: () {
