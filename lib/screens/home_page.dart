@@ -38,12 +38,10 @@ import '../core/widgets/carte_pressable.dart';
 import '../features/compte/ui/mes_avis_screen.dart';
 import 'parametres_data_screen.dart';
 import 'enregistrements_screen.dart';
-import 'conseils_screen.dart';
 import 'aide_support_screen.dart';
 import 'accessibilite_screen.dart';
 import 'journal_personnel_screen.dart';
 import 'confidentialite_screen.dart';
-import 'musee_savoir_faire_screen.dart';
 // ⬆️⬆️ FIN IMPORTS CLIENT ⬆️⬆️
 
 // ⬇️⬇️ IMPORTS — Role ARTISAN ⬇️⬇️
@@ -625,7 +623,11 @@ class _HomePageState extends State<HomePage> {
   // ===========================================================================
   // MENU CLIENT
   //
-  // Note : « Contacts d'urgence » et « Assistant vocal » ont été retirés.
+  // Boutons retirés :
+  //  - « Conseils et assistances »
+  //  - « Musée du savoir-faire » (devenu une publicité gérée par l'admin)
+  //  - « Assistant vocal » (retiré précédemment)
+  //  - « Contacts d'urgence » (retiré précédemment)
   // ===========================================================================
   Widget _buildClientProfileMenu() {
     return Column(
@@ -672,23 +674,10 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const BoutiqueMateriauxScreen()),
           );
         }),
-        _buildMenuItem(Icons.tips_and_updates_outlined, "Conseils et assistances", onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const ConseilsScreen()),
-          );
-        }),
         _buildMenuItem(Icons.menu_book_outlined, "Mon journal personnel", onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const JournalPersonnelScreen()),
-          );
-        }),
-        // ← Musée du savoir-faire : contenu géré par l'admin, vide pour l'instant
-        _buildMenuItem(Icons.museum_outlined, "Musée du savoir-faire", onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const MuseeSavoirFaireScreen()),
           );
         }),
         _buildMenuItem(Icons.notifications_none, "Notifications", onTap: () {
@@ -703,7 +692,6 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const ParametresDataScreen()),
           );
         }),
-        // ← Langue : bottom sheet Français / Lingala (aucun effet pour l'instant)
         _buildMenuItem(Icons.language_outlined, "Langue", onTap: _choisirLangue),
         _buildMenuItem(Icons.accessibility_new_rounded, "Accessibilité", onTap: () {
           Navigator.push(
