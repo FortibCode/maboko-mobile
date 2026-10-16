@@ -4,7 +4,6 @@ import 'services/storage_service.dart';
 class Onboarding3 extends StatelessWidget {
   const Onboarding3({super.key});
 
-  // Palette marron & beige — alignée sur la page d'inscription.
   static const Color terracotta = Color(0xFFB35B28);
   static const Color orMaboko = Color(0xFFEAA023);
   static const Color beigeFond = Color(0xFFFFFDF8);
@@ -20,9 +19,9 @@ class Onboarding3 extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF4A2A18), // marron foncé
-              Color(0xFF7A3F1D), // marron moyen
-              Color(0xFFB35B28), // terracotta
+              Color(0xFF4A2A18),
+              Color(0xFF7A3F1D),
+              Color(0xFFB35B28),
             ],
             stops: [0.0, 0.5, 1.0],
           ),
@@ -32,7 +31,6 @@ class Onboarding3 extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
             child: Column(
               children: [
-                // Lien "Passer" en haut à droite
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -59,8 +57,6 @@ class Onboarding3 extends StatelessWidget {
 
                 const Spacer(),
 
-                // L'image I2.jpeg dans une carte beige, cohérente
-                // avec le style du register.
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -92,7 +88,6 @@ class Onboarding3 extends StatelessWidget {
                 ),
                 const SizedBox(height: 48),
 
-                // Titre — blanc sur le fond marron
                 const Text(
                   "Contactez-les\ndirectement",
                   textAlign: TextAlign.center,
@@ -105,7 +100,6 @@ class Onboarding3 extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // Sous-titre — blanc translucide
                 Text(
                   "Messagerie intégrée ou WhatsApp. Avis\nvérifiés. Travail garanti.",
                   textAlign: TextAlign.center,
@@ -118,7 +112,6 @@ class Onboarding3 extends StatelessWidget {
 
                 const Spacer(),
 
-                // Pagination — 3e point actif doré
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -152,7 +145,7 @@ class Onboarding3 extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // Bouton Commencer — terracotta
+                // ⭐ Bouton "Commencer" — FOND BLANC
                 SizedBox(
                   width: double.infinity,
                   height: 52,
@@ -168,10 +161,10 @@ class Onboarding3 extends StatelessWidget {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: terracotta,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.white,
+                      foregroundColor: texteMarron,
                       elevation: 5,
-                      shadowColor: terracotta.withValues(alpha: 0.4),
+                      shadowColor: Colors.black.withValues(alpha: 0.2),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(26),
                       ),
@@ -181,10 +174,14 @@ class Onboarding3 extends StatelessWidget {
                       children: [
                         Text(
                           "Commencer",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: texteMarron,
+                          ),
                         ),
                         SizedBox(width: 8),
-                        Icon(Icons.arrow_forward_rounded, size: 18),
+                        Icon(Icons.arrow_forward_rounded, size: 18, color: texteMarron),
                       ],
                     ),
                   ),

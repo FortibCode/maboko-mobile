@@ -49,9 +49,7 @@ class Onboarding1 extends StatelessWidget {
 
                 const Spacer(),
 
-                // L'image I3.jpeg contient déjà son cercle visuel.
-                // On l'affiche dans une carte beige pour rester cohérent
-                // avec le style de la page d'inscription.
+                // L'image I3.jpeg dans une carte beige
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -74,7 +72,7 @@ class Onboarding1 extends StatelessWidget {
                       height: 220,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => const Icon(
-                        Icons.handshake,
+                        Icons.search_rounded,
                         size: 100,
                         color: terracotta,
                       ),
@@ -83,7 +81,7 @@ class Onboarding1 extends StatelessWidget {
                 ),
                 const SizedBox(height: 48),
 
-                // Titre — blanc sur le fond marron
+                // Titre
                 const Text(
                   "Trouvez les meilleurs\nartisans",
                   textAlign: TextAlign.center,
@@ -96,7 +94,7 @@ class Onboarding1 extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // Sous-titre — blanc translucide
+                // Sous-titre
                 Text(
                   "Peintres, mécaniciens, couturiers,\nélectriciens... tous près de chez vous.",
                   textAlign: TextAlign.center,
@@ -109,7 +107,7 @@ class Onboarding1 extends StatelessWidget {
 
                 const Spacer(),
 
-                // Pagination — point actif doré, points inactifs transparents
+                // Pagination
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -143,17 +141,17 @@ class Onboarding1 extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // Bouton Suivant — terracotta
+                // ⭐ Bouton "Suivant" — FOND BLANC, texte marron
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
                     onPressed: () => Navigator.pushNamed(context, "/onboarding2"),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: terracotta,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.white,
+                      foregroundColor: texteMarron,
                       elevation: 5,
-                      shadowColor: terracotta.withValues(alpha: 0.4),
+                      shadowColor: Colors.black.withValues(alpha: 0.2),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(26),
                       ),
@@ -163,10 +161,14 @@ class Onboarding1 extends StatelessWidget {
                       children: [
                         Text(
                           "Suivant",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: texteMarron,
+                          ),
                         ),
                         SizedBox(width: 8),
-                        Icon(Icons.arrow_forward_rounded, size: 18),
+                        Icon(Icons.arrow_forward_rounded, size: 18, color: texteMarron),
                       ],
                     ),
                   ),

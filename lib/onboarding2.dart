@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 class Onboarding2 extends StatelessWidget {
   const Onboarding2({super.key});
 
-  // Palette marron & beige — alignée sur la page d'inscription.
   static const Color terracotta = Color(0xFFB35B28);
   static const Color orMaboko = Color(0xFFEAA023);
   static const Color beigeFond = Color(0xFFFFFDF8);
@@ -19,9 +18,9 @@ class Onboarding2 extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF4A2A18), // marron foncé
-              Color(0xFF7A3F1D), // marron moyen
-              Color(0xFFB35B28), // terracotta
+              Color(0xFF4A2A18),
+              Color(0xFF7A3F1D),
+              Color(0xFFB35B28),
             ],
             stops: [0.0, 0.5, 1.0],
           ),
@@ -31,7 +30,6 @@ class Onboarding2 extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
             child: Column(
               children: [
-                // Lien "Passer" en haut à droite
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -49,9 +47,6 @@ class Onboarding2 extends StatelessWidget {
 
                 const Spacer(),
 
-                // L'image I1.jpeg contient déjà son visuel.
-                // On l'affiche dans une carte beige pour rester cohérent
-                // avec le style de la page d'inscription.
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -83,7 +78,6 @@ class Onboarding2 extends StatelessWidget {
                 ),
                 const SizedBox(height: 48),
 
-                // Titre — blanc sur le fond marron
                 const Text(
                   "Découvrez leurs\nréalisations",
                   textAlign: TextAlign.center,
@@ -96,7 +90,6 @@ class Onboarding2 extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // Sous-titre — blanc translucide
                 Text(
                   "Photos avant/après, vidéos, portfolios\ncomplets pour choisir en confiance.",
                   textAlign: TextAlign.center,
@@ -109,7 +102,6 @@ class Onboarding2 extends StatelessWidget {
 
                 const Spacer(),
 
-                // Pagination — 2e point actif doré
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -143,17 +135,17 @@ class Onboarding2 extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // Bouton Suivant — terracotta
+                // ⭐ Bouton "Suivant" — FOND BLANC
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
                     onPressed: () => Navigator.pushNamed(context, "/onboarding3"),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: terracotta,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.white,
+                      foregroundColor: texteMarron,
                       elevation: 5,
-                      shadowColor: terracotta.withValues(alpha: 0.4),
+                      shadowColor: Colors.black.withValues(alpha: 0.2),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(26),
                       ),
@@ -163,10 +155,14 @@ class Onboarding2 extends StatelessWidget {
                       children: [
                         Text(
                           "Suivant",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: texteMarron,
+                          ),
                         ),
                         SizedBox(width: 8),
-                        Icon(Icons.arrow_forward_rounded, size: 18),
+                        Icon(Icons.arrow_forward_rounded, size: 18, color: texteMarron),
                       ],
                     ),
                   ),
