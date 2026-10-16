@@ -68,3 +68,7 @@ flutter:
     - assets/images/I1.jpeg
     - assets/images/I2.jpeg
     - assets/images/I3.jpeg
+    # Images des métiers (utilisées par visuel_metier.dart)
+    # Un sous-dossier entier est déclaré : chaque PNG ajouté dedans est
+    # automatiquement embarqué, sans modifier ce fichier à chaque fois.
+    - assets/images/metiers/
