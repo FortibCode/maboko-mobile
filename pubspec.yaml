@@ -53,7 +53,6 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
-
 flutter:
   uses-material-design: true
 
@@ -64,6 +63,8 @@ flutter:
     - assets/images/google_g.png
     - assets/images/bricolage.png
     - assets/images/voiture.png
-    - assets/images/Appareil.png
-    - assets/images/loupe.png
-    - assets/images/message.png
+
+    # Images des onboardings (utilisées par onboarding1/2/3.dart)
+    - assets/images/I1.jpeg
+    - assets/images/I2.jpeg
+    - assets/images/I3.jpeg
