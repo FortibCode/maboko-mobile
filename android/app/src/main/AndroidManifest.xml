@@ -12,6 +12,12 @@
     <!-- Photos de profil, portfolio et pieces d'identite. -->
     <uses-permission android:name="android.permission.CAMERA"/>
 
+    <!-- Galerie : Android 13+ utilise READ_MEDIA_IMAGES, les versions
+         précédentes utilisent READ_EXTERNAL_STORAGE. Sans elles, l'app
+         ne peut pas lire les photos choisies depuis la galerie. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+
     <!-- Notifications de course (Android 13+). Sans cette declaration, le
          chauffeur ne recoit aucune alerte quand une course lui est proposee. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>

@@ -73,12 +73,86 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
     });
   }
 
-  Future<void> _choisirPhoto({required bool rccm}) async {
+  /// Affiche un choix entre la caméra et la galerie.
+  ///
+  /// Sur mobile, `ImageSource.camera` ouvre l'appareil photo, et
+  /// `ImageSource.gallery` ouvre le sélecteur de fichiers du téléphone
+  /// (photos, captures d'écran, PDF scannés sauvegardés comme images).
+  Future<void> _choisirSourcePhoto({required bool rccm}) async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: context.surfaceMaboko,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            // Petite poignée visuelle du bottom sheet.
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: context.bordureMaboko,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Ajouter un document',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: context.texteFortMaboko,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(
+                Icons.photo_camera_outlined,
+                color: MabokoCouleurs.secondaire,
+              ),
+              title: const Text('Prendre une photo'),
+              subtitle: const Text(
+                'Ouvrir l\'appareil photo du téléphone',
+                style: TextStyle(fontSize: 12),
+              ),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(
+                Icons.photo_library_outlined,
+                color: MabokoCouleurs.secondaire,
+              ),
+              title: const Text('Choisir dans la galerie'),
+              subtitle: const Text(
+                'Sélectionner une image déjà présente sur le téléphone',
+                style: TextStyle(fontSize: 12),
+              ),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null || !mounted) return;
+    await _choisirPhoto(rccm: rccm, source: source);
+  }
+
+  Future<void> _choisirPhoto({
+    required bool rccm,
+    required ImageSource source,
+  }) async {
     setState(() => _envoiPhoto = true);
 
     try {
       final fichier = await ImagePicker().pickImage(
-        source: ImageSource.camera,
+        source: source,
         maxWidth: 1800,
         imageQuality: 80,
       );
@@ -104,8 +178,10 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _envoiPhoto = false);
-      _informer('Impossible de prendre la photo sur cet appareil.',
-          MabokoCouleurs.danger);
+      _informer(
+        'Impossible d\'ouvrir $source. Vérifiez les autorisations.',
+        MabokoCouleurs.danger,
+      );
     }
   }
 
@@ -138,8 +214,10 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
         return;
       }
       if (_photoPiece == null) {
-        _informer('Ajoutez la photo de votre pièce d’identité.',
-            MabokoCouleurs.danger);
+        _informer(
+          'Ajoutez la photo de votre pièce d\'identité.',
+          MabokoCouleurs.danger,
+        );
         return;
       }
     }
@@ -278,7 +356,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Oui, j’ai un RCCM',
+                      'Oui, j\'ai un RCCM',
                       style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.bold,
@@ -362,7 +440,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'Je travaille en tant qu’artisan indépendant. Pas de '
+                      'Je travaille en tant qu\'artisan indépendant. Pas de '
                       'souci, vous pouvez devenir Recommandé par la communauté '
                       'grâce à vos avis clients.',
                       style: TextStyle(
@@ -400,7 +478,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
       children: [
         _titreBloc(
           icone: Icons.business_center_outlined,
-          titre: 'Vos informations d’entreprise',
+          titre: 'Vos informations d\'entreprise',
         ),
         const SizedBox(height: 14),
         _labelObligatoire('NUMÉRO RCCM'),
@@ -426,8 +504,8 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
         const SizedBox(height: 14),
         _zoneUpload(
           photo: _photoRccm,
-          libelle: 'Télécharger le document RCCM',
-          onTap: () => _choisirPhoto(rccm: true),
+          libelle: 'Ajouter le document RCCM',
+          onTap: () => _choisirSourcePhoto(rccm: true),
         ),
         const SizedBox(height: 10),
         _mentionVerification(
@@ -448,9 +526,9 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
       children: [
         _titreBloc(
           icone: Icons.shield_outlined,
-          titre: 'Vérification d’identité',
+          titre: 'Vérification d\'identité',
           sous: 'Pour la confiance et la sécurité, nous vérifions '
-              'l’identité de chaque artisan.',
+              'l\'identité de chaque artisan.',
         ),
         const SizedBox(height: 16),
         _labelObligatoire('TYPE DE PIÈCE'),
@@ -484,12 +562,12 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
         const SizedBox(height: 14),
         _zoneUpload(
           photo: _photoPiece,
-          libelle: 'Photo de la pièce d’identité',
-          onTap: () => _choisirPhoto(rccm: false),
+          libelle: 'Ajouter la pièce d\'identité',
+          onTap: () => _choisirSourcePhoto(rccm: false),
         ),
         const SizedBox(height: 10),
         _mentionVerification(
-          'Vos documents sont chiffrés et ne servent qu’à la vérification. '
+          'Vos documents sont chiffrés et ne servent qu\'à la vérification. '
           'Jamais partagés.',
         ),
       ],
@@ -699,7 +777,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           foregroundColor: MabokoCouleurs.secondaire,
                         ),
-                        child: const Text('Reprendre',
+                        child: const Text('Modifier',
                             style: TextStyle(fontSize: 12.5)),
                       ),
                     ],
@@ -707,7 +785,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.file_upload_outlined,
+                      const Icon(Icons.add_photo_alternate_outlined,
                           size: 20, color: MabokoCouleurs.secondaire),
                       const SizedBox(width: 8),
                       Text(
@@ -776,7 +854,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
                   TextSpan(
                     text: 'sur maboko.com, les artisans formels et informels '
                         'ont les mêmes chances de réussir. Ce qui compte, '
-                        'c’est la qualité de votre travail !',
+                        'c\'est la qualité de votre travail !',
                   ),
                 ],
               ),
