@@ -9,12 +9,6 @@ import 'artisan_termine_screen.dart';
 import 'inscription_artisan_data.dart';
 
 /// Étape 4 du parcours d'inscription artisan : RCCM ou pièce d'identité.
-///
-/// L'artisan a deux voies pour prouver son sérieux :
-/// - S'il a un RCCM (Registre du Commerce), il peut obtenir le badge
-///   « Artisan Reconnu » en 48 h après vérification par l'équipe Maboko.
-/// - Sinon, il vérifie son identité avec une CNI ou un passeport.
-/// Dans les deux cas, le badge rassure les clients avant la première mission.
 class ArtisanRccmScreen extends StatefulWidget {
   const ArtisanRccmScreen({super.key, required this.nomComplet});
 
@@ -36,7 +30,10 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
   final _nomPrenom = TextEditingController();
   final _numeroCarte = TextEditingController();
   final _adresse = TextEditingController();
-  String? _photoPiece;
+  
+  // ⬇️ NOUVEAU : Séparation Recto / Verso
+  String? _photoPieceRecto;
+  String? _photoPieceVerso;
 
   bool _chargement = true;
   bool _envoiPhoto = false;
@@ -68,17 +65,15 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
     setState(() {
       _aRccm = data?.aRccm;
       _photoRccm = data?.photoRccm;
-      _photoPiece = data?.photoPiece;
+      // ⬇️ MODIFIÉ : Charger les 2 photos
+      _photoPieceRecto = data?.photoPieceRecto;
+      _photoPieceVerso = data?.photoPieceVerso;
       _chargement = false;
     });
   }
 
   /// Affiche un choix entre la caméra et la galerie.
-  ///
-  /// Sur mobile, `ImageSource.camera` ouvre l'appareil photo, et
-  /// `ImageSource.gallery` ouvre le sélecteur de fichiers du téléphone
-  /// (photos, captures d'écran, PDF scannés sauvegardés comme images).
-  Future<void> _choisirSourcePhoto({required bool rccm}) async {
+  Future<void> _choisirSourcePhoto({required String cible}) async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       backgroundColor: context.surfaceMaboko,
@@ -90,7 +85,6 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 12),
-            // Petite poignée visuelle du bottom sheet.
             Container(
               width: 40,
               height: 4,
@@ -141,11 +135,11 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
     );
 
     if (source == null || !mounted) return;
-    await _choisirPhoto(rccm: rccm, source: source);
+    await _choisirPhoto(cible: cible, source: source);
   }
 
   Future<void> _choisirPhoto({
-    required bool rccm,
+    required String cible, // 'rccm', 'recto' ou 'verso'
     required ImageSource source,
   }) async {
     setState(() => _envoiPhoto = true);
@@ -168,10 +162,12 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
       final encode = 'data:image/jpeg;base64,${base64Encode(octets)}';
 
       setState(() {
-        if (rccm) {
+        if (cible == 'rccm') {
           _photoRccm = encode;
-        } else {
-          _photoPiece = encode;
+        } else if (cible == 'recto') {
+          _photoPieceRecto = encode;
+        } else if (cible == 'verso') {
+          _photoPieceVerso = encode;
         }
         _envoiPhoto = false;
       });
@@ -213,11 +209,13 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
         _informer('Saisissez votre adresse.', MabokoCouleurs.danger);
         return;
       }
-      if (_photoPiece == null) {
-        _informer(
-          'Ajoutez la photo de votre pièce d\'identité.',
-          MabokoCouleurs.danger,
-        );
+      // ⬇️ MODIFIÉ : Vérifier les 2 photos
+      if (_photoPieceRecto == null) {
+        _informer('Ajoutez la photo avant (recto).', MabokoCouleurs.danger);
+        return;
+      }
+      if (_photoPieceVerso == null) {
+        _informer('Ajoutez la photo arrière (verso).', MabokoCouleurs.danger);
         return;
       }
     }
@@ -228,7 +226,9 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
         .copierAvec(
           aRccm: _aRccm,
           photoRccm: _photoRccm,
-          photoPiece: _photoPiece,
+          // ⬇️ MODIFIÉ : Sauvegarder les 2 photos
+          photoPieceRecto: _photoPieceRecto,
+          photoPieceVerso: _photoPieceVerso,
         )
         .sauvegarder();
 
@@ -321,7 +321,6 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
 
   Widget _carteOui() {
     final actif = _aRccm == true;
-
     return Material(
       color: Theme.of(context).cardColor,
       borderRadius: BorderRadius.circular(14),
@@ -394,7 +393,6 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
 
   Widget _carteNon() {
     final actif = _aRccm == false;
-
     return Material(
       color: Theme.of(context).cardColor,
       borderRadius: BorderRadius.circular(14),
@@ -505,7 +503,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
         _zoneUpload(
           photo: _photoRccm,
           libelle: 'Ajouter le document RCCM',
-          onTap: () => _choisirSourcePhoto(rccm: true),
+          onTap: () => _choisirSourcePhoto(cible: 'rccm'), // ⬅️ Modification
         ),
         const SizedBox(height: 10),
         _mentionVerification(
@@ -559,12 +557,28 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
           controller: _adresse,
           hint: 'Ex. : Bacongo, Brazzaville',
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
+        
+        // ⬇️ NOUVEAU : Zone recto
+        _labelObligatoire('PHOTO AVANT (RECT O)'),
+        const SizedBox(height: 8),
         _zoneUpload(
-          photo: _photoPiece,
-          libelle: 'Ajouter la pièce d\'identité',
-          onTap: () => _choisirSourcePhoto(rccm: false),
+          photo: _photoPieceRecto,
+          libelle: 'Ajouter la photo avant',
+          onTap: () => _choisirSourcePhoto(cible: 'recto'),
         ),
+        
+        const SizedBox(height: 14),
+        
+        // ⬇️ NOUVEAU : Zone verso
+        _labelObligatoire('PHOTO ARRIÈRE (VERSO)'),
+        const SizedBox(height: 8),
+        _zoneUpload(
+          photo: _photoPieceVerso,
+          libelle: 'Ajouter la photo arrière',
+          onTap: () => _choisirSourcePhoto(cible: 'verso'),
+        ),
+
         const SizedBox(height: 10),
         _mentionVerification(
           'Vos documents sont chiffrés et ne servent qu\'à la vérification. '
