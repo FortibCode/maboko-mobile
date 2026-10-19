@@ -53,6 +53,10 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+
+  # Génération de l'icône de l'application (Logo)
+  flutter_launcher_icons: ^0.13.1
+
 flutter:
   uses-material-design: true
 
@@ -68,7 +72,13 @@ flutter:
     - assets/images/I1.jpeg
     - assets/images/I2.jpeg
     - assets/images/I3.jpeg
+    
     # Images des métiers (utilisées par visuel_metier.dart)
-    # Un sous-dossier entier est déclaré : chaque PNG ajouté dedans est
-    # automatiquement embarqué, sans modifier ce fichier à chaque fois.
     - assets/images/metiers/
+
+# Configuration du logo de l'application
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/images/maboko_logo_carre.png"
+  remove_alpha_ios: true

@@ -31,7 +31,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
   final _numeroCarte = TextEditingController();
   final _adresse = TextEditingController();
   
-  // ⬇️ NOUVEAU : Séparation Recto / Verso
+  // Photos de la pièce
   String? _photoPieceRecto;
   String? _photoPieceVerso;
 
@@ -65,15 +65,65 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
     setState(() {
       _aRccm = data?.aRccm;
       _photoRccm = data?.photoRccm;
-      // ⬇️ MODIFIÉ : Charger les 2 photos
       _photoPieceRecto = data?.photoPieceRecto;
       _photoPieceVerso = data?.photoPieceVerso;
       _chargement = false;
     });
   }
 
-  /// Affiche un choix entre la caméra et la galerie.
-  Future<void> _choisirSourcePhoto({required String cible}) async {
+  /// Point d'entrée pour la capture de la pièce d'identité.
+  /// Gère la logique séquentielle : Recto puis Verso.
+  Future<void> _gererCapturePiece() async {
+    if (_photoPieceRecto == null) {
+      // Étape 1 : Demander le Recto
+      final succes = await _demanderPhoto(cible: 'recto');
+      if (succes && mounted) {
+        // Petit message pour guider l'utilisateur
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Recto enregistré. Prenez maintenant la face arrière (Verso).'),
+            backgroundColor: MabokoCouleurs.succes,
+          ),
+        );
+        // On attend 1 seconde (pour qu'il lise) puis on ouvre direct le verso
+        await Future.delayed(const Duration(seconds: 1));
+        if (mounted) await _demanderPhoto(cible: 'verso');
+      }
+    } else if (_photoPieceVerso == null) {
+      // Étape 2 : Demander le Verso
+      await _demanderPhoto(cible: 'verso');
+    } else {
+      // Étape 3 : Déjà complet, on propose de recommencer
+      final recommencer = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Modifier les photos ?'),
+          content: const Text('Voulez-vous reprendre les photos de votre pièce d\'identité ?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Annuler'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Recommencer'),
+            ),
+          ],
+        ),
+      );
+
+      if (recommencer == true) {
+        setState(() {
+          _photoPieceRecto = null;
+          _photoPieceVerso = null;
+        });
+        await _gererCapturePiece();
+      }
+    }
+  }
+
+  /// Affiche le choix Caméra / Galerie et renvoie `true` si l'image est prise.
+  Future<bool> _demanderPhoto({required String cible}) async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       backgroundColor: context.surfaceMaboko,
@@ -95,7 +145,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Ajouter un document',
+              cible == 'recto' ? 'Photo AVANT (Recto)' : 'Photo ARRIÈRE (Verso)',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -104,28 +154,14 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
             ),
             const SizedBox(height: 16),
             ListTile(
-              leading: const Icon(
-                Icons.photo_camera_outlined,
-                color: MabokoCouleurs.secondaire,
-              ),
+              leading: const Icon(Icons.photo_camera_outlined, color: MabokoCouleurs.secondaire),
               title: const Text('Prendre une photo'),
-              subtitle: const Text(
-                'Ouvrir l\'appareil photo du téléphone',
-                style: TextStyle(fontSize: 12),
-              ),
               onTap: () => Navigator.pop(ctx, ImageSource.camera),
             ),
             const Divider(height: 1),
             ListTile(
-              leading: const Icon(
-                Icons.photo_library_outlined,
-                color: MabokoCouleurs.secondaire,
-              ),
+              leading: const Icon(Icons.photo_library_outlined, color: MabokoCouleurs.secondaire),
               title: const Text('Choisir dans la galerie'),
-              subtitle: const Text(
-                'Sélectionner une image déjà présente sur le téléphone',
-                style: TextStyle(fontSize: 12),
-              ),
               onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
             const SizedBox(height: 12),
@@ -134,12 +170,12 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
       ),
     );
 
-    if (source == null || !mounted) return;
-    await _choisirPhoto(cible: cible, source: source);
+    if (source == null || !mounted) return false;
+    return await _choisirPhoto(cible: cible, source: source);
   }
 
-  Future<void> _choisirPhoto({
-    required String cible, // 'rccm', 'recto' ou 'verso'
+  Future<bool> _choisirPhoto({
+    required String cible,
     required ImageSource source,
   }) async {
     setState(() => _envoiPhoto = true);
@@ -153,11 +189,11 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
 
       if (fichier == null) {
         setState(() => _envoiPhoto = false);
-        return;
+        return false;
       }
 
       final octets = await fichier.readAsBytes();
-      if (!mounted) return;
+      if (!mounted) return false;
 
       final encode = 'data:image/jpeg;base64,${base64Encode(octets)}';
 
@@ -171,13 +207,15 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
         }
         _envoiPhoto = false;
       });
+      return true;
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() => _envoiPhoto = false);
       _informer(
         'Impossible d\'ouvrir $source. Vérifiez les autorisations.',
         MabokoCouleurs.danger,
       );
+      return false;
     }
   }
 
@@ -209,13 +247,8 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
         _informer('Saisissez votre adresse.', MabokoCouleurs.danger);
         return;
       }
-      // ⬇️ MODIFIÉ : Vérifier les 2 photos
-      if (_photoPieceRecto == null) {
-        _informer('Ajoutez la photo avant (recto).', MabokoCouleurs.danger);
-        return;
-      }
-      if (_photoPieceVerso == null) {
-        _informer('Ajoutez la photo arrière (verso).', MabokoCouleurs.danger);
+      if (_photoPieceRecto == null || _photoPieceVerso == null) {
+        _informer('Ajoutez la photo avant ET la photo arrière.', MabokoCouleurs.danger);
         return;
       }
     }
@@ -226,7 +259,6 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
         .copierAvec(
           aRccm: _aRccm,
           photoRccm: _photoRccm,
-          // ⬇️ MODIFIÉ : Sauvegarder les 2 photos
           photoPieceRecto: _photoPieceRecto,
           photoPieceVerso: _photoPieceVerso,
         )
@@ -335,9 +367,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
               color: actif ? MabokoCouleurs.succes : context.bordureMaboko,
               width: actif ? 1.6 : 1,
             ),
-            color: actif
-                ? MabokoCouleurs.succes.withValues(alpha: 0.06)
-                : null,
+            color: actif ? MabokoCouleurs.succes.withValues(alpha: 0.06) : null,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -345,9 +375,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
               Icon(
                 Icons.verified_rounded,
                 size: 24,
-                color: actif
-                    ? MabokoCouleurs.succes
-                    : context.texteSecondaireMaboko,
+                color: actif ? MabokoCouleurs.succes : context.texteSecondaireMaboko,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -359,9 +387,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
                       style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.bold,
-                        color: actif
-                            ? MabokoCouleurs.succes
-                            : context.texteFortMaboko,
+                        color: actif ? MabokoCouleurs.succes : context.texteFortMaboko,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -378,9 +404,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
                 ),
               ),
               Icon(
-                actif
-                    ? Icons.radio_button_checked_rounded
-                    : Icons.radio_button_unchecked_rounded,
+                actif ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded,
                 color: actif ? MabokoCouleurs.succes : context.bordureMaboko,
                 size: 22,
               ),
@@ -407,9 +431,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
               color: actif ? MabokoCouleurs.accent : context.bordureMaboko,
               width: actif ? 1.6 : 1,
             ),
-            color: actif
-                ? MabokoCouleurs.accent.withValues(alpha: 0.06)
-                : null,
+            color: actif ? MabokoCouleurs.accent.withValues(alpha: 0.06) : null,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -417,9 +439,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
               Icon(
                 Icons.emoji_people_rounded,
                 size: 24,
-                color: actif
-                    ? MabokoCouleurs.accent
-                    : context.texteSecondaireMaboko,
+                color: actif ? MabokoCouleurs.accent : context.texteSecondaireMaboko,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -431,9 +451,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
                       style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.bold,
-                        color: actif
-                            ? MabokoCouleurs.accent
-                            : context.texteFortMaboko,
+                        color: actif ? MabokoCouleurs.accent : context.texteFortMaboko,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -451,12 +469,8 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
                 ),
               ),
               Icon(
-                actif
-                    ? Icons.radio_button_checked_rounded
-                    : Icons.radio_button_unchecked_rounded,
-                color: actif
-                    ? MabokoCouleurs.accent
-                    : context.bordureMaboko,
+                actif ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded,
+                color: actif ? MabokoCouleurs.accent : context.bordureMaboko,
                 size: 22,
               ),
             ],
@@ -500,22 +514,24 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
           ),
         ),
         const SizedBox(height: 14),
-        _zoneUpload(
+        _zoneUploadSimple(
           photo: _photoRccm,
           libelle: 'Ajouter le document RCCM',
-          onTap: () => _choisirSourcePhoto(cible: 'rccm'), // ⬅️ Modification
+          onTap: () async {
+            final succes = await _demanderPhoto(cible: 'rccm');
+            if (succes) _informer('Document RCCM ajouté.', MabokoCouleurs.succes);
+          },
         ),
         const SizedBox(height: 10),
         _mentionVerification(
-          'Votre RCCM sera vérifié sous 48h pour activer le badge '
-          'Artisan Reconnu.',
+          'Votre RCCM sera vérifié sous 48h pour activer le badge Artisan Reconnu.',
         ),
       ],
     );
   }
 
   // =========================================================================
-  // BLOC PIÈCE D'IDENTITÉ
+  // BLOC PIÈCE D'IDENTITÉ (Avec logique guidée Recto -> Verso)
   // =========================================================================
 
   Widget _blocIdentite() {
@@ -557,32 +573,110 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
           controller: _adresse,
           hint: 'Ex. : Bacongo, Brazzaville',
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
         
-        // ⬇️ NOUVEAU : Zone recto
-        _labelObligatoire('PHOTO AVANT (RECT O)'),
-        const SizedBox(height: 8),
-        _zoneUpload(
-          photo: _photoPieceRecto,
-          libelle: 'Ajouter la photo avant',
-          onTap: () => _choisirSourcePhoto(cible: 'recto'),
-        ),
+        // ⬇️ UN SEUL BOUTON QUI GÈRE TOUT LE FLUX RECT O / VERSO
+        _zoneUploadPiece(),
         
-        const SizedBox(height: 14),
-        
-        // ⬇️ NOUVEAU : Zone verso
-        _labelObligatoire('PHOTO ARRIÈRE (VERSO)'),
-        const SizedBox(height: 8),
-        _zoneUpload(
-          photo: _photoPieceVerso,
-          libelle: 'Ajouter la photo arrière',
-          onTap: () => _choisirSourcePhoto(cible: 'verso'),
-        ),
-
         const SizedBox(height: 10),
         _mentionVerification(
-          'Vos documents sont chiffrés et ne servent qu\'à la vérification. '
-          'Jamais partagés.',
+          'Vos documents sont chiffrés et ne servent qu\'à la vérification. Jamais partagés.',
+        ),
+      ],
+    );
+  }
+
+  /// Ce widget gère l'affichage de la zone d'upload avec son état d'avancement.
+  Widget _zoneUploadPiece() {
+    final aRecto = _photoPieceRecto != null;
+    final aVerso = _photoPieceVerso != null;
+    final estComplet = aRecto && aVerso;
+
+    return GestureDetector(
+      onTap: _envoiPhoto ? null : _gererCapturePiece,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: estComplet ? MabokoCouleurs.succes.withValues(alpha: 0.05) : context.surfaceMaboko,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: estComplet ? MabokoCouleurs.succes : context.bordureMaboko,
+            width: estComplet ? 1.6 : 1,
+          ),
+        ),
+        child: _envoiPhoto
+            ? const Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2.4, color: MabokoCouleurs.secondaire),
+                ),
+              )
+            : Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        estComplet ? Icons.check_circle_rounded : Icons.add_photo_alternate_outlined,
+                        color: estComplet ? MabokoCouleurs.succes : MabokoCouleurs.secondaire,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          estComplet
+                              ? 'Pièce d\'identité complète'
+                              : aRecto
+                                  ? 'Prendre la face arrière (Verso)'
+                                  : 'Ajouter la pièce d\'identité (Recto & Verso)',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: estComplet ? MabokoCouleurs.succes : context.texteFortMaboko,
+                          ),
+                        ),
+                      ),
+                      if (estComplet)
+                        TextButton(
+                          onPressed: _gererCapturePiece,
+                          child: const Text('Modifier', style: TextStyle(fontSize: 12)),
+                        )
+                    ],
+                  ),
+                  if (aRecto || aVerso) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _vignetteEtat('Recto', aRecto),
+                        _vignetteEtat('Verso', aVerso),
+                      ],
+                    )
+                  ]
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _vignetteEtat(String label, bool fait) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          fait ? Icons.check_circle : Icons.radio_button_unchecked,
+          size: 16,
+          color: fait ? MabokoCouleurs.succes : context.texteSecondaireMaboko,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: fait ? MabokoCouleurs.succes : context.texteSecondaireMaboko,
+            fontWeight: fait ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ],
     );
@@ -609,34 +703,25 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: actif
-                          ? MabokoCouleurs.secondaire
-                          : context.bordureMaboko,
+                      color: actif ? MabokoCouleurs.secondaire : context.bordureMaboko,
                       width: actif ? 1.6 : 1,
                     ),
-                    color: actif
-                        ? MabokoCouleurs.secondaire.withValues(alpha: 0.06)
-                        : null,
+                    color: actif ? MabokoCouleurs.secondaire.withValues(alpha: 0.06) : null,
                   ),
                   child: Column(
                     children: [
                       Icon(
                         piece.icone,
                         size: 22,
-                        color: actif
-                            ? MabokoCouleurs.secondaire
-                            : context.texteSecondaireMaboko,
+                        color: actif ? MabokoCouleurs.secondaire : context.texteSecondaireMaboko,
                       ),
                       const SizedBox(height: 6),
                       Text(
                         piece.libelle,
                         style: TextStyle(
                           fontSize: 12.5,
-                          fontWeight:
-                              actif ? FontWeight.bold : FontWeight.w500,
-                          color: actif
-                              ? MabokoCouleurs.secondaire
-                              : context.texteFortMaboko,
+                          fontWeight: actif ? FontWeight.bold : FontWeight.w500,
+                          color: actif ? MabokoCouleurs.secondaire : context.texteFortMaboko,
                         ),
                       ),
                     ],
@@ -739,7 +824,8 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
     );
   }
 
-  Widget _zoneUpload({
+  /// Utilisé uniquement pour le RCCM (photo unique)
+  Widget _zoneUploadSimple({
     required String? photo,
     required String libelle,
     required VoidCallback onTap,
@@ -771,8 +857,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
                 ? Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.check_circle_rounded,
-                          color: MabokoCouleurs.succes, size: 20),
+                      const Icon(Icons.check_circle_rounded, color: MabokoCouleurs.succes, size: 20),
                       const SizedBox(width: 8),
                       Text(
                         'Document ajouté',
@@ -791,16 +876,14 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           foregroundColor: MabokoCouleurs.secondaire,
                         ),
-                        child: const Text('Modifier',
-                            style: TextStyle(fontSize: 12.5)),
+                        child: const Text('Modifier', style: TextStyle(fontSize: 12.5)),
                       ),
                     ],
                   )
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.add_photo_alternate_outlined,
-                          size: 20, color: MabokoCouleurs.secondaire),
+                      const Icon(Icons.add_photo_alternate_outlined, size: 20, color: MabokoCouleurs.secondaire),
                       const SizedBox(width: 8),
                       Text(
                         libelle,
@@ -820,8 +903,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(Icons.shield_outlined,
-            size: 14, color: context.texteSecondaireMaboko),
+        Icon(Icons.shield_outlined, size: 14, color: context.texteSecondaireMaboko),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
