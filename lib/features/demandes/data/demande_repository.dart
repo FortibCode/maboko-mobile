@@ -4,31 +4,26 @@ import '../models/demande.dart';
 class DemandeRepository {
   const DemandeRepository();
 
-  /// Demandes envoyées pour un client, missions reçues pour un artisan :
-  /// l'API distingue les deux selon le rôle du compte connecté.
-  Future<List<Demande>> lister({String? statut}) async {
-    final reponse = await api.get(
-      '/demandes',
-      parametres: {if (statut != null) 'statut': statut},
-    );
-
+  /// Liste des demandes (filtrées selon le rôle côté API).
+  Future<List<Demande>> lister() async {
+    final reponse = await api.get('/demandes');
     return ((reponse['data'] as List?) ?? [])
-        .map((d) => Demande.depuisJson(d as Map<String, dynamic>))
+        .map((json) => Demande.depuisJson(json as Map<String, dynamic>))
         .toList();
   }
 
+  /// Détail d'une demande spécifique.
   Future<Demande> detail(int id) async {
     final reponse = await api.get('/demandes/$id');
-
-    return Demande.depuisJson(reponse['data'] as Map<String, dynamic>);
+    return Demande.depuisJson(reponse['demande'] as Map<String, dynamic>);
   }
 
+  /// Création d'une demande par le client.
   Future<Demande> creer({
     required int artisanId,
     required String titre,
     required String description,
     required String adresse,
-    String? metier,
     double? budgetEstime,
     String? dateSouhaitee,
     List<String> photos = const [],
@@ -38,39 +33,60 @@ class DemandeRepository {
       'titre': titre,
       'description': description,
       'adresse': adresse,
-      if (metier != null) 'metier': metier,
       if (budgetEstime != null) 'budget_estime': budgetEstime,
       if (dateSouhaitee != null) 'date_souhaitee': dateSouhaitee,
       if (photos.isNotEmpty) 'photos': photos,
     });
-
     return Demande.depuisJson(reponse['demande'] as Map<String, dynamic>);
   }
 
-  Future<Demande> accepter(int id, double montantPropose) =>
-      _transition(id, 'accepter', {'montant_propose': montantPropose});
+  /// L'artisan accepte et propose un montant.
+  Future<Demande> accepter(int id, double montant) async {
+    final reponse = await api.post('/demandes/$id/accepter', corps: {
+      'montant_propose': montant,
+    });
+    return Demande.depuisJson(reponse['demande'] as Map<String, dynamic>);
+  }
 
-  Future<Demande> refuser(int id, {String? motif}) =>
-      _transition(id, 'refuser', {if (motif != null) 'motif_refus': motif});
+  /// L'artisan refuse la demande.
+  Future<Demande> refuser(int id, {String? motif}) async {
+    final reponse = await api.post('/demandes/$id/refuser', corps: {
+      if (motif != null) 'motif_refus': motif,
+    });
+    return Demande.depuisJson(reponse['demande'] as Map<String, dynamic>);
+  }
 
-  Future<Demande> demarrer(int id) => _transition(id, 'demarrer', {});
+  /// L'artisan démarre l'intervention.
+  Future<Demande> demarrer(int id) async {
+    final reponse = await api.post('/demandes/$id/demarrer');
+    return Demande.depuisJson(reponse['demande'] as Map<String, dynamic>);
+  }
 
-  Future<Demande> terminer(int id, {double? montantFinal}) =>
-      _transition(id, 'terminer', {if (montantFinal != null) 'montant_final': montantFinal});
+  /// L'artisan termine l'intervention (avec le montant final).
+  Future<Demande> terminer(int id, {required double montantFinal}) async {
+    final reponse = await api.post('/demandes/$id/terminer', corps: {
+      'montant_final': montantFinal,
+    });
+    return Demande.depuisJson(reponse['demande'] as Map<String, dynamic>);
+  }
 
-  Future<Demande> annuler(int id, {String? motif}) =>
-      _transition(id, 'annuler', {if (motif != null) 'motif_refus': motif});
+  /// Le client annule la demande.
+  Future<Demande> annuler(int id) async {
+    final reponse = await api.post('/demandes/$id/annuler');
+    return Demande.depuisJson(reponse['demande'] as Map<String, dynamic>);
+  }
 
-  Future<void> noter(int id, {required int note, String? commentaire}) async {
+  /// Le client paie l'artisan (SIMULATION).
+  Future<Demande> payer(int id) async {
+    final reponse = await api.post('/demandes/$id/payer');
+    return Demande.depuisJson(reponse['demande'] as Map<String, dynamic>);
+  }
+
+  /// Le client note l'artisan après paiement.
+  Future<void> noter(int id, {required int note, required String commentaire}) async {
     await api.post('/demandes/$id/avis', corps: {
       'note': note,
-      if (commentaire != null && commentaire.isNotEmpty) 'commentaire': commentaire,
+      'commentaire': commentaire,
     });
-  }
-
-  Future<Demande> _transition(int id, String action, Map<String, dynamic> corps) async {
-    final reponse = await api.post('/demandes/$id/$action', corps: corps);
-
-    return Demande.depuisJson(reponse['demande'] as Map<String, dynamic>);
   }
 }
