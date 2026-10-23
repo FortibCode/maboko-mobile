@@ -169,45 +169,69 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
 
     setState(() => _envoi = true);
 
-    final position = _existante == null ? await ServicePosition.actuelle() : null;
-    final repere = _villes[_ville]!;
-    final precise = position != null;
-
-    final metierChoisi = _metiers!.firstWhere((m) => m.slug == _choisis.first);
-
-    // On utilise le quartier du parcours comme zone d'intervention.
-    // En mode modification, on garde la zone existante.
-    final zone = _existante != null
-        ? _existante!.zoneIntervention
-        : (_parcours?.quartier ?? _ville);
-
-    final bio = _existante != null
-        ? _existante!.bio
-        : _parcours?.bio;
-
-    // Adresse composée automatiquement (plus de saisie manuelle).
-    final adresse = _adresseCalculee();
-
     try {
+      // ── 1. Position : timeout court + jamais bloquant ───────────────
+      dynamic position;
+      if (_existante == null) {
+        try {
+          position = await ServicePosition.actuelle()
+              .timeout(const Duration(seconds: 8));
+        } catch (e) {
+          // Permission refusée, plugin KO, timeout : on continue sans GPS.
+          debugPrint('Position indisponible, fallback ville : $e');
+          position = null;
+        }
+      }
+
+      // ── 2. Repère ville : fallback ultime sur Brazzaville ───────────
+      final repere = _villes[_ville] ?? _villes['Brazzaville']!;
+      final latitude = position?.latitude ?? repere.lat;
+      final longitude = position?.longitude ?? repere.lon;
+      final precise = position != null;
+
+      // ── 3. Métier : orElse pour éviter le crash si slug inconnu ─────
+      final metierChoisi = _metiers!.firstWhere(
+        (m) => m.slug == _choisis.first,
+        orElse: () => _metiers!.first,
+      );
+
+      // ── 4. Zone : jamais null ───────────────────────────────────────
+      final zone = _existante?.zoneIntervention ??
+          (_parcours?.quartier?.trim().isNotEmpty == true
+              ? _parcours!.quartier!.trim()
+              : _ville);
+
+      // ── 5. Bio : jamais null, jamais vide (défaut lisible) ──────────
+      final bio = (_existante?.bio?.trim().isNotEmpty == true)
+          ? _existante!.bio!.trim()
+          : (_parcours?.bio?.trim().isNotEmpty == true
+              ? _parcours!.bio!.trim()
+              : 'Artisan à $zone');
+
+      // ── 6. Adresse : jamais vide ────────────────────────────────────
+      var adresse = _adresseCalculee().trim();
+      if (adresse.isEmpty) adresse = '$_ville, Congo';
+
+      // ── 7. Envoi ────────────────────────────────────────────────────
       if (_existante != null) {
         await _artisans.mettreAJourFiche(
           _existante!.id,
           specialite: metierChoisi.nom,
           adresse: adresse,
           metiers: _choisis.toList(),
-          bio: bio ?? '',
-          zoneIntervention: zone ?? _ville,
+          bio: bio,
+          zoneIntervention: zone,
           rayonKm: _rayon,
         );
       } else {
         await _artisans.creerFiche(
           specialite: metierChoisi.nom,
           adresse: adresse,
-          latitude: position?.latitude ?? repere.lat,
-          longitude: position?.longitude ?? repere.lon,
+          latitude: latitude,
+          longitude: longitude,
           metiers: _choisis.toList(),
-          bio: bio ?? '',
-          zoneIntervention: zone ?? _ville,
+          bio: bio,
+          zoneIntervention: zone,
           rayonKm: _rayon,
         );
       }
@@ -252,6 +276,15 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
       if (!mounted) return;
       setState(() => _envoi = false);
       _informer(e.message, MabokoCouleurs.danger);
+    } catch (e, stack) {
+      // ── Filet de sécurité : parsing, timeout, socket, plugin… ───────
+      if (!mounted) return;
+      setState(() => _envoi = false);
+      debugPrint('❌ Échec création fiche : $e\n$stack');
+      _informer(
+        'Une erreur est survenue. Vérifiez votre connexion et réessayez.',
+        MabokoCouleurs.danger,
+      );
     }
   }
 
@@ -303,7 +336,7 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
             texte: widget.premiereFois
                 ? 'Bienvenue${widget.nomComplet == null ? '' : ' ${widget.nomComplet}'} ! '
                     'Dernière étape : dites-nous ce que vous faites et où. '
-                    'C’est ce que les clients verront en vous cherchant.'
+                    'C\'est ce que les clients verront en vous cherchant.'
                 : 'Cette fiche est ce que les clients voient quand ils '
                     'cherchent un artisan. Ajoutez ou retirez un métier, '
                     'ajustez votre ville et votre rayon : les changements '
@@ -374,7 +407,7 @@ class _FicheArtisanScreenState extends State<FicheArtisanScreen> {
           if (_existante == null && !_positionPrecise) ...[
             const SizedBox(height: 12),
             Text(
-              'Votre position exacte est demandée au moment de l’enregistrement. '
+              'Votre position exacte est demandée au moment de l\'enregistrement. '
               'Si vous la refusez, le repère de la ville est utilisé et vous '
               'apparaîtrez de façon moins précise dans les recherches.',
               style: TextStyle(

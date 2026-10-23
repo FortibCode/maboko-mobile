@@ -54,6 +54,7 @@ import '../features/artisans/ui/caisse_a_outils_screen.dart';
 import '../features/artisans/ui/boutique_materiaux_screen.dart';
 import '../features/artisans/ui/reseau_entraide_screen.dart';
 import '../features/artisans/ui/paiements_revenus_screen.dart';
+import '../features/artisans/ui/mes_stories_screen.dart'; // 👈 NOUVEL IMPORT
 // ⬆️⬆️ FIN IMPORTS ARTISAN ⬆️⬆️
 
 class HomePage extends StatefulWidget {
@@ -192,11 +193,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// Choix de la langue d'affichage.
-  ///
-  /// ⚠️ Le choix est enregistré mais n'a aucun effet pour l'instant :
-  /// l'application n'est pas encore internationalisée. Ce sélecteur est
-  /// posé pour préparer le terrain, et n'entrave rien tant qu'il ne
-  /// modifie pas la langue courante.
   Future<void> _choisirLangue() async {
     await showModalBottomSheet<void>(
       context: context,
@@ -485,6 +481,7 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 children: [
                   const SizedBox(height: 10),
+                  // 👇 MODIFICATION ICI : BOUTON STORY SUR LA PHOTO 👇
                   _envoiPhoto
                       ? const SizedBox(
                           width: 90,
@@ -493,13 +490,42 @@ class _HomePageState extends State<HomePage> {
                             child: CircularProgressIndicator(color: MabokoCouleurs.secondaire),
                           ),
                         )
-                      : PhotoProfil(
-                          url: _profil?.avatarUrl,
-                          nom: _profil?.nomComplet.isNotEmpty == true
-                              ? _profil!.nomComplet
-                              : widget.avatarName,
-                          onModifier: _changerPhoto,
+                      : Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            PhotoProfil(
+                              url: _profil?.avatarUrl,
+                              nom: _profil?.nomComplet.isNotEmpty == true
+                                  ? _profil!.nomComplet
+                                  : widget.avatarName,
+                              onModifier: _changerPhoto,
+                            ),
+                            // Le bouton "+" style Instagram (seulement pour les artisans)
+                            if (!isClient)
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const MesStoriesScreen()),
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: MabokoCouleurs.secondaire,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white, width: 2),
+                                    ),
+                                    child: const Icon(Icons.add, color: Colors.white, size: 20),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
+                  // 👆 FIN MODIFICATION 👆
                   const SizedBox(height: 15),
                   Text(
                     widget.avatarName,
@@ -620,15 +646,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ===========================================================================
-  // MENU CLIENT
-  //
-  // Boutons retirés :
-  //  - « Conseils et assistances »
-  //  - « Musée du savoir-faire » (devenu une publicité gérée par l'admin)
-  //  - « Assistant vocal » (retiré précédemment)
-  //  - « Contacts d'urgence » (retiré précédemment)
-  // ===========================================================================
   Widget _buildClientProfileMenu() {
     return Column(
       children: [
@@ -722,9 +739,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ===========================================================================
-  // MENU ARTISAN (inchangé)
-  // ===========================================================================
   Widget _buildArtisanProfileMenu() {
     return Column(
       children: [
@@ -777,6 +791,14 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const AvisRecusScreen()),
           );
         }),
+        // 👇 AJOUT DU BOUTON DANS LE MENU ÉGALEMENT 👇
+        _buildMenuItem(Icons.camera_alt_outlined, "Mes stories", onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const MesStoriesScreen()),
+          );
+        }),
+        // 👆 FIN AJOUT 👆
         _buildMenuItem(Icons.photo_library_rounded, "Mon Portfolio", onTap: () {
           Navigator.push(
             context,
@@ -864,10 +886,6 @@ class _HomePageState extends State<HomePage> {
       ],
     );
   }
-
-  // ===========================================================================
-  // Helpers
-  // ===========================================================================
 
   Widget _buildMenuItem(IconData icon, String title, {VoidCallback? onTap}) {
     return Column(
