@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/maboko_theme.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/widgets/etats.dart';
+import '../../../core/widgets/choix_photo.dart'; // 👈 Nécessaire pour choisir une photo
 
 class MesStoriesScreen extends StatefulWidget {
   const MesStoriesScreen({super.key});
@@ -13,6 +14,7 @@ class MesStoriesScreen extends StatefulWidget {
 class _MesStoriesScreenState extends State<MesStoriesScreen> {
   List<dynamic>? _stories;
   String? _erreur;
+  bool _envoiEnCours = false; // Pour afficher le loader pendant l'envoi
 
   @override
   void initState() {
@@ -24,10 +26,55 @@ class _MesStoriesScreenState extends State<MesStoriesScreen> {
     setState(() => _erreur = null);
     try {
       // Adapte l'appel avec ton ApiClient ou Repository
-      final reponse = await const ApiClient().get('/stories/me'); 
+      final reponse = await const ApiClient().get('/stories/me');
       setState(() => _stories = reponse['data']);
     } on ApiException catch (e) {
       setState(() => _erreur = e.message);
+    }
+  }
+
+  // 📸 FONCTION POUR PUBLIER UNE STORY
+  Future<void> _publierStory() async {
+    // Ouvre la galerie ou l'appareil photo
+    final photo = await choisirPhoto(context);
+    if (photo == null || !mounted) return;
+
+    setState(() => _envoiEnCours = true);
+
+    try {
+      // ⚠️ ÉTAPE IMPORTANTE : Upload de l'image
+      // Si `choisirPhoto` te renvoie un fichier (XFile), il faut d'abord l'envoyer
+      // sur ton serveur pour obtenir une URL. 
+      // Si tu as un service comme ProfilRepository().enregistrerPhoto(photo), utilise-le.
+      
+      // Ici, je simule que `photo` est déjà une URL (à adapter selon ton code !)
+      final String urlImage = photo.toString(); 
+
+      // Envoi de l'URL à l'API Stories
+      await const ApiClient().post('/stories', {
+        'media_url': urlImage,
+        'type': 'image',
+      });
+
+      await _charger(); // Recharge la liste pour afficher la nouvelle story
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Story publiée ! Elle disparaîtra dans 2 heures.'),
+          backgroundColor: MabokoCouleurs.succes,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la publication : $e'),
+          backgroundColor: MabokoCouleurs.danger,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _envoiEnCours = false);
     }
   }
 
@@ -62,6 +109,22 @@ class _MesStoriesScreenState extends State<MesStoriesScreen> {
         backgroundColor: MabokoCouleurs.secondaire,
         foregroundColor: Colors.white,
       ),
+      // 🚀 BOUTON FLOTTANT POUR AJOUTER UNE STORY
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _envoiEnCours ? null : _publierStory,
+        backgroundColor: MabokoCouleurs.secondaire,
+        icon: _envoiEnCours
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              )
+            : const Icon(Icons.add_a_photo, color: Colors.white),
+        label: Text(
+          _envoiEnCours ? 'Publication...' : 'Publier',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
       body: _erreur != null
           ? EtatErreur(message: _erreur!, onReessayer: _charger)
           : _stories == null
@@ -69,10 +132,10 @@ class _MesStoriesScreenState extends State<MesStoriesScreen> {
               : _stories!.isEmpty
                   ? const EtatVide(
                       titre: 'Aucune story active',
-                      message: 'Publie une photo ou vidéo, elle durera 2 heures.',
+                      message: 'Clique sur le bouton "Publier" en bas à droite pour ajouter ta première story. Elle durera 2 heures.',
                     )
                   : GridView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80), // Marge en bas pour le bouton
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         crossAxisSpacing: 12,
@@ -87,7 +150,7 @@ class _MesStoriesScreenState extends State<MesStoriesScreen> {
                           child: Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(14),
-                              color: Colors.grey.shade300, // Couleur de fond en attendant l'image
+                              color: Colors.grey.shade300,
                               image: story['media_url'] != null
                                   ? DecorationImage(
                                       image: NetworkImage(story['media_url']),
@@ -122,7 +185,7 @@ class _MesStoriesScreenState extends State<MesStoriesScreen> {
                                         const Icon(Icons.remove_red_eye, color: Colors.white, size: 14),
                                         const SizedBox(width: 4),
                                         Text(
-                                          '${story['vues_count']}',
+                                          '${story['vues_count'] ?? 0}',
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 12,
