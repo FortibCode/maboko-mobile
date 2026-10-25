@@ -54,7 +54,7 @@ import '../features/artisans/ui/caisse_a_outils_screen.dart';
 import '../features/artisans/ui/boutique_materiaux_screen.dart';
 import '../features/artisans/ui/reseau_entraide_screen.dart';
 import '../features/artisans/ui/paiements_revenus_screen.dart';
-import '../features/artisans/ui/mes_stories_screen.dart'; // 👈 NOUVEL IMPORT
+import '../features/artisans/ui/mes_stories_screen.dart'; // 👈 IMPORT STORIES
 // ⬆️⬆️ FIN IMPORTS ARTISAN ⬆️⬆️
 
 class HomePage extends StatefulWidget {
@@ -100,8 +100,7 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
       setState(() => _metiers = liste.take(8).toList());
     } catch (_) {
-      // Les raccourcis sont un confort : l'onglet « Découvrir » reste
-      // accessible si le référentiel ne répond pas.
+      // Les raccourcis sont un confort.
     }
   }
 
@@ -111,7 +110,7 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
       setState(() => _notificationsNonLues = resultat.nonLues);
     } catch (_) {
-      // Le compteur est un confort : son échec ne doit rien bloquer.
+      // Le compteur est un confort.
     }
   }
 
@@ -192,7 +191,6 @@ class _HomePageState extends State<HomePage> {
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
-  /// Choix de la langue d'affichage.
   Future<void> _choisirLangue() async {
     await showModalBottomSheet<void>(
       context: context,
@@ -224,15 +222,13 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 12),
             ListTile(
-              leading: const Icon(Icons.language_rounded,
-                  color: MabokoCouleurs.secondaire),
+              leading: const Icon(Icons.language_rounded, color: MabokoCouleurs.secondaire),
               title: const Text('Français'),
               onTap: () => Navigator.pop(ctx),
             ),
             const Divider(height: 1),
             ListTile(
-              leading: const Icon(Icons.language_rounded,
-                  color: MabokoCouleurs.secondaire),
+              leading: const Icon(Icons.language_rounded, color: MabokoCouleurs.secondaire),
               title: const Text('Lingala'),
               onTap: () => Navigator.pop(ctx),
             ),
@@ -481,7 +477,8 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 children: [
                   const SizedBox(height: 10),
-                  // 👇 MODIFICATION ICI : BOUTON STORY SUR LA PHOTO 👇
+                  
+                  // 👇 BOUTON STORY SUPERPOSÉ SUR LA PHOTO 👇
                   _envoiPhoto
                       ? const SizedBox(
                           width: 90,
@@ -492,6 +489,7 @@ class _HomePageState extends State<HomePage> {
                         )
                       : Stack(
                           alignment: Alignment.bottomRight,
+                          clipBehavior: Clip.none, // 👈 Empêche le bouton d'être coupé
                           children: [
                             PhotoProfil(
                               url: _profil?.avatarUrl,
@@ -525,7 +523,8 @@ class _HomePageState extends State<HomePage> {
                               ),
                           ],
                         ),
-                  // 👆 FIN MODIFICATION 👆
+                  // 👆 FIN DU BOUTON STORY 👆
+                  
                   const SizedBox(height: 15),
                   Text(
                     widget.avatarName,
@@ -791,14 +790,6 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const AvisRecusScreen()),
           );
         }),
-        // 👇 AJOUT DU BOUTON DANS LE MENU ÉGALEMENT 👇
-        _buildMenuItem(Icons.camera_alt_outlined, "Mes stories", onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const MesStoriesScreen()),
-          );
-        }),
-        // 👆 FIN AJOUT 👆
         _buildMenuItem(Icons.photo_library_rounded, "Mon Portfolio", onTap: () {
           Navigator.push(
             context,
