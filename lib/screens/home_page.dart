@@ -25,7 +25,6 @@ import '../features/compte/data/profil_repository.dart';
 import '../features/tableau_bord/models/tableau_bord.dart';
 import '../features/tableau_bord/ui/tableau_bord_artisan_screen.dart';
 import 'portfolio_screen.dart';
-import 'settings_screen.dart';
 import '../services/storage_service.dart';
 import '../features/compte/data/google_auth.dart';
 import '../features/notifications/data/notification_repository.dart';
@@ -858,12 +857,6 @@ class _HomePageState extends State<HomePage> {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AideSupportScreen()),
-          );
-        }),
-        _buildMenuItem(Icons.settings_outlined, "Paramètres", onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const SettingsScreen()),
           );
         }),
         const Divider(height: 1),
