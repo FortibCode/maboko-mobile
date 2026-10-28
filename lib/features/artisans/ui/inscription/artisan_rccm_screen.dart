@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -78,19 +79,18 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
       // Étape 1 : Demander le Recto
       final succes = await _demanderPhoto(cible: 'recto');
       if (succes && mounted) {
-        // Petit message pour guider l'utilisateur
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Recto enregistré. Prenez maintenant la face arrière (Verso).'),
             backgroundColor: MabokoCouleurs.succes,
+            duration: Duration(seconds: 2),
           ),
         );
-        // On attend 1 seconde (pour qu'il lise) puis on ouvre direct le verso
-        await Future.delayed(const Duration(seconds: 1));
+        // On enchaîne DIRECTEMENT sur le Verso, sans attendre inutilement
         if (mounted) await _demanderPhoto(cible: 'verso');
       }
     } else if (_photoPieceVerso == null) {
-      // Étape 2 : Demander le Verso
+      // Étape 2 : Demander le Verso (si le recto est déjà fait)
       await _demanderPhoto(cible: 'verso');
     } else {
       // Étape 3 : Déjà complet, on propose de recommencer
@@ -575,7 +575,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
         ),
         const SizedBox(height: 18),
         
-        // ⬇️ UN SEUL BOUTON QUI GÈRE TOUT LE FLUX RECT O / VERSO
+        // ⬇️ UN SEUL BOUTON QUI GÈRE TOUT LE FLUX RECTO / VERSO
         _zoneUploadPiece(),
         
         const SizedBox(height: 10),
@@ -586,7 +586,7 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
     );
   }
 
-  /// Ce widget gère l'affichage de la zone d'upload avec son état d'avancement.
+  /// Ce widget gère l'affichage de la zone d'upload avec l'aperçu des photos.
   Widget _zoneUploadPiece() {
     final aRecto = _photoPieceRecto != null;
     final aVerso = _photoPieceVerso != null;
@@ -644,13 +644,15 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
                         )
                     ],
                   ),
+                  
+                  // 👇 AFFICHAGE DES MINIATURES DES PHOTOS PRISES 👇
                   if (aRecto || aVerso) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _vignetteEtat('Recto', aRecto),
-                        _vignetteEtat('Verso', aVerso),
+                        _vignettePhoto('Recto', _photoPieceRecto),
+                        _vignettePhoto('Verso', _photoPieceVerso),
                       ],
                     )
                   ]
@@ -660,23 +662,50 @@ class _ArtisanRccmScreenState extends State<ArtisanRccmScreen> {
     );
   }
 
-  Widget _vignetteEtat(String label, bool fait) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+  /// Affiche une petite vignette de la photo ou un emplacement vide.
+  Widget _vignettePhoto(String label, String? base64Image) {
+    final bool fait = base64Image != null;
+
+    return Column(
       children: [
-        Icon(
-          fait ? Icons.check_circle : Icons.radio_button_unchecked,
-          size: 16,
-          color: fait ? MabokoCouleurs.succes : context.texteSecondaireMaboko,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: fait ? MabokoCouleurs.succes : context.texteSecondaireMaboko,
-            fontWeight: fait ? FontWeight.bold : FontWeight.normal,
+        Container(
+          width: 100,
+          height: 70,
+          decoration: BoxDecoration(
+            color: context.fondMaboko,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: fait ? MabokoCouleurs.succes : context.bordureMaboko,
+              style: fait ? BorderStyle.solid : BorderStyle.none,
+            ),
           ),
+          clipBehavior: Clip.hardEdge,
+          child: fait
+              ? Image.memory(
+                  base64Decode(base64Image.split(',').last),
+                  fit: BoxFit.cover,
+                )
+              : Icon(Icons.image_outlined, color: context.texteSecondaireMaboko),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              fait ? Icons.check_circle : Icons.radio_button_unchecked,
+              size: 14,
+              color: fait ? MabokoCouleurs.succes : context.texteSecondaireMaboko,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: fait ? MabokoCouleurs.succes : context.texteSecondaireMaboko,
+                fontWeight: fait ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
         ),
       ],
     );
