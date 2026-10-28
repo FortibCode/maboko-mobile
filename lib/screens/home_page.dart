@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/maboko_theme.dart';
 import '../core/network/api_exception.dart';
+import '../core/network/api_client.dart'; // 👈 Import ajouté pour la suppression
 import '../features/abonnement/ui/abonnement_screen.dart';
 import '../features/demandes/ui/demandes_screen.dart';
 import '../features/courses/ui/historique_courses_screen.dart';
@@ -53,7 +54,7 @@ import '../features/artisans/ui/caisse_a_outils_screen.dart';
 import '../features/artisans/ui/boutique_materiaux_screen.dart';
 import '../features/artisans/ui/reseau_entraide_screen.dart';
 import '../features/artisans/ui/paiements_revenus_screen.dart';
-import '../features/artisans/ui/mes_stories_screen.dart'; // 👈 IMPORT STORIES
+import '../features/artisans/ui/mes_stories_screen.dart';
 // ⬆️⬆️ FIN IMPORTS ARTISAN ⬆️⬆️
 
 class HomePage extends StatefulWidget {
@@ -98,9 +99,7 @@ class _HomePageState extends State<HomePage> {
       final liste = await const MetierRepository().lister();
       if (!mounted) return;
       setState(() => _metiers = liste.take(8).toList());
-    } catch (_) {
-      // Les raccourcis sont un confort.
-    }
+    } catch (_) {}
   }
 
   Future<void> _chargerNotifications() async {
@@ -108,9 +107,7 @@ class _HomePageState extends State<HomePage> {
       final resultat = await const NotificationRepository().lister();
       if (!mounted) return;
       setState(() => _notificationsNonLues = resultat.nonLues);
-    } catch (_) {
-      // Le compteur est un confort.
-    }
+    } catch (_) {}
   }
 
   Future<void> _chargerProfil() async {
@@ -127,9 +124,7 @@ class _HomePageState extends State<HomePage> {
       if (bascule || !mounted) return;
 
       setState(() => _profil = profil);
-    } catch (_) {
-      // Le profil enrichit l'écran sans le conditionner.
-    }
+    } catch (_) {}
   }
 
   Future<void> _changerPhoto() async {
@@ -178,9 +173,7 @@ class _HomePageState extends State<HomePage> {
       final bord = await _tableauBord.charger();
       if (!mounted) return;
       setState(() => _bord = bord);
-    } on ApiException {
-      // Les compteurs ne sont pas essentiels.
-    }
+    } on ApiException {}
   }
 
   Future<void> _logout() async {
@@ -189,6 +182,79 @@ class _HomePageState extends State<HomePage> {
     if (!mounted) return;
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
+
+  // 👇 NOUVELLE MÉTHODE : SUPPRESSION DÉFINITIVE DU COMPTE 👇
+  Future<void> _supprimerMonCompte() async {
+    final mdpController = TextEditingController();
+
+    final confirme = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Supprimer mon compte ?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Cette action est IRRÉVERSIBLE. Toutes vos données (profil, avis, missions, messages) seront définitivement perdues.',
+              style: TextStyle(color: Colors.red),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: mdpController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Confirmez avec votre mot de passe',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirme != true) return;
+    if (mdpController.text.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Mot de passe requis pour confirmer.'), backgroundColor: MabokoCouleurs.danger),
+      );
+      return;
+    }
+
+    try {
+      // L'API attend 'password' et 'confirmation' (accepté)
+      await const ApiClient().delete('/compte', body: {
+        'password': mdpController.text,
+        'confirmation': true,
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Compte supprimé avec succès.'), backgroundColor: MabokoCouleurs.succes),
+      );
+      
+      // Déconnexion forcée
+      await _logout();
+      
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur : $e'), backgroundColor: MabokoCouleurs.danger),
+      );
+    }
+  }
+  // 👆 FIN NOUVELLE MÉTHODE 👆
 
   Future<void> _choisirLangue() async {
     await showModalBottomSheet<void>(
@@ -488,7 +554,7 @@ class _HomePageState extends State<HomePage> {
                         )
                       : Stack(
                           alignment: Alignment.bottomRight,
-                          clipBehavior: Clip.none, // 👈 Empêche le bouton d'être coupé
+                          clipBehavior: Clip.none,
                           children: [
                             PhotoProfil(
                               url: _profil?.avatarUrl,
@@ -497,7 +563,6 @@ class _HomePageState extends State<HomePage> {
                                   : widget.avatarName,
                               onModifier: _changerPhoto,
                             ),
-                            // Le bouton "+" style Instagram (seulement pour les artisans)
                             if (!isClient)
                               Positioned(
                                 bottom: 0,
@@ -727,6 +792,13 @@ class _HomePageState extends State<HomePage> {
           );
         }),
         const Divider(height: 1),
+        // 👇 BOUTON SUPPRIMER LE COMPTE (CLIENT) 👇
+        _buildMenuItem(
+          Icons.delete_forever,
+          "Supprimer mon compte",
+          onTap: _supprimerMonCompte,
+        ),
+        const Divider(height: 1),
         ListTile(
           leading: const Icon(Icons.logout_rounded, color: Colors.red),
           title: const Text("Se déconnecter", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
@@ -859,6 +931,13 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => const AideSupportScreen()),
           );
         }),
+        const Divider(height: 1),
+        // 👇 BOUTON SUPPRIMER LE COMPTE (ARTISAN) 👇
+        _buildMenuItem(
+          Icons.delete_forever,
+          "Supprimer mon compte",
+          onTap: _supprimerMonCompte,
+        ),
         const Divider(height: 1),
         ListTile(
           leading: const Icon(Icons.logout_rounded, color: Colors.red),
