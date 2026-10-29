@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/maboko_theme.dart';
+import '../../../core/network/api.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/widgets/etats.dart';
 import '../../../core/widgets/choix_photo.dart'; // 👈 Nécessaire pour choisir une photo
@@ -26,7 +27,7 @@ class _MesStoriesScreenState extends State<MesStoriesScreen> {
     setState(() => _erreur = null);
     try {
       // Adapte l'appel avec ton ApiClient ou Repository
-      final reponse = await const ApiClient().get('/stories/me');
+      final reponse = await api.get('/stories/me');
       setState(() => _stories = reponse['data']);
     } on ApiException catch (e) {
       setState(() => _erreur = e.message);
@@ -51,7 +52,7 @@ class _MesStoriesScreenState extends State<MesStoriesScreen> {
       final String urlImage = photo.toString(); 
 
       // Envoi de l'URL à l'API Stories
-      await const ApiClient().post('/stories', {
+      await api.post('/stories', corps: {
         'media_url': urlImage,
         'type': 'image',
       });
@@ -80,7 +81,7 @@ class _MesStoriesScreenState extends State<MesStoriesScreen> {
 
   Future<void> _supprimerStory(int id) async {
     try {
-      await const ApiClient().delete('/stories/$id');
+      await api.delete('/stories/$id');
       await _charger();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -131,6 +132,7 @@ class _MesStoriesScreenState extends State<MesStoriesScreen> {
               ? const ChargementEnCours()
               : _stories!.isEmpty
                   ? const EtatVide(
+                      icone: Icons.auto_stories_outlined,
                       titre: 'Aucune story active',
                       message: 'Clique sur le bouton "Publier" en bas à droite pour ajouter ta première story. Elle durera 2 heures.',
                     )
@@ -227,7 +229,7 @@ class _StoryVuesScreenState extends State<StoryVuesScreen> {
 
   Future<void> _charger() async {
     try {
-      final reponse = await const ApiClient().get('/stories/${widget.storyId}/vues');
+      final reponse = await api.get('/stories/${widget.storyId}/vues');
       setState(() => _vues = reponse['data']);
     } on ApiException catch (e) {
       setState(() => _erreur = e.message);
@@ -247,7 +249,7 @@ class _StoryVuesScreenState extends State<StoryVuesScreen> {
           : _vues == null
               ? const ChargementEnCours()
               : _vues!.isEmpty
-                  ? const EtatVide(titre: 'Aucune vue', message: 'Personne n\'a encore vu cette story.')
+                  ? const EtatVide(icone: Icons.visibility_off_outlined, titre: 'Aucune vue', message: 'Personne n\'a encore vu cette story.')
                   : ListView.separated(
                       itemCount: _vues!.length,
                       separatorBuilder: (_, __) => const Divider(height: 1),
