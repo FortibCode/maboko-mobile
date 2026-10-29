@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/maboko_theme.dart';
 import '../core/network/api_exception.dart';
-import '../core/network/api.dart'; // 👈 Import de api.dart pour l'appel DELETE
+import '../core/network/api.dart';
 import '../features/abonnement/ui/abonnement_screen.dart';
 import '../features/demandes/ui/demandes_screen.dart';
 import '../features/courses/ui/historique_courses_screen.dart';
@@ -233,7 +233,6 @@ class _HomePageState extends State<HomePage> {
     }
 
     try {
-      // On utilise l'import 'api.dart' comme ton collègue l'avait fait
       await api.delete('/compte', corps: {
         'password': mdpController.text,
         'confirmation': true,
@@ -565,8 +564,8 @@ class _HomePageState extends State<HomePage> {
                             // Le bouton "+" style Instagram (seulement pour les artisans)
                             if (!isClient)
                               Positioned(
-                                bottom: -4,  // 👈 Poussé un peu vers le bas
-                                right: 25,   // 👈 Poussé vers la gauche pour ne pas cacher le bouton photo
+                                bottom: -10, // 👈 Plus bas
+                                right: 55,   // 👈 BEAUCOUP plus à gauche pour laisser la place à l'appareil photo
                                 child: GestureDetector(
                                   onTap: () {
                                     Navigator.push(
