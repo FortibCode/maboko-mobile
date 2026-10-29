@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/maboko_theme.dart';
 import '../core/network/api_exception.dart';
-import '../core/network/api_client.dart'; // 👈 Import ajouté pour la suppression
+import '../core/network/api.dart';
 import '../features/abonnement/ui/abonnement_screen.dart';
 import '../features/demandes/ui/demandes_screen.dart';
 import '../features/courses/ui/historique_courses_screen.dart';
@@ -234,7 +234,7 @@ class _HomePageState extends State<HomePage> {
 
     try {
       // L'API attend 'password' et 'confirmation' (accepté)
-      await const ApiClient().delete('/compte', body: {
+      await api.delete('/compte', corps: {
         'password': mdpController.text,
         'confirmation': true,
       });

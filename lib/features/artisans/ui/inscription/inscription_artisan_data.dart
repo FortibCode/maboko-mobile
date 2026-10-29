@@ -15,7 +15,8 @@ class InscriptionArtisanData {
     this.bio,
     this.aRccm,
     this.photoRccm,
-    this.photoPiece,
+    this.photoPieceRecto,
+    this.photoPieceVerso,
   });
 
   /// Tranche d'expérience choisie : « moins-2 », « 2-5 », « 5-10 »,
@@ -37,8 +38,9 @@ class InscriptionArtisanData {
   /// Photo du RCCM, encodée en base64 (`data:image/jpeg;base64,...`).
   final String? photoRccm;
 
-  /// Photo de la pièce d'identité, encodée en base64.
-  final String? photoPiece;
+  /// Photos de la pièce d'identité, recto et verso, encodées en base64.
+  final String? photoPieceRecto;
+  final String? photoPieceVerso;
 
   /// Vrai si toutes les étapes obligatoires ont été remplies.
   bool get estComplet =>
@@ -48,7 +50,9 @@ class InscriptionArtisanData {
       bio != null &&
       bio!.trim().isNotEmpty &&
       aRccm != null &&
-      (aRccm == true ? photoRccm != null : photoPiece != null);
+      (aRccm == true
+          ? photoRccm != null
+          : photoPieceRecto != null && photoPieceVerso != null);
 
   // ---------------------------------------------------------------------------
   // Sérialisation vers SharedPreferences
@@ -60,7 +64,8 @@ class InscriptionArtisanData {
   static const _cleBio = 'inscription_artisan_bio';
   static const _cleARccm = 'inscription_artisan_a_rccm';
   static const _clePhotoRccm = 'inscription_artisan_photo_rccm';
-  static const _clePhotoPiece = 'inscription_artisan_photo_piece';
+  static const _clePhotoPieceRecto = 'inscription_artisan_photo_piece';
+  static const _clePhotoPieceVerso = 'inscription_artisan_photo_piece_verso';
 
   /// Sauvegarde l'état complet du parcours en local.
   Future<void> sauvegarder() async {
@@ -72,7 +77,12 @@ class InscriptionArtisanData {
     if (bio != null) await prefs.setString(_cleBio, bio!);
     if (aRccm != null) await prefs.setBool(_cleARccm, aRccm!);
     if (photoRccm != null) await prefs.setString(_clePhotoRccm, photoRccm!);
-    if (photoPiece != null) await prefs.setString(_clePhotoPiece, photoPiece!);
+    if (photoPieceRecto != null) {
+      await prefs.setString(_clePhotoPieceRecto, photoPieceRecto!);
+    }
+    if (photoPieceVerso != null) {
+      await prefs.setString(_clePhotoPieceVerso, photoPieceVerso!);
+    }
   }
 
   /// Relit l'état sauvegardé. Renvoie `null` si rien n'a été sauvegardé.
@@ -85,7 +95,8 @@ class InscriptionArtisanData {
     final bio = prefs.getString(_cleBio);
     final aRccm = prefs.getBool(_cleARccm);
     final photoRccm = prefs.getString(_clePhotoRccm);
-    final photoPiece = prefs.getString(_clePhotoPiece);
+    final photoPieceRecto = prefs.getString(_clePhotoPieceRecto);
+    final photoPieceVerso = prefs.getString(_clePhotoPieceVerso);
 
     if (experience == null &&
         ville == null &&
@@ -102,7 +113,8 @@ class InscriptionArtisanData {
       bio: bio,
       aRccm: aRccm,
       photoRccm: photoRccm,
-      photoPiece: photoPiece,
+      photoPieceRecto: photoPieceRecto,
+      photoPieceVerso: photoPieceVerso,
     );
   }
 
@@ -116,7 +128,8 @@ class InscriptionArtisanData {
     await prefs.remove(_cleBio);
     await prefs.remove(_cleARccm);
     await prefs.remove(_clePhotoRccm);
-    await prefs.remove(_clePhotoPiece);
+    await prefs.remove(_clePhotoPieceRecto);
+    await prefs.remove(_clePhotoPieceVerso);
   }
 
   /// Copie avec modification : chaque écran renvoie sa valeur et on
@@ -128,7 +141,8 @@ class InscriptionArtisanData {
     String? bio,
     bool? aRccm,
     String? photoRccm,
-    String? photoPiece,
+    String? photoPieceRecto,
+    String? photoPieceVerso,
   }) {
     return InscriptionArtisanData(
       experience: experience ?? this.experience,
@@ -137,7 +151,8 @@ class InscriptionArtisanData {
       bio: bio ?? this.bio,
       aRccm: aRccm ?? this.aRccm,
       photoRccm: photoRccm ?? this.photoRccm,
-      photoPiece: photoPiece ?? this.photoPiece,
+      photoPieceRecto: photoPieceRecto ?? this.photoPieceRecto,
+      photoPieceVerso: photoPieceVerso ?? this.photoPieceVerso,
     );
   }
 }
