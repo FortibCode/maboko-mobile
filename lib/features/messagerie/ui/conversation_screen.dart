@@ -243,11 +243,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
     });
   }
 
-  /// Lit un fichier audio et devine son type MIME à partir de l'extension.
-  ///
-  /// La lecture est déléguée à un stub (Web) ou à une implémentation
-  /// native (mobile) via un import conditionnel. Sur Web, le stub
-  /// retourne null : l'envoi vocal y est donc simplement désactivé.
   Future<_AudioPrepare?> _lireFichierAudio(String chemin) async {
     final octets = await lireFichierAudio(chemin);
     if (octets == null) return null;
@@ -488,16 +483,25 @@ class _ConversationScreenState extends State<ConversationScreen> {
                 ),
               )
             else if (champVide)
+              // 👇 ICÔNE CORRIGÉE ICI 👇
               IconButton(
                 tooltip: 'Enregistrer un message vocal',
                 onPressed: _demarrerEnregistrement,
-                icon: const Icon(Icons.mic_rounded, color: MabokoCouleurs.secondaire),
+                icon: const Icon(
+                  Icons.mic, // Utilisation de l'icône standard, compatible partout
+                  size: 26, 
+                  color: MabokoCouleurs.secondaire,
+                ),
               )
             else
               IconButton(
                 tooltip: 'Envoyer',
                 onPressed: () => _envoyer(),
-                icon: const Icon(Icons.send_rounded, color: MabokoCouleurs.secondaire),
+                icon: const Icon(
+                  Icons.send_rounded, 
+                  size: 26,
+                  color: MabokoCouleurs.secondaire,
+                ),
               ),
           ],
         ),
@@ -553,10 +557,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
 }
 
 /// Résultat de la préparation d'un fichier audio : type MIME et octets.
-///
-/// On n'utilise pas un record Dart (`(String, Uint8List)`) pour éviter
-/// les incompatibilités de compilation sur les versions plus anciennes
-/// de Dart, ni les surprises du Web où le tuple est parfois mal inféré.
 class _AudioPrepare {
   const _AudioPrepare(this.mime, this.octets);
 
@@ -608,7 +608,7 @@ class _LecteurAudioState extends State<_LecteurAudio> {
     try {
       await _lecteur.setUrl(widget.url);
     } catch (_) {
-      // URL invalide ou réseau : la bulle affiche juste le bouton play.
+      // URL invalide ou réseau.
     }
   }
 
