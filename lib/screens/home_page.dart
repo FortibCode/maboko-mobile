@@ -183,7 +183,7 @@ class _HomePageState extends State<HomePage> {
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
-  // 👇 NOUVELLE MÉTHODE : SUPPRESSION DÉFINITIVE DU COMPTE 👇
+  // 👇 MÉTHODE : SUPPRESSION DÉFINITIVE DU COMPTE 👇
   Future<void> _supprimerMonCompte() async {
     final mdpController = TextEditingController();
 
@@ -233,7 +233,6 @@ class _HomePageState extends State<HomePage> {
     }
 
     try {
-      // L'API attend 'password' et 'confirmation' (accepté)
       await const ApiClient().delete('/compte', body: {
         'password': mdpController.text,
         'confirmation': true,
@@ -244,7 +243,6 @@ class _HomePageState extends State<HomePage> {
         const SnackBar(content: Text('Compte supprimé avec succès.'), backgroundColor: MabokoCouleurs.succes),
       );
       
-      // Déconnexion forcée
       await _logout();
       
     } catch (e) {
@@ -254,7 +252,7 @@ class _HomePageState extends State<HomePage> {
       );
     }
   }
-  // 👆 FIN NOUVELLE MÉTHODE 👆
+  // 👆 FIN MÉTHODE 👆
 
   Future<void> _choisirLangue() async {
     await showModalBottomSheet<void>(
@@ -563,10 +561,11 @@ class _HomePageState extends State<HomePage> {
                                   : widget.avatarName,
                               onModifier: _changerPhoto,
                             ),
+                            // Le bouton "+" style Instagram (seulement pour les artisans)
                             if (!isClient)
                               Positioned(
-                                bottom: 0,
-                                right: 0,
+                                bottom: -4,  // 👈 Poussé un peu vers le bas
+                                right: 25,   // 👈 Poussé vers la gauche pour ne pas cacher le bouton photo
                                 child: GestureDetector(
                                   onTap: () {
                                     Navigator.push(
@@ -792,7 +791,6 @@ class _HomePageState extends State<HomePage> {
           );
         }),
         const Divider(height: 1),
-        // 👇 BOUTON SUPPRIMER LE COMPTE (CLIENT) 👇
         _buildMenuItem(
           Icons.delete_forever,
           "Supprimer mon compte",
@@ -932,7 +930,6 @@ class _HomePageState extends State<HomePage> {
           );
         }),
         const Divider(height: 1),
-        // 👇 BOUTON SUPPRIMER LE COMPTE (ARTISAN) 👇
         _buildMenuItem(
           Icons.delete_forever,
           "Supprimer mon compte",
