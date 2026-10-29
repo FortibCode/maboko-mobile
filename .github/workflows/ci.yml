@@ -1,0 +1,40 @@
+name: CI Mobile
+
+# La mise en ligne n'a pas lieu ici : Vercel construit et publie la version
+# web lui-meme a chaque push sur main (vercel.json, outils/build-vercel.sh).
+# Ce workflow verifie seulement que le code compile et que les tests passent,
+# avec la meme version de Flutter que Vercel.
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  verification:
+    name: Analyse, tests et compilation web
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.1'
+          channel: stable
+          cache: true
+
+      - name: Installer les dependances
+        run: flutter pub get
+
+      # Seules les erreurs bloquent : les avertissements et suggestions
+      # restent visibles dans le journal sans faire echouer la verification.
+      - name: Analyse statique
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Tests
+        run: flutter test
+
+      - name: Compilation web
+        run: flutter build web --release
