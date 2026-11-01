@@ -63,11 +63,24 @@ class _AttenteChauffeurScreenState extends State<AttenteChauffeurScreen> {
     }
   }
 
+  Future<void> _refuserPrix() async {
+    try {
+      final course = await const CourseRepository().refuserPrix(widget.courseId);
+      if (!mounted) return;
+      setState(() => _course = course);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur : $e'), backgroundColor: MabokoCouleurs.danger),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_chargement) return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
-    final enNegociation = _course?.statut == 'negociation';
+    final enNegociation = _course?.enNegociation ?? false;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Recherche d\'un chauffeur')),
@@ -96,10 +109,9 @@ class _AttenteChauffeurScreenState extends State<AttenteChauffeurScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {
-                           // Annuler la course
-                        },
-                        child: const Text('Annuler'),
+                        // La course repart vers les autres chauffeurs.
+                        onPressed: _refuserPrix,
+                        child: const Text('Refuser'),
                       ),
                     ),
                     const SizedBox(width: 16),

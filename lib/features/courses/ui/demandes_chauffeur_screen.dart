@@ -47,9 +47,10 @@ class _DemandesChauffeurScreenState extends State<DemandesChauffeurScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final prixClient = widget.courseData['prix_client'] ?? widget.courseData['tarif_estime'];
-    final depart = widget.courseData['lieu_depart'] ?? 'Départ';
-    final arrivee = widget.courseData['lieu_arrivee'] ?? 'Arrivée';
+    // Format de CourseResource côté API.
+    final prixClient = widget.courseData['prixClient'] ?? widget.courseData['tarifEstime'];
+    final depart = (widget.courseData['depart'] as Map?)?['adresse'] ?? 'Départ';
+    final arrivee = (widget.courseData['arrivee'] as Map?)?['adresse'] ?? 'Arrivée';
 
     return Scaffold(
       appBar: AppBar(title: const Text('Nouvelle course')),
@@ -60,7 +61,7 @@ class _DemandesChauffeurScreenState extends State<DemandesChauffeurScreen> {
           children: [
             Text('$depart ➡️ $arrivee', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            Text('Le client propose : ${prixClient} FCFA', style: const TextStyle(fontSize: 16, color: MabokoCouleurs.secondaire)),
+            Text('Le client propose : $prixClient FCFA', style: const TextStyle(fontSize: 16, color: MabokoCouleurs.secondaire)),
             const SizedBox(height: 32),
             
             TextField(
