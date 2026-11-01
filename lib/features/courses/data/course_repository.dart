@@ -213,6 +213,11 @@ class CourseRepository {
   Future<Course> accepterPrix(int courseId) =>
       _transition(courseId, 'accepter-prix', {});
 
+  /// Le client refuse le prix du chauffeur : la course repart vers les
+  /// autres chauffeurs.
+  Future<Course> refuserPrix(int courseId) =>
+      _transition(courseId, 'refuser-prix', {});
+
   /// Aliases courts pour les nouveaux écrans de négociation.
   Future<Course> accepterCourse(int courseId) => accepter(courseId);
   Future<void> refuserCourse(int courseId) => refuser(courseId);

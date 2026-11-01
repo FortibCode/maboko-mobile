@@ -114,6 +114,9 @@ class Course {
 
   bool get chercheChauffeur => statut == 'recherche';
 
+  /// Un chauffeur a proposé un autre prix, en attente de la réponse du client.
+  bool get enNegociation => statut == 'negociation';
+
   bool get estActive =>
       const ['acceptee', 'en_route', 'prise_en_charge'].contains(statut);
 
@@ -145,8 +148,8 @@ class Course {
       dureeEstimeeMin: json['dureeEstimeeMin'] as int? ?? 0,
       tarifEstime: (json['tarifEstime'] as num?)?.toDouble() ?? 0,
       tarifFinal: (json['tarifFinal'] as num?)?.toDouble(),
-      prixClient: (json['prix_client'] as num?)?.toDouble(),
-      prixChauffeur: (json['prix_chauffeur'] as num?)?.toDouble(),
+      prixClient: (json['prixClient'] as num?)?.toDouble(),
+      prixChauffeur: (json['prixChauffeur'] as num?)?.toDouble(),
       chauffeur: chauffeur == null ? null : ChauffeurCourse.depuisJson(chauffeur),
       clientNom: (client?['nomComplet'] as String?)?.trim(),
       annuleePar: json['annuleePar'] as String?,
