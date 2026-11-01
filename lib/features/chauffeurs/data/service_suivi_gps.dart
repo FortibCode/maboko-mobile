@@ -1,96 +1,89 @@
 import 'dart:async';
-<<<<<<< HEAD
+
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
-import '../../../core/network/api_client.dart';
-
-class ServiceSuiviGps {
-  Timer? _timer;
-  bool _enCours = false;
-
-  /// Démarre l'envoi de la position toutes les 10 secondes.
-  Future<void> demarrer() async {
-    if (_enCours) return;
-
-    // 1. Vérifier si le GPS est activé
-    final serviceActive = await Geolocator.isLocationServiceEnabled();
-    if (!serviceActive) return;
-
-    // 2. Demander la permission
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) return;
-    }
-
-    if (permission == LocationPermission.deniedForever) return;
-
-    _enCours = true;
-
-    // 3. Envoyer la position toutes les 10 secondes
-    _timer = Timer.periodic(const Duration(seconds: 10), (timer) async {
-      try {
-        final position = await Geolocator.getCurrentPosition();
-        
-        // On envoie à l'API Laravel (route POST /chauffeur/position)
-        await const ApiClient().post('/chauffeur/position', body: {
-          'latitude': position.latitude,
-          'longitude': position.longitude,
-          'vitesse_kmh': position.speed * 3.6, // Conversion m/s en km/h
-        });
-      } catch (e) {
-        // Erreur réseau silencieuse pour ne pas bloquer l'app
-        print('Erreur GPS: $e');
-      }
-    });
-  }
-
-  /// Arrête l'envoi (quand le chauffeur passe hors ligne).
-  void arreter() {
-    _timer?.cancel();
-    _enCours = false;
-  }
-}
-=======
 
 import '../../courses/data/course_repository.dart';
 import '../../../core/localisation/service_position.dart';
 
-/// Service de suivi GPS pour le chauffeur.
+/// Suivi GPS du chauffeur, partagé par toute l'application.
 ///
-/// Démarre un flux de position continue quand le chauffeur est en ligne
-/// et le transmet au serveur via [CourseRepository.transmettrePosition].
-/// Appelé depuis [ChauffeurAccueilScreen] lorsque le chauffeur bascule
-/// en mode « En ligne ».
+/// Tant qu'il est actif, chaque position part au serveur via
+/// [CourseRepository.transmettrePosition], y compris écran verrouillé :
+/// c'est elle qui rend le chauffeur joignable et permet au client de suivre
+/// son taxi. Démarré par [ChauffeurAccueilScreen] au passage « En ligne » et
+/// par [CourseChauffeurScreen] pendant une course.
 ///
-/// Bien que ce service soit instanciable, la logique de suivi est déjà
-/// intégrée dans [ChauffeurAccueilScreen] via [ServicePosition.suivi()].
-/// Cette classe sert de point d'extension pour les tests et les futures
-/// fonctionnalités (ex. : historique des trajets côté chauffeur).
+/// Une seule instance existe, car le plugin GPS ne tient qu'un flux à la
+/// fois : un second abonnement recevrait le premier flux, et le couper
+/// arrêterait le suivi pour tout le monde. Les écrans qui veulent afficher
+/// la position écoutent [positions] au lieu d'ouvrir leur propre flux.
 class ServiceSuiviGps {
+  ServiceSuiviGps._();
+
+  static final ServiceSuiviGps instance = ServiceSuiviGps._();
+
   static const _repository = CourseRepository();
 
-  StreamSubscription<dynamic>? _abonnement;
+  StreamSubscription<Position>? _abonnement;
+  final _positions = StreamController<Position>.broadcast();
 
-  /// Démarre le suivi GPS et la transmission automatique de la position.
-  void demarrer() {
-    if (_abonnement != null) return; // Déjà actif
+  /// Positions reçues pendant le suivi, pour l'affichage (carte, etc.).
+  Stream<Position> get positions => _positions.stream;
 
-    _abonnement = ServicePosition.suivi().listen((position) {
-      _repository.transmettrePosition(
-        latitude: position.latitude,
-        longitude: position.longitude,
-        vitesseKmh: position.speed * 3.6,
-      );
-    });
-  }
-
-  /// Arrête le suivi GPS.
-  void arreter() {
-    _abonnement?.cancel();
-    _abonnement = null;
-  }
+  /// Dernière position reçue : un écran qui s'abonne en cours de route n'a
+  /// pas à attendre le prochain déplacement de 25 m pour l'afficher.
+  Position? get dernierePosition => _derniere;
+  Position? _derniere;
 
   /// Indique si le suivi est actif.
   bool get estActif => _abonnement != null;
+
+  /// Démarre le suivi GPS et la transmission automatique de la position.
+  ///
+  /// Renvoie false si le GPS est coupé ou l'autorisation refusée : le flux
+  /// de position échouerait sinon dès son ouverture.
+  Future<bool> demarrer() async {
+    if (_abonnement != null) return true; // Déjà actif
+
+    if (!await Geolocator.isLocationServiceEnabled()) return false;
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      return false;
+    }
+
+    // Deux appels simultanés ont pu passer les vérifications ensemble.
+    if (_abonnement != null) return true;
+
+    _abonnement = ServicePosition.suivi(arrierePlan: true).listen(
+      (position) {
+        _derniere = position;
+        _positions.add(position);
+
+        // Une erreur réseau ne doit pas interrompre le suivi : la position
+        // suivante sera envoyée normalement.
+        _repository
+            .transmettrePosition(
+              latitude: position.latitude,
+              longitude: position.longitude,
+              vitesseKmh: position.speed * 3.6, // m/s vers km/h
+            )
+            .catchError((Object e) => debugPrint('Envoi de position échoué : $e'));
+      },
+      onError: (Object e) => debugPrint('Erreur GPS : $e'),
+    );
+    return true;
+  }
+
+  /// Arrête le suivi GPS (et la notification Android qui l'accompagne).
+  void arreter() {
+    _abonnement?.cancel();
+    _abonnement = null;
+    _derniere = null;
+  }
 }
->>>>>>> 1e016d67d9892b850e40325b501a17951038a399

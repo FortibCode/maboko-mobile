@@ -7,6 +7,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/theme/maboko_theme.dart';
 import '../../../core/widgets/etats.dart';
 import '../../../services/notification_service.dart';
+import '../../chauffeurs/data/service_suivi_gps.dart';
 import '../data/course_repository.dart';
 import '../models/course.dart';
 import 'course_chauffeur_screen.dart';
@@ -41,7 +42,6 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
   bool _premierChargement = true;
 
   Timer? _minuterie;
-  StreamSubscription<dynamic>? _suiviPosition;
   bool _chargement = true;
   bool _bascule = false;
   String? _erreur;
@@ -56,7 +56,7 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
   @override
   void dispose() {
     _minuterie?.cancel();
-    _suiviPosition?.cancel();
+    ServiceSuiviGps.instance.arreter();
     super.dispose();
   }
 
@@ -128,23 +128,11 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
   }
 
   /// Tant que le chauffeur est en ligne, sa position part au serveur : c'est
-  /// elle qui le rend joignable pour les courses proches.
-  void _demarrerSuiviPosition() {
-    if (_suiviPosition != null) return;
+  /// elle qui le rend joignable pour les courses proches, même écran
+  /// verrouillé.
+  void _demarrerSuiviPosition() => ServiceSuiviGps.instance.demarrer();
 
-    _suiviPosition = ServicePosition.suivi().listen((position) {
-      _repository.transmettrePosition(
-        latitude: position.latitude,
-        longitude: position.longitude,
-        vitesseKmh: position.speed * 3.6,
-      );
-    });
-  }
-
-  void _arreterSuiviPosition() {
-    _suiviPosition?.cancel();
-    _suiviPosition = null;
-  }
+  void _arreterSuiviPosition() => ServiceSuiviGps.instance.arreter();
 
   Future<void> _basculer(bool enLigne) async {
     setState(() => _bascule = true);

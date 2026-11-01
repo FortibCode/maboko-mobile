@@ -34,11 +34,12 @@
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Maboko utilise votre position en arrière-plan pour permettre aux clients de suivre votre taxi en temps réel pendant une course.</string>
 	
-	<!-- 👇 NOUVEAU : Modes d'arrière-plan (GPS et Audio) 👇 -->
+	<!-- Suivi GPS du chauffeur écran verrouillé. Pas de mode « audio » : les
+	     messages vocaux s'enregistrent application ouverte, et Apple refuse
+	     une application qui le déclare sans lire de son en arrière-plan. -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
-		<string>audio</string>
 	</array>
 
 	<key>CFBundlePackageType</key>
