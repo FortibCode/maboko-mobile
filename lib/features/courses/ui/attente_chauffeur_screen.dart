@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import '../../../core/network/api.dart';
 import '../../../core/theme/maboko_theme.dart';
 import '../data/course_repository.dart';
 import '../models/course.dart';
@@ -15,27 +18,34 @@ class AttenteChauffeurScreen extends StatefulWidget {
 class _AttenteChauffeurScreenState extends State<AttenteChauffeurScreen> {
   Course? _course;
   bool _chargement = true;
+  Timer? _minuterie;
 
   @override
   void initState() {
     super.initState();
     _charger();
-    // Note : Idéalement, ici tu écoutes Reverb (WebSocket) pour être notifié en temps réel
-    // Pour l'instant, on utilise un timer simple pour rafraichir
-    Timer.periodic(const Duration(seconds: 5), (_) => _charger());
+    _minuterie = Timer.periodic(const Duration(seconds: 5), (_) => _charger());
+  }
+
+  @override
+  void dispose() {
+    _minuterie?.cancel();
+    super.dispose();
   }
 
   Future<void> _charger() async {
     try {
-      // On suppose que tu as une méthode pour récupérer une course par son ID
-      // Si tu ne l'as pas, on peut utiliser GET /courses/{id}
-      final reponse = await const ApiClient().get('/courses/${widget.courseId}');
+      // Utilise le singleton `api` (pattern correct) plutôt que const ApiClient()
+      final reponse = await api.get('/courses/${widget.courseId}');
+      if (!mounted) return;
       setState(() {
-        _course = Course.fromJson(reponse['course'] ?? reponse['data']);
+        _course = Course.depuisJson(
+            (reponse['course'] ?? reponse['data']) as Map<String, dynamic>);
         _chargement = false;
       });
     } catch (_) {}
   }
+
 
   Future<void> _accepterPrix() async {
     try {

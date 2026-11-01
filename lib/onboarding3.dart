@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'services/storage_service.dart';
 
 class Onboarding3 extends StatelessWidget {
@@ -6,50 +7,102 @@ class Onboarding3 extends StatelessWidget {
 
   static const Color terracotta = Color(0xFFB35B28);
   static const Color orMaboko = Color(0xFFEAA023);
-  static const Color beigeFond = Color(0xFFFFFDF8);
   static const Color texteMarron = Color(0xFF4A2A18);
-  static const Color texteDoux = Color(0xFF7A6A5C);
+
+  static const Color gradientHaut = Color(0xFF3B1F0E);
+  static const Color gradientMilieu = Color(0xFF6B3318);
+  static const Color gradientBas = Color(0xFFB35B28);
+
+  Future<void> _terminer(BuildContext context) async {
+    await StorageService.saveOnboardingCompleted(true);
+    if (!context.mounted) return;
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/register',
+      (route) => false,
+      arguments: {'userRole': 'client'},
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF4A2A18),
-              Color(0xFF7A3F1D),
-              Color(0xFFB35B28),
-            ],
-            stops: [0.0, 0.5, 1.0],
+      backgroundColor: gradientHaut,
+      body: Stack(
+        children: [
+          // ── Image plein-écran, partie haute ──────────────────────────
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: size.height * 0.58,
+            child: Image.asset(
+              'assets/images/I2.jpeg',
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                color: gradientMilieu,
+                child: const Icon(Icons.chat_bubble_outline_rounded, size: 80, color: Colors.white30),
+              ),
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+
+          // ── Fondu bas de l'image vers le gradient ────────────────────
+          Positioned(
+            top: size.height * 0.32,
+            left: 0,
+            right: 0,
+            height: size.height * 0.28,
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, gradientHaut],
+                ),
+              ),
+            ),
+          ),
+
+          // ── Fond gradient sous le texte ──────────────────────────────
+          Positioned(
+            top: size.height * 0.55,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [gradientHaut, gradientMilieu, gradientBas],
+                  stops: [0.0, 0.5, 1.0],
+                ),
+              ),
+            ),
+          ),
+
+          // ── Contenu superposé ────────────────────────────────────────
+          SafeArea(
             child: Column(
               children: [
+                // Bouton « Passer »
                 Align(
                   alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () async {
-                      await StorageService.saveOnboardingCompleted(true);
-                      if (!context.mounted) return;
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        "/register",
-                        (route) => false,
-                        arguments: {'userRole': 'client'},
-                      );
-                    },
-                    child: const Text(
-                      "Passer",
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 16, top: 4),
+                    child: TextButton(
+                      onPressed: () => _terminer(context),
+                      child: const Text(
+                        'Passer',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          shadows: [Shadow(color: Colors.black45, blurRadius: 6)],
+                        ),
                       ),
                     ),
                   ),
@@ -57,140 +110,102 @@ class Onboarding3 extends StatelessWidget {
 
                 const Spacer(),
 
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: beigeFond,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 25,
-                        spreadRadius: 5,
-                        offset: const Offset(0, 10),
+                // Texte
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Contactez-les\ndirectement',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        'Messagerie intégrée ou WhatsApp. Avis\nvérifiés. Travail garanti.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          color: Colors.white.withValues(alpha: 0.85),
+                          height: 1.55,
+                        ),
                       ),
                     ],
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(18),
-                    child: Image.asset(
-                      'assets/images/I2.jpeg',
-                      width: 220,
-                      height: 220,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
-                        Icons.chat_bubble_outline_rounded,
-                        size: 100,
-                        color: terracotta,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 48),
-
-                const Text(
-                  "Contactez-les\ndirectement",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                Text(
-                  "Messagerie intégrée ou WhatsApp. Avis\nvérifiés. Travail garanti.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white.withValues(alpha: 0.85),
-                    height: 1.5,
-                  ),
                 ),
 
                 const Spacer(),
 
+                // Indicateurs de pagination
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.4),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
+                    _point(actif: false),
                     const SizedBox(width: 6),
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.4),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
+                    _point(actif: false),
                     const SizedBox(width: 6),
-                    Container(
-                      width: 22,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: orMaboko,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
+                    _point(actif: true),
                   ],
                 ),
                 const SizedBox(height: 24),
 
-                // ⭐ Bouton "Commencer" — FOND BLANC
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      await StorageService.saveOnboardingCompleted(true);
-                      if (!context.mounted) return;
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        "/register",
-                        (route) => false,
-                        arguments: {'userRole': 'client'},
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: texteMarron,
-                      elevation: 5,
-                      shadowColor: Colors.black.withValues(alpha: 0.2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(26),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "Commencer",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: texteMarron,
-                          ),
+                // Bouton Commencer
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: () => _terminer(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: texteMarron,
+                        elevation: 6,
+                        shadowColor: Colors.black38,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(26),
                         ),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward_rounded, size: 18, color: texteMarron),
-                      ],
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Commencer',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: texteMarron,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Icon(Icons.arrow_forward_rounded, size: 18, color: texteMarron),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
               ],
             ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
+
+  Widget _point({required bool actif}) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: actif ? 22 : 6,
+      height: 6,
+      decoration: BoxDecoration(
+        color: actif ? orMaboko : Colors.white38,
+        borderRadius: BorderRadius.circular(3),
       ),
     );
   }
