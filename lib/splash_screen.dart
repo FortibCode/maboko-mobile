@@ -44,7 +44,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     // Palette crème clair — alignée sur les onboardings.
     const Color beigeFond = Color(0xFFFAF4E7);      // fond général
-    const Color beigeChaud = Color(0xFFE8D5C0);     // cercle derrière le logo
     const Color orMaboko = Color(0xFFEAA023);       // accent doré
     const Color texteFort = Color(0xFF4A2A18);      // marron foncé
     const Color texteDoux = Color(0xFF7A6A5C);      // gris chaud
@@ -67,64 +66,31 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       children: [
                         const Spacer(),
 
-                        // Logo dans son cercle beige chaud
-                        Container(
-                          width: 220,
-                          height: 220,
-                          alignment: Alignment.center,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: beigeChaud,
-                          ),
-                          child: ClipOval(
-                            child: Image.asset(
-                              'assets/images/maboko_logo_carre.png',
-                              width: 160,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) => const Icon(
-                                Icons.handshake_rounded,
-                                size: 90,
-                                color: texteFort,
-                              ),
-                            ),
+                        // Logo détouré (fond transparent) : il porte déjà
+                        // le nom et la devise, inutile de les répéter.
+                        Image.asset(
+                          'assets/images/maboko_logo.png',
+                          width: 240,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) => const Icon(
+                            Icons.handshake_rounded,
+                            size: 90,
+                            color: texteFort,
                           ),
                         ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 36),
 
                         // Titre principal — marron foncé
                         const Text(
-                          "Bienvenue sur\nMaboko",
+                          "Bienvenue",
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 30,
+                            fontSize: 28,
                             fontWeight: FontWeight.w800,
                             color: texteFort,
-                            height: 1.15,
                           ),
                         ),
                         const SizedBox(height: 12),
-
-                        // Sous-titre
-                        const Text(
-                          "Les mains qui font le Congo",
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: texteDoux,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-
-                        // Petite barre dorée
-                        Container(
-                          width: 40,
-                          height: 3,
-                          decoration: BoxDecoration(
-                            color: orMaboko,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
 
                         // Description
                         const Text(

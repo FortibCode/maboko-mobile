@@ -57,6 +57,7 @@ flutter:
   assets:
     - assets/images/Maboko.jpeg
     - assets/images/maboko_logo_carre.png
+    - assets/images/maboko_logo.png
     - assets/images/google_g.png
     - assets/images/bricolage.png
     - assets/images/voiture.png
