@@ -34,6 +34,8 @@ import '../main.dart' show controleurTheme;
 import '../features/compte/ui/moyens_paiement_screen.dart';
 import '../core/widgets/carte_pressable.dart';
 
+
+
 // ⬇️⬇️ IMPORTS — Role CLIENT ⬇️⬇️
 import '../features/compte/ui/mes_avis_screen.dart';
 import 'parametres_data_screen.dart';
@@ -82,6 +84,7 @@ class _HomePageState extends State<HomePage> {
 
   final GlobalKey<ScaffoldState> _cleEchafaudage = GlobalKey<ScaffoldState>();
 
+
   int _notificationsNonLues = 0;
   bool _envoiPhoto = false;
 
@@ -92,6 +95,11 @@ class _HomePageState extends State<HomePage> {
     _chargerProfil();
     _chargerMetiers();
     _chargerNotifications();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   Future<void> _chargerMetiers() async {
@@ -564,8 +572,8 @@ class _HomePageState extends State<HomePage> {
                             // Le bouton "+" style Instagram (seulement pour les artisans)
                             if (!isClient)
                               Positioned(
-                                bottom: -10, // 👈 Plus bas
-                                right: 55,   // 👈 BEAUCOUP plus à gauche pour laisser la place à l'appareil photo
+                                bottom: -10, // 👈 Poussé vers le bas
+                                right: 55,   // 👈 Poussé vers la gauche
                                 child: GestureDetector(
                                   onTap: () {
                                     Navigator.push(

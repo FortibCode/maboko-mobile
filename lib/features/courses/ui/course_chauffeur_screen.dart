@@ -7,10 +7,10 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../core/localisation/service_position.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/maboko_theme.dart';
 import '../../../core/widgets/etats.dart';
+import '../../chauffeurs/data/service_suivi_gps.dart';
 import '../data/course_repository.dart';
 import '../models/course.dart';
 import 'widgets_carte.dart';
@@ -41,6 +41,10 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
   Course? _course;
   StreamSubscription<dynamic>? _suiviPosition;
 
+  /// Vrai si cet écran a lui-même lancé le suivi : il ne l'arrête alors en
+  /// sortant que dans ce cas, pour ne pas couper un chauffeur en ligne.
+  bool _suiviLanceIci = false;
+
   LatLng? _positionActuelle;
   bool _chargement = true;
   bool _actionEnCours = false;
@@ -56,21 +60,30 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
   @override
   void dispose() {
     _suiviPosition?.cancel();
+    if (_suiviLanceIci) ServiceSuiviGps.instance.arreter();
     super.dispose();
   }
 
+  /// La transmission au serveur est assurée par [ServiceSuiviGps] ; l'écran
+  /// se contente d'afficher la position sur la carte.
   void _suivrePosition() {
-    _suiviPosition = ServicePosition.suivi().listen((position) {
+    final suivi = ServiceSuiviGps.instance;
+
+    final derniere = suivi.dernierePosition;
+    if (derniere != null) {
+      _positionActuelle = LatLng(derniere.latitude, derniere.longitude);
+    }
+
+    _suiviPosition = suivi.positions.listen((position) {
       if (mounted) {
         setState(() => _positionActuelle = LatLng(position.latitude, position.longitude));
       }
-
-      _repository.transmettrePosition(
-        latitude: position.latitude,
-        longitude: position.longitude,
-        vitesseKmh: position.speed * 3.6,
-      );
     });
+
+    if (!suivi.estActif) {
+      _suiviLanceIci = true;
+      suivi.demarrer();
+    }
   }
 
   Future<void> _charger() async {

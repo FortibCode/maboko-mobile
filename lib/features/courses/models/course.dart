@@ -68,6 +68,8 @@ class Course {
     this.dureeEstimeeMin = 0,
     this.tarifEstime = 0,
     this.tarifFinal,
+    this.prixClient,
+    this.prixChauffeur,
     this.chauffeur,
     this.clientNom,
     this.annuleePar,
@@ -92,6 +94,12 @@ class Course {
   final ChauffeurCourse? chauffeur;
   final String? clientNom;
   final String? annuleePar;
+
+  /// Prix proposé par le client lors d'une négociation (§5.1.9).
+  final double? prixClient;
+
+  /// Prix proposé par le chauffeur lors d'une négociation (§5.1.9).
+  final double? prixChauffeur;
 
   /// Code à 4 chiffres fourni par le serveur quand il l'expose.
   ///
@@ -137,6 +145,8 @@ class Course {
       dureeEstimeeMin: json['dureeEstimeeMin'] as int? ?? 0,
       tarifEstime: (json['tarifEstime'] as num?)?.toDouble() ?? 0,
       tarifFinal: (json['tarifFinal'] as num?)?.toDouble(),
+      prixClient: (json['prix_client'] as num?)?.toDouble(),
+      prixChauffeur: (json['prix_chauffeur'] as num?)?.toDouble(),
       chauffeur: chauffeur == null ? null : ChauffeurCourse.depuisJson(chauffeur),
       clientNom: (client?['nomComplet'] as String?)?.trim(),
       annuleePar: json['annuleePar'] as String?,
@@ -145,7 +155,11 @@ class Course {
       codeConfirmation: json['codeConfirmation'] as String?,
     );
   }
+
+  /// Alias de [depuisJson] pour compatibilité avec les nouveaux écrans.
+  factory Course.fromJson(Map<String, dynamic> json) => Course.depuisJson(json);
 }
+
 
 /// Estimation affichée avant la réservation.
 class EstimationCourse {
@@ -236,5 +250,36 @@ class EtatChauffeur {
         disponible: json['disponible'] as bool? ?? false,
         noteMoyenne: (json['noteMoyenne'] as num?)?.toDouble() ?? 0,
         nbCoursesTerminees: json['nbCoursesTerminees'] as int? ?? 0,
+      );
+}
+
+/// Résumé du chauffeur exposé dans les réponses de négociation (§5.1.9).
+///
+/// Utilisé par les nouveaux écrans de négociation de prix ; plus léger que
+/// [ChauffeurCourse] qui sert, lui, au suivi de course.
+class ChauffeurResume {
+  const ChauffeurResume({
+    required this.id,
+    required this.nomComplet,
+    required this.telephone,
+    this.avatarUrl,
+    this.vehiculeModele,
+    this.plaque,
+  });
+
+  final int id;
+  final String nomComplet;
+  final String telephone;
+  final String? avatarUrl;
+  final String? vehiculeModele;
+  final String? plaque;
+
+  factory ChauffeurResume.fromJson(Map<String, dynamic> json) => ChauffeurResume(
+        id: json['id'] as int? ?? 0,
+        nomComplet: json['nom_complet'] as String? ?? 'Chauffeur',
+        telephone: json['telephone'] as String? ?? '',
+        avatarUrl: json['avatar_url'] as String?,
+        vehiculeModele: json['vehicule_modele'] as String?,
+        plaque: json['plaque_immatriculation'] as String?,
       );
 }

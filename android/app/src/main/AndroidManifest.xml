@@ -1,32 +1,29 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- INTERNET n'etait declare que dans les manifestes debug et profile.
-         Une compilation release n'utilise que celui-ci : l'application publiee
-         n'aurait eu aucun acces reseau. -->
+    <!-- INTERNET -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
-    <!-- Position du chauffeur : sans ces declarations, geolocator refuse la
-         permission et l'appariement des courses ne peut pas fonctionner. -->
+    <!-- Position du chauffeur -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    
+    <!-- 👇 NOUVEAU : Permet au GPS de continuer à tourner quand le chauffeur verrouille son écran 👇 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
-    <!-- Photos de profil, portfolio et pieces d'identite. -->
+    <!-- Photos de profil, portfolio et pièces d'identité -->
     <uses-permission android:name="android.permission.CAMERA"/>
-
-    <!-- Galerie : Android 13+ utilise READ_MEDIA_IMAGES, les versions
-         précédentes utilisent READ_EXTERNAL_STORAGE. Sans elles, l'app
-         ne peut pas lire les photos choisies depuis la galerie. -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
 
-    <!-- Notifications de course (Android 13+). Sans cette declaration, le
-         chauffeur ne recoit aucune alerte quand une course lui est proposee. -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- 👇 NOUVEAU : Permet d'enregistrer les messages vocaux sans crash 👇 -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
-    <!-- Sonnerie et vibration des notifications de course. -->
+    <!-- Notifications -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
 
-    <!-- L'appareil photo est un confort, pas une condition d'installation :
-         un telephone sans camera doit pouvoir utiliser la galerie. -->
+    <!-- L'appareil photo est un confort, pas une condition d'installation -->
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
 
@@ -43,10 +40,6 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-            <!-- Specifies an Android theme to apply to this Activity as soon as
-                 the Android process has started. This theme is visible to the user
-                 while the Flutter UI initializes. After that, this theme continues
-                 to determine the Window background behind the Flutter UI. -->
             <meta-data
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
@@ -56,17 +49,11 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <!-- Don't delete the meta-data below.
-             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
     </application>
-    <!-- Required to query activities that can process text, see:
-         https://developer.android.com/training/package-visibility and
-         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
 
-         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>

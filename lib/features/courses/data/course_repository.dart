@@ -98,6 +98,7 @@ class CourseRepository {
     required String plaque,
     required String permisCategories,
     required String permisNumero,
+    bool estClimatise = false,
   }) async {
     final reponse = await api.post('/chauffeur', corps: {
       'type_vehicule': typeVehicule,
@@ -105,6 +106,7 @@ class CourseRepository {
       'plaque_immatriculation': plaque,
       'permis_conduire': permisNumero,
       'permis_categories': permisCategories,
+      'est_climatise': estClimatise,
     });
 
     return EtatChauffeur.depuisJson(reponse as Map<String, dynamic>);
@@ -167,6 +169,55 @@ class CourseRepository {
         'code_confirmation': codeConfirmation,
         if (tarifFinal != null) 'tarif_final': tarifFinal,
       });
+
+  // ------------------------------------------------------------------
+  // Négociation de prix (§5.1.9)
+  // ------------------------------------------------------------------
+
+  /// Le client soumet une course avec un prix proposé.
+  Future<Course> reserverCourse({
+    required String lieuDepart,
+    required String lieuArrivee,
+    required double departLat,
+    required double departLng,
+    required double arriveeLat,
+    required double arriveeLng,
+    required String typeVehicule,
+    double? prixClient,
+  }) async {
+    final reponse = await api.post('/courses', corps: {
+      'lieu_depart': lieuDepart,
+      'lieu_arrivee': lieuArrivee,
+      'depart_latitude': departLat,
+      'depart_longitude': departLng,
+      'arrivee_latitude': arriveeLat,
+      'arrivee_longitude': arriveeLng,
+      'type_vehicule': typeVehicule,
+      if (prixClient != null) 'prix_client': prixClient,
+    });
+
+    return Course.depuisJson(reponse['course'] as Map<String, dynamic>);
+  }
+
+  /// Le chauffeur contre-propose un prix différent.
+  Future<Course> contreProposer(int courseId, double nouveauPrix) async {
+    final reponse = await api.post(
+      '/courses/$courseId/contre-proposition',
+      corps: {'prix_chauffeur': nouveauPrix},
+    );
+
+    return Course.depuisJson(reponse['course'] as Map<String, dynamic>);
+  }
+
+  /// Le client accepte le prix proposé par le chauffeur.
+  Future<Course> accepterPrix(int courseId) =>
+      _transition(courseId, 'accepter-prix', {});
+
+  /// Aliases courts pour les nouveaux écrans de négociation.
+  Future<Course> accepterCourse(int courseId) => accepter(courseId);
+  Future<void> refuserCourse(int courseId) => refuser(courseId);
+  Future<Course> terminerCourse(int courseId) =>
+      _transition(courseId, 'terminer', {});
 
   Future<Course> _transition(int id, String action, Map<String, dynamic> corps) async {
     final reponse = await api.post('/courses/$id/$action', corps: corps);
