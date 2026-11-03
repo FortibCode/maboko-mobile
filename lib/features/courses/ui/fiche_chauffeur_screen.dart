@@ -46,8 +46,8 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
   String _vehicule = 'taxi';
   bool _estClimatise = false;
 
-  String? _photoRecto; // 👈 AJOUT
-  String? _photoVerso; // 👈 AJOUT
+  String? _photoRecto; // Photo AVANT
+  String? _photoVerso; // Photo ARRIÈRE
 
   bool _envoi = false;
   bool _envoiPhoto = false;
@@ -65,103 +65,82 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
     super.dispose();
   }
 
-  // 👇 LOGIQUE DE CAPTURE SEQUENTIELLE (Copiée de l'artisan) 👇
-  Future<void> _gererCapturePiece() async {
-    if (_photoRecto == null) {
-      // Étape 1 : Demander le Recto
-      final succes = await _demanderPhoto(cible: 'recto');
-      if (succes && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Recto enregistré. Prenez maintenant la face arrière (Verso).'),
-            backgroundColor: MabokoCouleurs.succes,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        if (mounted) await _demanderPhoto(cible: 'verso');
-      }
-    } else if (_photoVerso == null) {
-      // Étape 2 : Demander le Verso
-      await _demanderPhoto(cible: 'verso');
-    } else {
-      // Étape 3 : Déjà complet, on propose de recommencer
-      final recommencer = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Modifier les photos ?'),
-          content: const Text('Voulez-vous reprendre les photos de votre pièce d\'identité ?'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
-            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Recommencer')),
-          ],
-        ),
-      );
-
-      if (recommencer == true) {
-        setState(() {
-          _photoRecto = null;
-          _photoVerso = null;
-        });
-        await _gererCapturePiece();
-      }
-    }
-  }
-
-  Future<bool> _demanderPhoto({required String cible}) async {
+  // ── CAPTURE D'UNE PHOTO (Recto ou Verso) ──────────────────────────────
+  Future<void> _prendrePhoto({required String cible}) async {
+    // 1. Demander la source (Caméra ou Galerie)
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       backgroundColor: context.surfaceMaboko,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 12),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: context.bordureMaboko, borderRadius: BorderRadius.circular(2))),
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(color: context.bordureMaboko, borderRadius: BorderRadius.circular(2)),
+            ),
             const SizedBox(height: 16),
-            Text(cible == 'recto' ? 'Photo AVANT (Recto)' : 'Photo ARRIÈRE (Verso)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.texteFortMaboko)),
+            Text(
+              cible == 'recto' ? 'Photo AVANT (Recto)' : 'Photo ARRIÈRE (Verso)',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.texteFortMaboko),
+            ),
             const SizedBox(height: 16),
-            ListTile(leading: const Icon(Icons.photo_camera_outlined, color: MabokoCouleurs.secondaire), title: const Text('Prendre une photo'), onTap: () => Navigator.pop(ctx, ImageSource.camera)),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined, color: MabokoCouleurs.secondaire),
+              title: const Text('Prendre une photo'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
             const Divider(height: 1),
-            ListTile(leading: const Icon(Icons.photo_library_outlined, color: MabokoCouleurs.secondaire), title: const Text('Choisir dans la galerie'), onTap: () => Navigator.pop(ctx, ImageSource.gallery)),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined, color: MabokoCouleurs.secondaire),
+              title: const Text('Choisir dans la galerie'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
             const SizedBox(height: 12),
           ],
         ),
       ),
     );
 
-    if (source == null || !mounted) return false;
-    return await _choisirPhoto(cible: cible, source: source);
-  }
+    if (source == null || !mounted) return;
 
-  Future<bool> _choisirPhoto({required String cible, required ImageSource source}) async {
     setState(() => _envoiPhoto = true);
+
     try {
-      final fichier = await ImagePicker().pickImage(source: source, maxWidth: 1800, imageQuality: 80);
+      final fichier = await ImagePicker().pickImage(
+        source: source,
+        maxWidth: 1800,
+        imageQuality: 80,
+      );
+
       if (fichier == null) {
         setState(() => _envoiPhoto = false);
-        return false;
+        return;
       }
+
       final octets = await fichier.readAsBytes();
-      if (!mounted) return false;
+      if (!mounted) return;
+
       final encode = 'data:image/jpeg;base64,${base64Encode(octets)}';
+
       setState(() {
         if (cible == 'recto') {
           _photoRecto = encode;
-        } else if (cible == 'verso') {
+        } else {
           _photoVerso = encode;
         }
         _envoiPhoto = false;
       });
-      return true;
     } catch (_) {
-      if (!mounted) return false;
+      if (!mounted) return;
       setState(() => _envoiPhoto = false);
-      _informer('Impossible d\'ouvrir $source.', MabokoCouleurs.danger);
-      return false;
+      _informer('Impossible d\'ouvrir la source de photo.', MabokoCouleurs.danger);
     }
   }
-  // 👆 FIN LOGIQUE DE CAPTURE 👆
 
   Future<void> _enregistrer() async {
     if (!_cleFormulaire.currentState!.validate()) return;
@@ -171,8 +150,13 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
       return;
     }
 
-    if (_photoRecto == null || _photoVerso == null) {
-      _informer('Ajoutez la photo Recto ET Verso de votre pièce.', MabokoCouleurs.danger);
+    // 👇 VÉRIFICATION OBLIGATOIRE DES DEUX PHOTOS 👇
+    if (_photoRecto == null) {
+      _informer('Vous devez prendre la photo AVANT (Recto) de votre carte d\'identité.', MabokoCouleurs.danger);
+      return;
+    }
+    if (_photoVerso == null) {
+      _informer('Vous devez prendre la photo ARRIÈRE (Verso) de votre carte d\'identité.', MabokoCouleurs.danger);
       return;
     }
 
@@ -186,8 +170,8 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
         permisCategories: _permisChoisis.join(','),
         permisNumero: _permisNumero.text.trim().toUpperCase(),
         estClimatise: _estClimatise,
-        photoRecto: _photoRecto, // 👈 AJOUT
-        photoVerso: _photoVerso, // 👈 AJOUT
+        photoRecto: _photoRecto,
+        photoVerso: _photoVerso,
       );
 
       if (!mounted) return;
@@ -214,10 +198,16 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: const Text('Quitter la création de la fiche ?'),
-        content: const Text('Votre compte existe déjà, mais sans fiche vous ne pourrez pas recevoir de courses. Vous pourrez reprendre plus tard depuis votre profil.'),
+        content: const Text(
+          'Votre compte existe déjà, mais sans fiche vous ne pourrez pas recevoir de courses. Vous pourrez reprendre plus tard depuis votre profil.',
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Rester')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), style: FilledButton.styleFrom(backgroundColor: MabokoCouleurs.danger, foregroundColor: Colors.white), child: const Text('Quitter et se déconnecter')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: MabokoCouleurs.danger, foregroundColor: Colors.white),
+            child: const Text('Quitter et se déconnecter'),
+          ),
         ],
       ),
     );
@@ -229,7 +219,9 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
   }
 
   void _informer(String message, Color couleur) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: couleur));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: couleur),
+    );
   }
 
   @override
@@ -243,7 +235,11 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
         elevation: 0,
         automaticallyImplyLeading: !widget.premiereFois,
         actions: [
-          IconButton(tooltip: 'Se déconnecter', onPressed: _envoi ? null : _quitter, icon: const Icon(Icons.logout_rounded)),
+          IconButton(
+            tooltip: 'Se déconnecter',
+            onPressed: _envoi ? null : _quitter,
+            icon: const Icon(Icons.logout_rounded),
+          ),
         ],
       ),
       body: Form(
@@ -267,14 +263,44 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
               controller: _permisNumero,
               textCapitalization: TextCapitalization.characters,
               decoration: _decoration('Ex. : AB123456', Icons.credit_card_outlined),
-              validator: (valeur) => (valeur ?? '').trim().length < 6 ? 'Entrez le numéro complet du permis.' : null,
+              validator: (valeur) {
+                final propre = (valeur ?? '').trim();
+                if (propre.length < 6) return 'Entrez le numéro complet du permis.';
+                return null;
+              },
             ),
 
             const SizedBox(height: 24),
 
-            _labelObligatoire('Pièce d’identité (Recto & Verso)'),
+            // 👇 NOUVELLE INTERFACE POUR LES DEUX PHOTOS 👇
+            _labelObligatoire('Carte d\'identité (Recto & Verso)'),
+            const SizedBox(height: 4),
+            Text(
+              'Vous devez obligatoirement prendre les DEUX photos.',
+              style: TextStyle(fontSize: 12, color: context.texteSecondaireMaboko),
+            ),
             const SizedBox(height: 12),
-            _zoneUploadPiece(), // 👈 NOUVEAU WIDGET
+            
+            // Photo AVANT (Recto)
+            _cartePhoto(
+              titre: 'Photo AVANT (Recto)',
+              sousTitre: 'Face avant de votre carte',
+              base64Image: _photoRecto,
+              onTap: _envoiPhoto ? null : () => _prendrePhoto(cible: 'recto'),
+              estObligatoire: true,
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // Photo ARRIÈRE (Verso)
+            _cartePhoto(
+              titre: 'Photo ARRIÈRE (Verso)',
+              sousTitre: 'Face arrière de votre carte',
+              base64Image: _photoVerso,
+              onTap: _envoiPhoto ? null : () => _prendrePhoto(cible: 'verso'),
+              estObligatoire: true,
+            ),
+            // 👆 FIN NOUVELLE INTERFACE 👆
 
             const SizedBox(height: 24),
 
@@ -285,13 +311,23 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(color: context.surfaceMaboko, borderRadius: BorderRadius.circular(12), border: Border.all(color: context.bordureMaboko)),
+              decoration: BoxDecoration(
+                color: context.surfaceMaboko,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: context.bordureMaboko),
+              ),
               child: Row(
                 children: [
                   const Icon(Icons.ac_unit_rounded, color: Colors.blue),
                   const SizedBox(width: 12),
-                  const Expanded(child: Text('Véhicule climatisé', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600))),
-                  Switch(value: _estClimatise, activeColor: MabokoCouleurs.secondaire, onChanged: (val) => setState(() => _estClimatise = val)),
+                  const Expanded(
+                    child: Text('Véhicule climatisé', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  ),
+                  Switch(
+                    value: _estClimatise,
+                    activeColor: MabokoCouleurs.secondaire,
+                    onChanged: (val) => setState(() => _estClimatise = val),
+                  ),
                 ],
               ),
             ),
@@ -317,10 +353,17 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
               height: 52,
               child: FilledButton(
                 onPressed: _envoi ? null : _enregistrer,
-                style: FilledButton.styleFrom(backgroundColor: MabokoCouleurs.secondaire, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                style: FilledButton.styleFrom(
+                  backgroundColor: MabokoCouleurs.secondaire,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
                 child: _envoi
                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.4))
-                    : Text(widget.premiereFois ? 'Créer mon profil chauffeur' : 'Enregistrer', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15.5)),
+                    : Text(
+                        widget.premiereFois ? 'Créer mon profil chauffeur' : 'Enregistrer',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15.5),
+                      ),
               ),
             ),
           ],
@@ -329,81 +372,100 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
     );
   }
 
-  // 👇 WIDGET POUR AFFICHER LES MINIATURES 👇
-  Widget _zoneUploadPiece() {
-    final aRecto = _photoRecto != null;
-    final aVerso = _photoVerso != null;
-    final estComplet = aRecto && aVerso;
+  // 👇 WIDGET RÉUTILISABLE POUR CHAQUE PHOTO 👇
+  Widget _cartePhoto({
+    required String titre,
+    required String sousTitre,
+    required String? base64Image,
+    required VoidCallback? onTap,
+    required bool estObligatoire,
+  }) {
+    final aUnePhoto = base64Image != null;
 
     return GestureDetector(
-      onTap: _envoiPhoto ? null : _gererCapturePiece,
+      onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: estComplet ? MabokoCouleurs.succes.withValues(alpha: 0.05) : context.surfaceMaboko,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: estComplet ? MabokoCouleurs.succes : context.bordureMaboko, width: estComplet ? 1.6 : 1),
+          color: aUnePhoto ? MabokoCouleurs.succes.withValues(alpha: 0.05) : context.surfaceMaboko,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: aUnePhoto ? MabokoCouleurs.succes : context.bordureMaboko,
+            width: aUnePhoto ? 1.6 : 1,
+          ),
         ),
-        child: _envoiPhoto
-            ? const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.4, color: MabokoCouleurs.secondaire)))
-            : Column(
+        child: Row(
+          children: [
+            // Zone d'aperçu
+            Container(
+              width: 80, height: 60,
+              decoration: BoxDecoration(
+                color: context.fondMaboko,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: context.bordureMaboko),
+              ),
+              clipBehavior: Clip.hardEdge,
+              child: aUnePhoto
+                  ? Image.memory(
+                      base64Decode(base64Image.split(',').last),
+                      fit: BoxFit.cover,
+                    )
+                  : Icon(Icons.add_a_photo_outlined, color: context.texteSecondaireMaboko),
+            ),
+            const SizedBox(width: 14),
+            // Texte et statut
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(estComplet ? Icons.check_circle_rounded : Icons.add_photo_alternate_outlined, color: estComplet ? MabokoCouleurs.succes : MabokoCouleurs.secondaire, size: 24),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          estComplet ? 'Pièce d\'identité complète' : aRecto ? 'Prendre la face arrière (Verso)' : 'Ajouter la pièce d\'identité (Recto & Verso)',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: estComplet ? MabokoCouleurs.succes : context.texteFortMaboko),
+                      Text(
+                        titre,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: aUnePhoto ? MabokoCouleurs.succes : context.texteFortMaboko,
                         ),
                       ),
-                      if (estComplet) TextButton(onPressed: _gererCapturePiece, child: const Text('Modifier', style: TextStyle(fontSize: 12))),
+                      if (estObligatoire) ...[
+                        const SizedBox(width: 4),
+                        const Text('*', style: TextStyle(color: MabokoCouleurs.danger)),
+                      ],
                     ],
                   ),
-                  if (aRecto || aVerso) ...[
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _vignettePhoto('Recto', _photoRecto),
-                        _vignettePhoto('Verso', _photoVerso),
-                      ],
-                    )
-                  ]
+                  const SizedBox(height: 2),
+                  Text(
+                    sousTitre,
+                    style: TextStyle(fontSize: 12, color: context.texteSecondaireMaboko),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        aUnePhoto ? Icons.check_circle : Icons.radio_button_unchecked,
+                        size: 14,
+                        color: aUnePhoto ? MabokoCouleurs.succes : context.texteSecondaireMaboko,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        aUnePhoto ? 'Photo ajoutée' : 'Appuyez pour prendre la photo',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: aUnePhoto ? MabokoCouleurs.succes : context.texteSecondaireMaboko,
+                          fontWeight: aUnePhoto ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
-      ),
-    );
-  }
-
-  Widget _vignettePhoto(String label, String? base64Image) {
-    final bool fait = base64Image != null;
-    return Column(
-      children: [
-        Container(
-          width: 100, height: 70,
-          decoration: BoxDecoration(
-            color: context.fondMaboko,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: fait ? MabokoCouleurs.succes : context.bordureMaboko, style: fait ? BorderStyle.solid : BorderStyle.none),
-          ),
-          clipBehavior: Clip.hardEdge,
-          child: fait
-              ? Image.memory(base64Decode(base64Image.split(',').last), fit: BoxFit.cover)
-              : Icon(Icons.image_outlined, color: context.texteSecondaireMaboko),
-        ),
-        const SizedBox(height: 6),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(fait ? Icons.check_circle : Icons.radio_button_unchecked, size: 14, color: fait ? MabokoCouleurs.succes : context.texteSecondaireMaboko),
-            const SizedBox(width: 4),
-            Text(label, style: TextStyle(fontSize: 11, color: fait ? MabokoCouleurs.succes : context.texteSecondaireMaboko, fontWeight: fait ? FontWeight.bold : FontWeight.normal)),
+            ),
+            if (_envoiPhoto)
+              const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
           ],
         ),
-      ],
+      ),
     );
   }
   // 👆 FIN WIDGET 👆
@@ -428,9 +490,19 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
             decoration: BoxDecoration(
               color: actif ? MabokoCouleurs.secondaire.withValues(alpha: 0.12) : context.surfaceMaboko,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: actif ? MabokoCouleurs.secondaire : context.bordureMaboko, width: actif ? 1.5 : 1),
+              border: Border.all(
+                color: actif ? MabokoCouleurs.secondaire : context.bordureMaboko,
+                width: actif ? 1.5 : 1,
+              ),
             ),
-            child: Text(permis.libelle, style: TextStyle(fontSize: 13, fontWeight: actif ? FontWeight.bold : FontWeight.w500, color: actif ? MabokoCouleurs.secondaire : context.texteFortMaboko)),
+            child: Text(
+              permis.libelle,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: actif ? FontWeight.bold : FontWeight.w500,
+                color: actif ? MabokoCouleurs.secondaire : context.texteFortMaboko,
+              ),
+            ),
           ),
         );
       }).toList(),
@@ -451,14 +523,24 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
             decoration: BoxDecoration(
               color: actif ? MabokoCouleurs.secondaire.withValues(alpha: 0.12) : context.surfaceMaboko,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: actif ? MabokoCouleurs.secondaire : context.bordureMaboko, width: actif ? 1.5 : 1),
+              border: Border.all(
+                color: actif ? MabokoCouleurs.secondaire : context.bordureMaboko,
+                width: actif ? 1.5 : 1,
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(v.icone, size: 16, color: actif ? MabokoCouleurs.secondaire : context.texteSecondaireMaboko),
                 const SizedBox(width: 6),
-                Text(v.libelle, style: TextStyle(fontSize: 13, fontWeight: actif ? FontWeight.bold : FontWeight.w500, color: actif ? MabokoCouleurs.secondaire : context.texteFortMaboko)),
+                Text(
+                  v.libelle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: actif ? FontWeight.bold : FontWeight.w500,
+                    color: actif ? MabokoCouleurs.secondaire : context.texteFortMaboko,
+                  ),
+                ),
               ],
             ),
           ),
@@ -470,7 +552,11 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
   Widget _mentionVerification() {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: MabokoCouleurs.accent.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(12), border: Border.all(color: MabokoCouleurs.accent.withValues(alpha: 0.4))),
+      decoration: BoxDecoration(
+        color: MabokoCouleurs.accent.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: MabokoCouleurs.accent.withValues(alpha: 0.4)),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -481,7 +567,7 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
               text: TextSpan(
                 style: TextStyle(fontSize: 12, height: 1.45, color: context.texteSecondaireMaboko),
                 children: const [
-                  TextSpan(text: 'La vérification officielle de vos documents sera faite par l’équipe Maboko. '),
+                  TextSpan(text: 'La vérification officielle de vos documents sera faite par l\'équipe Maboko. '),
                   TextSpan(text: 'Vous pourrez stocker vos papiers en sécurité dans votre « coffre à documents ».'),
                 ],
               ),
@@ -495,7 +581,10 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
   Widget _labelObligatoire(String texte) {
     return Row(
       children: [
-        Text(texte, style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: context.texteFortMaboko)),
+        Text(
+          texte,
+          style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: context.texteFortMaboko),
+        ),
         const SizedBox(width: 4),
         const Text('*', style: TextStyle(color: MabokoCouleurs.danger)),
       ],
@@ -508,8 +597,14 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
       prefixIcon: Icon(icone, size: 20, color: MabokoCouleurs.secondaire),
       filled: true,
       fillColor: context.surfaceMaboko,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: context.bordureMaboko)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: context.bordureMaboko)),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: context.bordureMaboko),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: context.bordureMaboko),
+      ),
     );
   }
 }
