@@ -99,6 +99,8 @@ class CourseRepository {
     required String permisCategories,
     required String permisNumero,
     bool estClimatise = false,
+    String? photoRecto,
+    String? photoVerso,
   }) async {
     final reponse = await api.post('/chauffeur', corps: {
       'type_vehicule': typeVehicule,
@@ -107,6 +109,8 @@ class CourseRepository {
       'permis_conduire': permisNumero,
       'permis_categories': permisCategories,
       'est_climatise': estClimatise,
+      if (photoRecto != null) 'photo_recto': photoRecto,
+      if (photoVerso != null) 'photo_verso': photoVerso,
     });
 
     return EtatChauffeur.depuisJson(reponse as Map<String, dynamic>);
