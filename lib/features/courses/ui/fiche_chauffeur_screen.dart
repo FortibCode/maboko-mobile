@@ -30,11 +30,8 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
   ];
 
   static const _vehicules = <({String code, String libelle, IconData icone})>[
-    (code: 'taxi', libelle: 'Taxi', icone: Icons.local_taxi_rounded),
+    // Les seuls types que l'API accepte, et qui ont un tarif et des courses.
     (code: 'voiture', libelle: 'Voiture', icone: Icons.directions_car_rounded),
-    (code: 'utilitaire', libelle: 'Utilitaire', icone: Icons.airport_shuttle_rounded),
-    (code: 'camion', libelle: 'Camion', icone: Icons.local_shipping_rounded),
-    (code: 'bus', libelle: 'Bus', icone: Icons.directions_bus_rounded),
     (code: 'moto', libelle: 'Moto', icone: Icons.two_wheeler_rounded),
   ];
 
@@ -43,7 +40,7 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
   final _permisNumero = TextEditingController();
 
   final Set<String> _permisChoisis = {};
-  String _vehicule = 'taxi';
+  String _vehicule = 'voiture';
   bool _estClimatise = false;
 
   String? _photoRecto; // Photo AVANT
