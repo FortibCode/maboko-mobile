@@ -327,8 +327,25 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
             centre: course.clientABord ? arrivee : depart,
             trace: [depart, arrivee],
             marqueurs: [
-              marqueurMaboko(point: depart, icone: Icons.trip_origin, couleur: MabokoCouleurs.principale),
-              marqueurMaboko(point: arrivee, icone: Icons.place, couleur: MabokoCouleurs.secondaire),
+              marqueurMaboko(
+                point: depart, 
+                icone: Icons.trip_origin, 
+                couleur: MabokoCouleurs.principale,
+              ),
+              marqueurMaboko(
+                point: arrivee, 
+                icone: Icons.place, 
+                couleur: MabokoCouleurs.secondaire,
+              ),
+              
+              // 👇 AJOUT DU MARQUEUR DU TAXI EN TEMPS RÉEL 👇
+              if (_positionActuelle != null)
+                marqueurMaboko(
+                  point: _positionActuelle!,
+                  icone: Icons.local_taxi_rounded,
+                  couleur: Colors.blue, // On le met en bleu pour bien le distinguer
+                ),
+              // 👆 FIN AJOUT 👆
             ],
           ),
         ),
