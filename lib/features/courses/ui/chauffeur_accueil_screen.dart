@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../core/localisation/service_position.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/maboko_theme.dart';
 import '../../../core/widgets/etats.dart';
@@ -13,11 +12,7 @@ import '../models/course.dart';
 import 'course_chauffeur_screen.dart';
 import 'fiche_chauffeur_screen.dart';
 
-/// Accueil du chauffeur (§5.3.1 et §5.3.4) : bascule en ligne / hors ligne,
-/// courses proposées, et revenus du jour.
-///
-/// Une notification locale est levée à chaque nouvelle course proposée :
-/// le chauffeur peut vaquer à ses occupations, il sera prévenu.
+/// Accueil du chauffeur (§5.3.1 et §5.3.4).
 class ChauffeurAccueilScreen extends StatefulWidget {
   const ChauffeurAccueilScreen({super.key});
 
@@ -34,11 +29,13 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
   List<Course> _propositions = const [];
   Course? _courseEnCours;
 
-  /// Ids des courses déjà vues : sert à ne pas renotifier deux fois.
   final Set<int> _coursesVues = {};
 
-  /// Le premier chargement remplit la liste : il ne doit pas déclencher
-  /// de notification pour des courses déjà en attente.
+  /// ✅ IDs des courses où CE chauffeur a proposé un prix.
+  /// Permet de distinguer "ma proposition en attente" (modifiable) de
+  /// "un autre chauffeur a proposé" (lecture seule).
+  final Set<int> _mesPropositions = {};
+
   bool _premierChargement = true;
 
   Timer? _minuterie;
@@ -75,6 +72,7 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
 
       final historique = resultats[2] as List<Course>;
       final propositions = resultats[1] as List<Course>;
+      final active = historique.where((c) => c.estActive).firstOrNull;
 
       await _notifierNouvellesCourses(propositions);
 
@@ -82,12 +80,17 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
         _etat = etat;
         _revenus = resultats[0] as RevenusChauffeur;
         _propositions = propositions;
-        _courseEnCours = historique.where((c) => c.estActive).firstOrNull;
+        _courseEnCours = active;
         _chargement = false;
         _erreur = null;
       });
 
-      if (etat.enLigne) _demarrerSuiviPosition();
+      // ✅ GPS activé uniquement si une course est active (acceptee / en_route / prise_en_charge).
+      if (active != null) {
+        _demarrerSuiviPosition();
+      } else {
+        _arreterSuiviPosition();
+      }
     } on ApiException catch (e) {
       if (!mounted || !premiereFois) return;
       setState(() {
@@ -97,22 +100,17 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
     }
   }
 
-  /// Compare les propositions reçues avec celles déjà vues : toute nouvelle
-  /// course déclenche une notification. Le premier chargement ne notifie pas.
   Future<void> _notifierNouvellesCourses(List<Course> propositions) async {
     if (_premierChargement) {
       _premierChargement = false;
       _coursesVues.addAll(propositions.map((c) => c.id));
-
       return;
     }
 
-    final nouvelles =
-        propositions.where((c) => !_coursesVues.contains(c.id)).toList();
+    final nouvelles = propositions.where((c) => !_coursesVues.contains(c.id)).toList();
 
     if (nouvelles.isNotEmpty) {
       final course = nouvelles.first;
-
       await NotificationService.notifierCourse(
         id: course.id,
         titre: 'Nouvelle course disponible',
@@ -121,15 +119,11 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
       );
     }
 
-    // On mémorise toutes les courses vues, même refusées depuis.
     for (final c in propositions) {
       _coursesVues.add(c.id);
     }
   }
 
-  /// Tant que le chauffeur est en ligne, sa position part au serveur : c'est
-  /// elle qui le rend joignable pour les courses proches, même écran
-  /// verrouillé.
   void _demarrerSuiviPosition() => ServiceSuiviGps.instance.demarrer();
 
   void _arreterSuiviPosition() => ServiceSuiviGps.instance.arreter();
@@ -137,32 +131,14 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
   Future<void> _basculer(bool enLigne) async {
     setState(() => _bascule = true);
 
-    if (enLigne) {
-      final position = await ServicePosition.actuelle();
-
-      if (position == null) {
-        if (!mounted) return;
-        setState(() => _bascule = false);
-        _informer(
-          'Activez la localisation pour recevoir des courses.',
-          MabokoCouleurs.danger,
-        );
-
-        return;
-      }
-
-      await _repository.transmettrePosition(
-        latitude: position.latitude,
-        longitude: position.longitude,
-      );
-    }
-
     try {
       await _repository.basculerDisponibilite(enLigne);
       if (!mounted) return;
       setState(() => _bascule = false);
 
-      enLigne ? _demarrerSuiviPosition() : _arreterSuiviPosition();
+      if (!enLigne) {
+        _arreterSuiviPosition();
+      }
       await _charger();
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -171,16 +147,143 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
     }
   }
 
-  Future<void> _accepter(Course course) async {
+  Future<void> _proposerPrixEtAccepter(Course course) async {
+    final prixInitial = course.prixChauffeur ??
+        (course.prixClient != null && course.prixClient! > 0
+            ? course.prixClient!
+            : course.tarifEstime);
+
+    final controleurPrix = TextEditingController(
+      text: prixInitial.round().toString(),
+    );
+
+    final prixValide = await showModalBottomSheet<double>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.surfaceMaboko,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: context.bordureMaboko,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Fixer votre prix',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '${course.depart.adresse} → ${course.arrivee.adresse}',
+              style: TextStyle(fontSize: 13, color: context.texteSecondaireMaboko),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: MabokoCouleurs.secondaire.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: MabokoCouleurs.secondaire, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Tarif estimé : ${formaterFcfa(course.tarifEstime)}\n'
+                      'Fixez le montant proposé au client.',
+                      style: const TextStyle(fontSize: 12.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controleurPrix,
+              keyboardType: TextInputType.number,
+              autofocus: true,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                labelText: 'Votre tarif (FCFA)',
+                suffixText: 'FCFA',
+                filled: true,
+                fillColor: context.fondMaboko,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: const Text('Annuler'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final p = double.tryParse(controleurPrix.text.trim());
+                      if (p != null && p > 0) {
+                        Navigator.pop(ctx, p);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: MabokoCouleurs.secondaire,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: const Text(
+                      'Proposer ce prix',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (prixValide == null) return;
+
     try {
-      final acceptee = await _repository.accepter(course.id);
+      await _repository.contreProposer(course.id, prixValide);
       if (!mounted) return;
 
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CourseChauffeurScreen(courseId: acceptee.id),
-        ),
+      // ✅ On mémorise localement que c'est NOTRE proposition en attente.
+      _mesPropositions.add(course.id);
+
+      _informer(
+        'Votre proposition de ${formaterFcfa(prixValide)} a été transmise au client.',
+        MabokoCouleurs.succes,
       );
       await _charger();
     } on ApiException catch (e) {
@@ -194,12 +297,11 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
   }
 
   Future<void> _refuser(Course course) async {
-    setState(
-      () => _propositions = _propositions.where((c) => c.id != course.id).toList(),
-    );
+    setState(() => _propositions = _propositions.where((c) => c.id != course.id).toList());
 
     try {
       await _repository.refuser(course.id);
+      _mesPropositions.remove(course.id);
     } on ApiException catch (e) {
       if (!mounted) return;
       _informer(e.message, MabokoCouleurs.danger);
@@ -324,9 +426,7 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
                       : 'Passez en ligne pour recevoir des courses.',
                   style: TextStyle(
                     fontSize: 12.5,
-                    color: etat.enLigne
-                        ? Colors.white70
-                        : context.texteSecondaireMaboko,
+                    color: etat.enLigne ? Colors.white70 : context.texteSecondaireMaboko,
                   ),
                 ),
               ],
@@ -336,10 +436,7 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
               ? const SizedBox(
                   width: 22,
                   height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                 )
               : Switch(
                   value: etat.enLigne,
@@ -361,9 +458,7 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
         onTap: () async {
           await Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => CourseChauffeurScreen(courseId: course.id),
-            ),
+            MaterialPageRoute(builder: (_) => CourseChauffeurScreen(courseId: course.id)),
           );
           await _charger();
         },
@@ -375,11 +470,7 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
           ),
           child: Row(
             children: [
-              const Icon(
-                Icons.navigation_rounded,
-                color: MabokoCouleurs.accent,
-                size: 28,
-              ),
+              const Icon(Icons.navigation_rounded, color: MabokoCouleurs.accent, size: 28),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -387,20 +478,14 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
                   children: [
                     const Text(
                       'Course en cours',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       '${course.depart.adresse} → ${course.arrivee.adresse}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: context.texteSecondaireMaboko,
-                      ),
+                      style: TextStyle(fontSize: 12.5, color: context.texteSecondaireMaboko),
                     ),
                   ],
                 ),
@@ -439,10 +524,7 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
           Text(
             '${revenus?.coursesAujourdhui ?? 0} course(s) · '
             '${formaterFcfa(revenus?.totalSemaine ?? 0)} cette semaine',
-            style: TextStyle(
-              fontSize: 12.5,
-              color: context.texteSecondaireMaboko,
-            ),
+            style: TextStyle(fontSize: 12.5, color: context.texteSecondaireMaboko),
           ),
           if (revenus != null && revenus.semaine.isNotEmpty) ...[
             const SizedBox(height: 16),
@@ -454,9 +536,7 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
   }
 
   Widget _graphiqueSemaine(RevenusChauffeur revenus) {
-    final maximum = revenus.semaine
-        .map((j) => j.total)
-        .fold<double>(0, (a, b) => a > b ? a : b);
+    final maximum = revenus.semaine.map((j) => j.total).fold<double>(0, (a, b) => a > b ? a : b);
 
     return SizedBox(
       height: 78,
@@ -474,19 +554,14 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
                   height: hauteur < 3 ? 3 : hauteur,
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: jour.total > 0
-                        ? MabokoCouleurs.secondaire
-                        : context.bordureMaboko,
+                    color: jour.total > 0 ? MabokoCouleurs.secondaire : context.bordureMaboko,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   date == null ? '' : _jourCourt(date.weekday),
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: context.texteSecondaireMaboko,
-                  ),
+                  style: TextStyle(fontSize: 10, color: context.texteSecondaireMaboko),
                 ),
               ],
             ),
@@ -503,8 +578,7 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
         child: EtatVide(
           icone: Icons.wifi_tethering_off,
           titre: 'Hors ligne',
-          message:
-              'Passez en ligne pour voir les courses proposées près de vous.',
+          message: 'Passez en ligne pour voir les courses disponibles sur la plateforme.',
         ),
       );
     }
@@ -534,13 +608,21 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
   }
 
   Widget _carteProposition(Course course) {
+    final jaiPropose = _mesPropositions.contains(course.id);
+    // ✅ Une course en négociation que je n'ai PAS proposée : un autre chauffeur
+    // a déjà fixé un prix, on attend la réponse du client. Les boutons sont
+    // désactivés pour éviter l'erreur 409 côté API.
+    final autreAPropose = course.enNegociation && !jaiPropose;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: context.surfaceMaboko,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.bordureMaboko),
+        border: Border.all(
+          color: autreAPropose ? MabokoCouleurs.bordureMaboko : context.bordureMaboko,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -548,28 +630,27 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
           Row(
             children: [
               Icon(
-                course.typeVehicule == 'moto'
-                    ? Icons.two_wheeler
-                    : Icons.directions_car,
-                color: MabokoCouleurs.secondaire,
+                course.typeVehicule == 'moto' ? Icons.two_wheeler : Icons.directions_car,
+                color: autreAPropose ? Colors.grey : MabokoCouleurs.secondaire,
                 size: 20,
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   course.clientNom ?? 'Client Maboko',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14.5,
+                    color: autreAPropose ? Colors.grey.shade600 : null,
                   ),
                 ),
               ),
               Text(
                 formaterFcfa(course.tarifEstime),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: MabokoCouleurs.secondaire,
+                  color: autreAPropose ? Colors.grey : MabokoCouleurs.secondaire,
                 ),
               ),
             ],
@@ -582,27 +663,60 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
             'Trajet : ${course.distanceKm.toStringAsFixed(1)} km · environ ${course.dureeEstimeeMin} min',
             style: TextStyle(fontSize: 12, color: context.texteSecondaireMaboko),
           ),
-          if (course.distancePriseEnChargeKm != null) ...[
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                const Icon(
-                  Icons.near_me_outlined,
-                  size: 14,
-                  color: MabokoCouleurs.secondaire,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'Client à ${course.distancePriseEnChargeKm!.toStringAsFixed(1)} km de vous',
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.bold,
-                    color: MabokoCouleurs.secondaire,
+
+          // ✅ Bandeau "Ma proposition" (modifiable) ou "Un autre a proposé" (lecture seule).
+          if (jaiPropose) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: MabokoCouleurs.accent.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.hourglass_top_rounded, size: 16, color: MabokoCouleurs.accent),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Ma proposition : ${formaterFcfa(course.prixChauffeur ?? course.tarifEstime)} · En attente du client',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: MabokoCouleurs.accent,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+            ),
+          ] else if (autreAPropose) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.lock_outline_rounded, size: 16, color: Colors.grey.shade600),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Un autre chauffeur a proposé ${formaterFcfa(course.prixChauffeur ?? course.tarifEstime)} · En attente du client',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
+
           const SizedBox(height: 12),
           Row(
             children: [
@@ -610,13 +724,11 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
                 child: SizedBox(
                   height: 44,
                   child: OutlinedButton(
-                    onPressed: () => _refuser(course),
+                    onPressed: autreAPropose ? null : () => _refuser(course),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: context.texteSecondaireMaboko,
                       side: BorderSide(color: context.bordureMaboko),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: const Text('Refuser'),
                   ),
@@ -628,17 +740,18 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
                 child: SizedBox(
                   height: 44,
                   child: ElevatedButton(
-                    onPressed: () => _accepter(course),
+                    onPressed: autreAPropose ? null : () => _proposerPrixEtAccepter(course),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: MabokoCouleurs.secondaire,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      disabledBackgroundColor: Colors.grey.shade300,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text(
-                      'Accepter',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    child: Text(
+                      jaiPropose
+                          ? 'Modifier mon prix'
+                          : (autreAPropose ? 'En attente du client' : 'Fixer mon prix'),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),

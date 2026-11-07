@@ -28,22 +28,11 @@ class _RegisterPageState extends State<RegisterPage> {
   String _userRole = 'client';
   bool _argsRead = false;
 
-  bool hasMinLength = false;
-  bool hasUppercase = false;
-  bool hasDigit = false;
-  bool hasSpecialChar = false;
-
   // Palette marron & beige — alignée sur la page de connexion du web.
   static const Color terracotta = Color(0xFFB35B28);
   static const Color orMaboko = Color(0xFFEAA023);
   static const Color beigeFond = Color(0xFFFFFDF8);
   static const Color texteMarron = Color(0xFF4A2A18);
-
-  @override
-  void initState() {
-    super.initState();
-    passwordController.addListener(_validatePasswordRules);
-  }
 
   @override
   void didChangeDependencies() {
@@ -57,23 +46,12 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   void dispose() {
-    passwordController.removeListener(_validatePasswordRules);
     nameController.dispose();
     emailController.dispose();
     phoneController.dispose();
     passwordController.dispose();
     codeController.dispose();
     super.dispose();
-  }
-
-  void _validatePasswordRules() {
-    final password = passwordController.text;
-    setState(() {
-      hasMinLength = password.length >= 8;
-      hasUppercase = password.contains(RegExp(r'[A-Z]'));
-      hasDigit = password.contains(RegExp(r'[0-9]'));
-      hasSpecialChar = password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
-    });
   }
 
   String formatCongolesePhone(String input) {
@@ -103,6 +81,8 @@ class _RegisterPageState extends State<RegisterPage> {
     final String rawPhone = phoneController.text.trim();
     final String formattedPhone = formatCongolesePhone(rawPhone);
 
+    // ⚠️ Aucune complexité de mot de passe : on vérifie juste qu'il n'est
+    // pas vide. L'utilisateur est libre de choisir le mot de passe qu'il veut.
     if (nameController.text.trim().isEmpty ||
         emailController.text.trim().isEmpty ||
         rawPhone.isEmpty ||
@@ -120,16 +100,6 @@ class _RegisterPageState extends State<RegisterPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Format invalide. Ex : 06 666 66 66 (9 chiffres)"),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (!(hasMinLength && hasUppercase && hasDigit && hasSpecialChar)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Veuillez respecter toutes les normes du mot de passe"),
           backgroundColor: Colors.red,
         ),
       );
@@ -246,11 +216,6 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  /// Aiguillage juste après la création du compte.
-  ///
-  /// L'artisan passe désormais par un parcours d'inscription en plusieurs
-  /// étapes (expérience, ville, quartier, bio, RCCM) avant sa fiche métier.
-  /// Le chauffeur garde son parcours actuel.
   Future<void> _apresInscription(String role, String nom) async {
     final reel = RoleMaboko.depuis(role);
 
@@ -261,7 +226,6 @@ class _RegisterPageState extends State<RegisterPage> {
           builder: (_) => ArtisanExperienceScreen(nomComplet: nom),
         ),
       );
-
       return;
     }
 
@@ -272,7 +236,6 @@ class _RegisterPageState extends State<RegisterPage> {
           builder: (_) => const FicheChauffeurScreen(premiereFois: true),
         ),
       );
-
       return;
     }
 
@@ -364,27 +327,6 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _buildPasswordRuleRow(String text, bool isValid) {
-    return Row(
-      children: [
-        Icon(
-          isValid ? Icons.check_circle_rounded : Icons.cancel_rounded,
-          color: isValid ? Colors.green.shade600 : Colors.red.shade400,
-          size: 15,
-        ),
-        const SizedBox(width: 8),
-        Text(
-          text,
-          style: TextStyle(
-            color: isValid ? Colors.green.shade800 : Colors.grey.shade600,
-            fontSize: 12,
-            fontWeight: isValid ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -394,9 +336,9 @@ class _RegisterPageState extends State<RegisterPage> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF4A2A18), // marron foncé
-              Color(0xFF7A3F1D), // marron moyen
-              Color(0xFFB35B28), // terracotta
+              Color(0xFF4A2A18),
+              Color(0xFF7A3F1D),
+              Color(0xFFB35B28),
             ],
             stops: [0.0, 0.5, 1.0],
           ),
@@ -529,6 +471,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             style: const TextStyle(color: texteMarron, fontSize: 15),
                             controller: passwordController,
                             obscureText: _obscurePassword,
+                            // ⚠️ Aucune règle de complexité : l'utilisateur choisit librement.
                             decoration: _inputDecoration(
                               "Mot de passe",
                               Icons.lock_outline,
@@ -544,35 +487,6 @@ class _RegisterPageState extends State<RegisterPage> {
                                   });
                                 },
                               ),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: beigeFond,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: const Color(0xFFE8D5C0)),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  "Le mot de passe doit contenir :",
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                      color: terracotta),
-                                ),
-                                const SizedBox(height: 6),
-                                _buildPasswordRuleRow("Au moins 8 caractères", hasMinLength),
-                                const SizedBox(height: 4),
-                                _buildPasswordRuleRow("Une lettre majuscule (A-Z)", hasUppercase),
-                                const SizedBox(height: 4),
-                                _buildPasswordRuleRow("Un chiffre (0-9)", hasDigit),
-                                const SizedBox(height: 4),
-                                _buildPasswordRuleRow("Un caractère spécial (!@#\$...)", hasSpecialChar),
-                              ],
                             ),
                           ),
                           const SizedBox(height: 22),

@@ -16,14 +16,6 @@ import '../models/course.dart';
 import 'widgets_carte.dart';
 
 /// Course en cours, côté chauffeur (§5.3.2, §5.3.3).
-///
-/// La navigation guidée est déléguée à Google Maps ou Waze, déjà installés
-/// sur le téléphone : les réimplémenter coûterait cher pour un résultat
-/// inférieur, et le cahier de charges autorise ce choix (§6.2).
-///
-/// La fin de course exige le code à 4 chiffres que le client lit à l'écran
-/// de son propre téléphone : un chauffeur ne peut donc pas clôturer une
-/// course sans l'accord du client.
 class CourseChauffeurScreen extends StatefulWidget {
   const CourseChauffeurScreen({super.key, required this.courseId});
 
@@ -53,8 +45,9 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
   @override
   void initState() {
     super.initState();
+    // ⚠️ Le GPS n'est PAS démarré ici. Il le sera dans _charger() une fois
+    // qu'on connaît le statut réel de la course.
     _charger();
-    _suivrePosition();
   }
 
   @override
@@ -66,6 +59,9 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
 
   /// La transmission au serveur est assurée par [ServiceSuiviGps] ; l'écran
   /// se contente d'afficher la position sur la carte.
+  ///
+  /// ⚠️ Cette méthode ne doit être appelée QUE si la course est confirmée
+  /// et active (acceptee / en_route / prise_en_charge). Voir _charger().
   void _suivrePosition() {
     final suivi = ServiceSuiviGps.instance;
 
@@ -90,11 +86,19 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
     try {
       final course = await _repository.detail(widget.courseId);
       if (!mounted) return;
+
       setState(() {
         _course = course;
         _chargement = false;
         _erreur = null;
       });
+
+      // ✅ GPS ACTIVÉ UNIQUEMENT QUAND LA COURSE EST CONFIRMÉE ET ACTIVE.
+      // Si la course est en recherche, en négociation, annulée ou terminée,
+      // le GPS ne doit pas tourner (ni transmettre la position au serveur).
+      if (course.estActive) {
+        _suivrePosition();
+      }
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -119,7 +123,12 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
         SnackBar(content: Text(succes), backgroundColor: MabokoCouleurs.succes),
       );
 
-      if (course.estCloturee && mounted) Navigator.pop(context, true);
+      // ✅ Si la course est clôturée, on arrête le suivi GPS avant de quitter.
+      if (course.estCloturee && mounted) {
+        _suiviPosition?.cancel();
+        if (_suiviLanceIci) ServiceSuiviGps.instance.arreter();
+        Navigator.pop(context, true);
+      }
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _actionEnCours = false);
@@ -129,10 +138,6 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
     }
   }
 
-  /// Demande le code à 4 chiffres du client, puis termine la course.
-  ///
-  /// Le code est comparé localement (simulation). Quand le serveur validera
-  /// lui-même, cette méthode lui enverra simplement la valeur saisie.
   Future<void> _terminerAvecCode(Course course) async {
     final controleur = TextEditingController();
     String? erreur;
@@ -194,13 +199,11 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
 
                 if (saisi.length != 4) {
                   setDialogue(() => erreur = 'Entrez les 4 chiffres.');
-
                   return;
                 }
 
                 if (saisi != course.codePin) {
                   setDialogue(() => erreur = 'Code incorrect. Demandez au client.');
-
                   return;
                 }
 
@@ -225,8 +228,6 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
     );
   }
 
-  /// Ouvre le guidage vers le point utile : le client tant qu'il n'est pas
-  /// à bord, sa destination ensuite.
   Future<void> _ouvrirNavigation() async {
     final course = _course;
     if (course == null) return;
@@ -241,7 +242,6 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
     for (final uri in uris) {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
-
         return;
       }
     }
@@ -328,24 +328,21 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
             trace: [depart, arrivee],
             marqueurs: [
               marqueurMaboko(
-                point: depart, 
-                icone: Icons.trip_origin, 
+                point: depart,
+                icone: Icons.trip_origin,
                 couleur: MabokoCouleurs.principale,
               ),
               marqueurMaboko(
-                point: arrivee, 
-                icone: Icons.place, 
+                point: arrivee,
+                icone: Icons.place,
                 couleur: MabokoCouleurs.secondaire,
               ),
-              
-              // 👇 AJOUT DU MARQUEUR DU TAXI EN TEMPS RÉEL 👇
               if (_positionActuelle != null)
                 marqueurMaboko(
                   point: _positionActuelle!,
                   icone: Icons.local_taxi_rounded,
-                  couleur: Colors.blue, // On le met en bleu pour bien le distinguer
+                  couleur: Colors.blue,
                 ),
-              // 👆 FIN AJOUT 👆
             ],
           ),
         ),
@@ -478,7 +475,6 @@ class _CourseChauffeurScreenState extends State<CourseChauffeurScreen> {
   static double _radians(double degres) => degres * math.pi / 180;
 
   Widget _actionPrincipale(Course course) {
-    // Fin de course : on demande le code au client avant de clôturer.
     if (course.statut == 'prise_en_charge') {
       return SizedBox(
         height: 50,
