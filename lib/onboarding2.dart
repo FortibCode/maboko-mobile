@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 class Onboarding2 extends StatelessWidget {
   const Onboarding2({super.key});
 
-  static const Color terracotta = Color(0xFFB35B28);
   static const Color orMaboko = Color(0xFFEAA023);
   static const Color texteMarron = Color(0xFF4A2A18);
 
@@ -21,7 +20,6 @@ class Onboarding2 extends StatelessWidget {
       backgroundColor: gradientHaut,
       body: Stack(
         children: [
-          // ── Image plein-écran, partie haute ──────────────────────────
           Positioned(
             top: 0,
             left: 0,
@@ -37,7 +35,6 @@ class Onboarding2 extends StatelessWidget {
             ),
           ),
 
-          // ── Fondu bas de l'image vers le gradient ────────────────────
           Positioned(
             top: size.height * 0.32,
             left: 0,
@@ -54,7 +51,6 @@ class Onboarding2 extends StatelessWidget {
             ),
           ),
 
-          // ── Fond gradient sous le texte ──────────────────────────────
           Positioned(
             top: size.height * 0.55,
             left: 0,
@@ -72,11 +68,10 @@ class Onboarding2 extends StatelessWidget {
             ),
           ),
 
-          // ── Contenu superposé ────────────────────────────────────────
+          // ⚠️ Demande client : aucun texte descriptif.
           SafeArea(
             child: Column(
               children: [
-                // Bouton « Passer »
                 Align(
                   alignment: Alignment.centerRight,
                   child: Padding(
@@ -98,38 +93,6 @@ class Onboarding2 extends StatelessWidget {
 
                 const Spacer(),
 
-                // Texte
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 28),
-                  child: Column(
-                    children: [
-                      const Text(
-                        'Découvrez leurs\nréalisations',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          height: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        'Photos avant/après, vidéos, portfolios\ncomplets pour choisir en confiance.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          color: Colors.white.withValues(alpha: 0.85),
-                          height: 1.55,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const Spacer(),
-
-                // Indicateurs de pagination
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -142,7 +105,6 @@ class Onboarding2 extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // Bouton Suivant
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: SizedBox(

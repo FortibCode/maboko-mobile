@@ -15,12 +15,11 @@ import '../data/course_repository.dart';
 import '../models/course.dart';
 import 'widgets_carte.dart';
 
-/// Suivi d'une course côté client : recherche d'un chauffeur, puis position
-/// du véhicule sur la carte jusqu'à la dépose.
+/// Suivi d'une course côté client : recherche d'un chauffeur, négociation de tarif,
+/// puis position du véhicule sur la carte jusqu'à la dépose.
 ///
-/// Une notification locale prévient le client dès qu'un chauffeur accepte.
-/// Pendant la course, un code à 4 chiffres est affiché au client : il le
-/// communique au chauffeur pour confirmer la fin.
+/// Une notification locale prévient le client dès qu'un chauffeur accepte
+/// ou propose un tarif.
 class SuiviCourseScreen extends StatefulWidget {
   const SuiviCourseScreen({super.key, required this.courseId});
 
@@ -88,7 +87,15 @@ class _SuiviCourseScreenState extends State<SuiviCourseScreen> {
     final precedent = _statutPrecedent;
     _statutPrecedent = course.statut;
 
-    if (precedent == 'recherche' && course.statut == 'acceptee') {
+    if (precedent == 'recherche' && course.statut == 'negociation') {
+      await NotificationService.notifierCourse(
+        id: 100000 + course.id,
+        titre: 'Proposition de tarif reçue',
+        corps:
+            'Un chauffeur vous propose ${formaterFcfa(course.prixChauffeur ?? course.tarifEstime)} pour votre course.',
+      );
+    } else if ((precedent == 'recherche' || precedent == 'negociation') &&
+        course.statut == 'acceptee') {
       await NotificationService.notifierCourse(
         id: 100000 + course.id,
         titre: 'Chauffeur trouvé',
@@ -116,6 +123,76 @@ class _SuiviCourseScreenState extends State<SuiviCourseScreen> {
         _erreur = e.message;
         _chargement = false;
       });
+    }
+  }
+
+  Future<void> _accepterPrix() async {
+    setState(() => _actionEnCours = true);
+    try {
+      final course = await _repository.accepterPrix(widget.courseId);
+      if (!mounted) return;
+      setState(() {
+        _course = course;
+        _actionEnCours = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Prix accepté ! Votre chauffeur arrive.'),
+          backgroundColor: MabokoCouleurs.succes,
+        ),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _actionEnCours = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: MabokoCouleurs.danger),
+      );
+    }
+  }
+
+  Future<void> _refuserPrix() async {
+    final confirme = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Refuser ce prix ?'),
+        content: const Text(
+          'Cette proposition sera refusée et la course sera de nouveau proposée aux autres chauffeurs.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Revenir'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Refuser', style: TextStyle(color: MabokoCouleurs.danger)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirme != true) return;
+
+    setState(() => _actionEnCours = true);
+    try {
+      final course = await _repository.refuserPrix(widget.courseId);
+      if (!mounted) return;
+      setState(() {
+        _course = course;
+        _actionEnCours = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Proposition refusée. Recherche d’un autre chauffeur…'),
+          backgroundColor: MabokoCouleurs.secondaire,
+        ),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _actionEnCours = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: MabokoCouleurs.danger),
+      );
     }
   }
 
@@ -258,7 +335,7 @@ class _SuiviCourseScreenState extends State<SuiviCourseScreen> {
                 ),
               ),
               Text(
-                formaterFcfa(course.tarifFinal ?? course.tarifEstime),
+                formaterFcfa(course.prixChauffeur ?? (course.tarifFinal ?? course.tarifEstime)),
                 style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
@@ -281,6 +358,79 @@ class _SuiviCourseScreenState extends State<SuiviCourseScreen> {
             LinearProgressIndicator(
               color: MabokoCouleurs.secondaire,
               backgroundColor: context.bordureMaboko,
+            ),
+          ],
+
+          // Carte de négociation : quand le chauffeur a fixé son prix
+          if (course.enNegociation) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: MabokoCouleurs.secondaire.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: MabokoCouleurs.secondaire.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Prix fixé par le chauffeur :',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        formaterFcfa(course.prixChauffeur ?? course.tarifEstime),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: MabokoCouleurs.secondaire,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _actionEnCours ? null : _refuserPrix,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: MabokoCouleurs.danger,
+                            side: const BorderSide(color: MabokoCouleurs.danger),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Refuser'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                          onPressed: _actionEnCours ? null : _accepterPrix,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: MabokoCouleurs.secondaire,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Accepter le prix',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
 
@@ -339,9 +489,6 @@ class _SuiviCourseScreenState extends State<SuiviCourseScreen> {
   }
 
   /// Carte du code à 4 chiffres, affichée pendant la course.
-  ///
-  /// Le client lit ce code au chauffeur à l'arrivée : c'est ce qui évite
-  /// qu'une course soit terminée sans son accord.
   Widget _carteCodeConfirmation(Course course) {
     return Container(
       width: double.infinity,
@@ -453,6 +600,7 @@ class _SuiviCourseScreenState extends State<SuiviCourseScreen> {
 
   String _titreStatut(String statut) => switch (statut) {
         'recherche' => 'Recherche d’un chauffeur…',
+        'negociation' => 'Proposition de prix reçue',
         'acceptee' => 'Chauffeur trouvé',
         'en_route' => 'Votre chauffeur arrive',
         'prise_en_charge' => 'En route vers votre destination',
@@ -463,7 +611,9 @@ class _SuiviCourseScreenState extends State<SuiviCourseScreen> {
 
   String _sousTitreStatut(Course course) => switch (course.statut) {
         'recherche' =>
-          'Nous prévenons les chauffeurs disponibles autour de vous.',
+          'Nous prévenons les chauffeurs disponibles sur la plateforme.',
+        'negociation' =>
+          'Le chauffeur vous a proposé un tarif. Acceptez ou refusez ci-dessous.',
         'acceptee' => 'Il se met en route. Restez au point de départ.',
         'en_route' => 'Suivez sa position sur la carte.',
         'prise_en_charge' =>
