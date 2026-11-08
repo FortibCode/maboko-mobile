@@ -621,7 +621,7 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
         color: context.surfaceMaboko,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: autreAPropose ? MabokoCouleurs.bordureMaboko : context.bordureMaboko,
+          color: autreAPropose ? Colors.grey.shade400 : context.bordureMaboko,
         ),
       ),
       child: Column(

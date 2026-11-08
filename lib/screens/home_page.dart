@@ -342,7 +342,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _barreHaut() {
-    final侵sombre = controleurTheme.estSombre(context);
+    final sombre = controleurTheme.estSombre(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(6, 8, 10, 4),
