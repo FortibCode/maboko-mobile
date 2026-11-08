@@ -4,11 +4,9 @@ import 'package:flutter/services.dart';
 class Onboarding1 extends StatelessWidget {
   const Onboarding1({super.key});
 
-  static const Color terracotta = Color(0xFFB35B28);
   static const Color orMaboko = Color(0xFFEAA023);
   static const Color texteMarron = Color(0xFF4A2A18);
 
-  // Couleurs du gradient (identiques dans les 3 écrans)
   static const Color gradientHaut = Color(0xFF3B1F0E);
   static const Color gradientMilieu = Color(0xFF6B3318);
   static const Color gradientBas = Color(0xFFB35B28);
@@ -49,16 +47,13 @@ class Onboarding1 extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    gradientHaut,
-                  ],
+                  colors: [Colors.transparent, gradientHaut],
                 ),
               ),
             ),
           ),
 
-          // ── Fond gradient sous le texte ──────────────────────────────
+          // ── Fond gradient sous l'image ───────────────────────────────
           Positioned(
             top: size.height * 0.55,
             left: 0,
@@ -80,7 +75,6 @@ class Onboarding1 extends StatelessWidget {
           SafeArea(
             child: Column(
               children: [
-                // Bouton « Passer »
                 Align(
                   alignment: Alignment.centerRight,
                   child: Padding(
@@ -102,37 +96,6 @@ class Onboarding1 extends StatelessWidget {
 
                 const Spacer(),
 
-                // Texte
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 28),
-                  child: Column(
-                    children: [
-                      const Text(
-                        'Trouvez les meilleurs\nartisans',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          height: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        'Peintres, mécaniciens, couturiers,\nélectriciens... tous près de chez vous.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          color: Colors.white.withValues(alpha: 0.85),
-                          height: 1.55,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const Spacer(),
-
                 // Indicateurs de pagination
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -146,7 +109,6 @@ class Onboarding1 extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // Bouton Suivant
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: SizedBox(
