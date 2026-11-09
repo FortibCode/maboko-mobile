@@ -50,6 +50,11 @@ dev_dependencies:
   # Génération de l'icône de l'application (Logo)
   flutter_launcher_icons: ^0.13.1
 
+# 👇 CORRECTION INCOMPATIBILITE RECORD / RECORD_LINUX 👇
+dependency_overrides:
+  record_platform_interface: 1.1.0
+# 👆 FIN DE LA CORRECTION 👆
+
 flutter:
   uses-material-design: true
 
