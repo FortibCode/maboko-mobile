@@ -30,7 +30,6 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // Palette marron & beige — alignée sur la page de connexion du web.
   static const Color terracotta = Color(0xFFB35B28);
-  static const Color orMaboko = Color(0xFFEAA023);
   static const Color beigeFond = Color(0xFFFFFDF8);
   static const Color texteMarron = Color(0xFF4A2A18);
 
