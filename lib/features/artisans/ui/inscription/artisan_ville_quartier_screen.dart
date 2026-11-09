@@ -4,11 +4,7 @@ import '../../../../core/theme/maboko_theme.dart';
 import 'artisan_bio_screen.dart';
 import 'inscription_artisan_data.dart';
 
-/// Étape 2 du parcours d'inscription artisan : ville + quartier.
-///
-/// Fusion des deux anciens écrans : on choisit sa ville, et les quartiers
-/// de cette ville apparaissent immédiatement en dessous. Plus rapide, plus
-/// clair, et conforme à la maquette Maboko.
+/// Étape 2 du parcours d'inscription artisan : métiers + ville + quartier.
 class ArtisanVilleQuartierScreen extends StatefulWidget {
   const ArtisanVilleQuartierScreen({super.key, required this.nomComplet});
 
@@ -21,8 +17,18 @@ class ArtisanVilleQuartierScreen extends StatefulWidget {
 
 class _ArtisanVilleQuartierScreenState
     extends State<ArtisanVilleQuartierScreen> {
+  // 👇 1. LISTE DES MÉTIERS DISPONIBLES 👇
+  static const List<String> _metiersDisponibles = [
+    'Plombier', 'Électricien', 'Menuisier', 'Maçon', 'Peintre',
+    'Mécanicien', 'Couturier', 'Coiffeur', 'Jardinier', 'Soudeur'
+  ];
+
   String? _ville;
   String? _quartier;
+  
+  // 👇 2. ÉTAT POUR LES MÉTIERS SÉLECTIONNÉS 👇
+  final Set<String> _metiersChoisis = {};
+  
   bool _chargement = true;
 
   @override
@@ -38,11 +44,21 @@ class _ArtisanVilleQuartierScreenState
     setState(() {
       _ville = data?.ville;
       _quartier = data?.quartier;
+      // Si tes données contiennent déjà des métiers, on les charge
+      if (data?.metiers != null) {
+        _metiersChoisis.addAll(data!.metiers!);
+      }
       _chargement = false;
     });
   }
 
   Future<void> _continuer() async {
+    // 👇 3. VALIDATION DES MÉTIERS 👇
+    if (_metiersChoisis.isEmpty) {
+      _informer('Choisissez au moins un métier pour continuer.');
+      return;
+    }
+
     if (_ville == null) {
       _informer('Choisissez votre ville pour continuer.');
       return;
@@ -55,8 +71,13 @@ class _ArtisanVilleQuartierScreenState
 
     final data = (await InscriptionArtisanData.charger()) ??
         const InscriptionArtisanData();
+        
     await data
-        .copierAvec(ville: _ville, quartier: _quartier)
+        .copierAvec(
+          ville: _ville, 
+          quartier: _quartier,
+          metiers: _metiersChoisis.toList(), // Sauvegarde des métiers
+        )
         .sauvegarder();
 
     if (!mounted) return;
@@ -82,7 +103,7 @@ class _ArtisanVilleQuartierScreenState
     return Scaffold(
       backgroundColor: context.fondMaboko,
       appBar: AppBar(
-        title: const Text('Votre localisation'),
+        title: const Text('Votre profil'),
         backgroundColor: MabokoCouleurs.secondaire,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -109,10 +130,18 @@ class _ArtisanVilleQuartierScreenState
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       children: [
         _titre(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
+        
+        // 👇 4. SECTION MÉTIERS AJOUTÉE ICI 👇
+        _section('VOS MÉTIERS (PLUSIEURS POSSIBLES)'),
+        const SizedBox(height: 10),
+        _chipsMetiers(),
+        const SizedBox(height: 26),
+
         _section('VOTRE VILLE'),
         const SizedBox(height: 10),
         _grilleVilles(),
+        
         if (_ville != null) ...[
           const SizedBox(height: 26),
           _section('VOTRE QUARTIER'),
@@ -140,7 +169,7 @@ class _ArtisanVilleQuartierScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Où êtes-vous basé ?',
+          'Présentez votre activité',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -149,7 +178,7 @@ class _ArtisanVilleQuartierScreenState
         ),
         const SizedBox(height: 6),
         Text(
-          'Les clients vous trouveront près de chez eux.',
+          'Choisissez vos spécialités, puis indiquez où vous travaillez.',
           style: TextStyle(
             fontSize: 13.5,
             height: 1.45,
@@ -157,6 +186,48 @@ class _ArtisanVilleQuartierScreenState
           ),
         ),
       ],
+    );
+  }
+
+  // 👇 5. WIDGET DES CHIPS MÉTIERS 👇
+  Widget _chipsMetiers() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _metiersDisponibles.map((metier) {
+        final actif = _metiersChoisis.contains(metier);
+        return GestureDetector(
+          onTap: () => setState(() {
+            if (actif) {
+              _metiersChoisis.remove(metier);
+            } else {
+              _metiersChoisis.add(metier);
+            }
+          }),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            decoration: BoxDecoration(
+              color: actif
+                  ? MabokoCouleurs.secondaire.withValues(alpha: 0.12)
+                  : Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: actif ? MabokoCouleurs.secondaire : context.bordureMaboko,
+                width: actif ? 1.5 : 1,
+              ),
+            ),
+            child: Text(
+              metier,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: actif ? FontWeight.bold : FontWeight.w500,
+                color: actif ? MabokoCouleurs.secondaire : context.texteFortMaboko,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -182,7 +253,6 @@ class _ArtisanVilleQuartierScreenState
         borderRadius: BorderRadius.circular(14),
         onTap: () => setState(() {
           _ville = ville;
-          // On garde le quartier seulement s'il est dans la nouvelle ville.
           final quartiers = quartiersParVille[ville] ?? const <String>[];
           if (_quartier != null && !quartiers.contains(_quartier)) {
             _quartier = null;
@@ -231,10 +301,7 @@ class _ArtisanVilleQuartierScreenState
     if (quartiers.isEmpty) {
       return Text(
         'Aucun quartier disponible pour cette ville.',
-        style: TextStyle(
-          fontSize: 13,
-          color: context.texteSecondaireMaboko,
-        ),
+        style: TextStyle(fontSize: 13, color: context.texteSecondaireMaboko),
       );
     }
 
@@ -268,8 +335,7 @@ class _ArtisanVilleQuartierScreenState
           style: TextStyle(
             fontSize: 13,
             fontWeight: actif ? FontWeight.bold : FontWeight.w500,
-            color:
-                actif ? MabokoCouleurs.secondaire : context.texteFortMaboko,
+            color: actif ? MabokoCouleurs.secondaire : context.texteFortMaboko,
           ),
         ),
       ),
@@ -277,7 +343,7 @@ class _ArtisanVilleQuartierScreenState
   }
 
   Widget _piedDePage() {
-    final peutContinuer = _ville != null && _quartier != null;
+    final peutContinuer = _metiersChoisis.isNotEmpty && _ville != null && _quartier != null;
 
     return SafeArea(
       child: Padding(

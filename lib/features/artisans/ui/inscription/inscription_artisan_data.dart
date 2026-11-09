@@ -1,15 +1,10 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Données du parcours d'inscription artisan.
-///
-/// Rempli étape par étape (expérience → ville → quartier → bio → RCCM) et
-/// sauvegardé en local au fur et à mesure. Si l'utilisateur ferme
-/// l'application au milieu, il reprend là où il s'était arrêté.
-///
-/// Vidé une fois la fiche artisan créée avec succès sur le serveur.
 class InscriptionArtisanData {
   const InscriptionArtisanData({
     this.experience,
+    this.metiers, // 👈 AJOUT
     this.ville,
     this.quartier,
     this.bio,
@@ -19,32 +14,23 @@ class InscriptionArtisanData {
     this.photoPieceVerso,
   });
 
-  /// Tranche d'expérience choisie : « moins-2 », « 2-5 », « 5-10 »,
-  /// « 10-20 », « plus-20 ».
   final String? experience;
-
-  /// Ville d'exercice (Brazzaville, Pointe-Noire, etc.).
+  
+  /// 👇 AJOUT : Liste des métiers sélectionnés
+  final List<String>? metiers; 
+  
   final String? ville;
-
-  /// Quartier dans la ville.
   final String? quartier;
-
-  /// Présentation libre, limitée à 100 mots.
   final String? bio;
-
-  /// L'artisan possède-t-il un RCCM ?
   final bool? aRccm;
-
-  /// Photo du RCCM, encodée en base64 (`data:image/jpeg;base64,...`).
   final String? photoRccm;
-
-  /// Photos de la pièce d'identité, recto et verso, encodées en base64.
   final String? photoPieceRecto;
   final String? photoPieceVerso;
 
   /// Vrai si toutes les étapes obligatoires ont été remplies.
   bool get estComplet =>
       experience != null &&
+      metiers != null && metiers!.isNotEmpty && // 👈 AJOUT
       ville != null &&
       quartier != null &&
       bio != null &&
@@ -59,6 +45,7 @@ class InscriptionArtisanData {
   // ---------------------------------------------------------------------------
 
   static const _cleExperience = 'inscription_artisan_experience';
+  static const _cleMetiers = 'inscription_artisan_metiers'; // 👈 AJOUT
   static const _cleVille = 'inscription_artisan_ville';
   static const _cleQuartier = 'inscription_artisan_quartier';
   static const _cleBio = 'inscription_artisan_bio';
@@ -72,6 +59,7 @@ class InscriptionArtisanData {
     final prefs = await SharedPreferences.getInstance();
 
     if (experience != null) await prefs.setString(_cleExperience, experience!);
+    if (metiers != null) await prefs.setStringList(_cleMetiers, metiers!); // 👈 AJOUT
     if (ville != null) await prefs.setString(_cleVille, ville!);
     if (quartier != null) await prefs.setString(_cleQuartier, quartier!);
     if (bio != null) await prefs.setString(_cleBio, bio!);
@@ -85,11 +73,12 @@ class InscriptionArtisanData {
     }
   }
 
-  /// Relit l'état sauvegardé. Renvoie `null` si rien n'a été sauvegardé.
+  /// Relit l'état sauvegardé.
   static Future<InscriptionArtisanData?> charger() async {
     final prefs = await SharedPreferences.getInstance();
 
     final experience = prefs.getString(_cleExperience);
+    final metiers = prefs.getStringList(_cleMetiers); // 👈 AJOUT
     final ville = prefs.getString(_cleVille);
     final quartier = prefs.getString(_cleQuartier);
     final bio = prefs.getString(_cleBio);
@@ -99,6 +88,7 @@ class InscriptionArtisanData {
     final photoPieceVerso = prefs.getString(_clePhotoPieceVerso);
 
     if (experience == null &&
+        metiers == null && // 👈 AJOUT
         ville == null &&
         quartier == null &&
         bio == null &&
@@ -108,6 +98,7 @@ class InscriptionArtisanData {
 
     return InscriptionArtisanData(
       experience: experience,
+      metiers: metiers, // 👈 AJOUT
       ville: ville,
       quartier: quartier,
       bio: bio,
@@ -123,6 +114,7 @@ class InscriptionArtisanData {
     final prefs = await SharedPreferences.getInstance();
 
     await prefs.remove(_cleExperience);
+    await prefs.remove(_cleMetiers); // 👈 AJOUT
     await prefs.remove(_cleVille);
     await prefs.remove(_cleQuartier);
     await prefs.remove(_cleBio);
@@ -132,10 +124,10 @@ class InscriptionArtisanData {
     await prefs.remove(_clePhotoPieceVerso);
   }
 
-  /// Copie avec modification : chaque écran renvoie sa valeur et on
-  /// reconstruit l'objet complet sans toucher aux autres champs.
+  /// Copie avec modification.
   InscriptionArtisanData copierAvec({
     String? experience,
+    List<String>? metiers, // 👈 AJOUT
     String? ville,
     String? quartier,
     String? bio,
@@ -146,6 +138,7 @@ class InscriptionArtisanData {
   }) {
     return InscriptionArtisanData(
       experience: experience ?? this.experience,
+      metiers: metiers ?? this.metiers, // 👈 AJOUT
       ville: ville ?? this.ville,
       quartier: quartier ?? this.quartier,
       bio: bio ?? this.bio,
@@ -161,62 +154,32 @@ class InscriptionArtisanData {
 // Référentiels statiques : villes et quartiers
 // ---------------------------------------------------------------------------
 
-/// Quartiers par ville du Congo.
-///
-/// Sert à l'écran de choix du quartier : une fois la ville choisie, on
-/// affiche uniquement ses quartiers.
 const Map<String, List<String>> quartiersParVille = {
   'Brazzaville': [
-    'Bacongo',
-    'Makélékélé',
-    'Poto-Poto',
-    'Moungali',
-    'Talangaï',
-    'Ouenzé',
-    'Mfilou',
-    'Madibou',
-    'Djiri',
+    'Bacongo', 'Makélékélé', 'Poto-Poto', 'Moungali', 
+    'Talangaï', 'Ouenzé', 'Mfilou', 'Madibou', 'Djiri',
   ],
   'Pointe-Noire': [
-    'Loandjili',
-    'Tié-Tié',
-    'Mvou-Mvou',
-    'Mpaka',
-    'Ngoyo',
-    'Lumumba',
+    'Loandjili', 'Tié-Tié', 'Mvou-Mvou', 'Mpaka', 'Ngoyo', 'Lumumba',
   ],
   'Dolisie': [
-    'Centre',
-    'Nkoulou',
-    'Moutampa',
-    'Banga',
+    'Centre', 'Nkoulou', 'Moutampa', 'Banga',
   ],
   'Ouesso': [
-    'Centre',
-    'Bandongo',
-    'Kombo',
+    'Centre', 'Bandongo', 'Kombo',
   ],
   'Kinkala': [
-    'Centre',
-    'Mbanza-Ndounga',
+    'Centre', 'Mbanza-Ndounga',
   ],
   'Nkayi': [
-    'Centre',
-    'Mouyondzi',
+    'Centre', 'Mouyondzi',
   ],
 };
 
-/// Liste ordonnée des villes proposées à l'inscription.
 const List<String> villesDisponibles = [
-  'Brazzaville',
-  'Pointe-Noire',
-  'Dolisie',
-  'Ouesso',
-  'Kinkala',
-  'Nkayi',
+  'Brazzaville', 'Pointe-Noire', 'Dolisie', 'Ouesso', 'Kinkala', 'Nkayi',
 ];
 
-/// Tranches d'expérience proposées à l'étape 1.
 const List<({String code, String libelle})> tranchesExperience = [
   (code: 'moins-2', libelle: 'Moins de 2 ans'),
   (code: '2-5', libelle: '2 à 5 ans'),
