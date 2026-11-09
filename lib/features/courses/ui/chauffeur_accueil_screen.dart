@@ -621,7 +621,8 @@ class _ChauffeurAccueilScreenState extends State<ChauffeurAccueilScreen> {
         color: context.surfaceMaboko,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: autreAPropose ? MabokoCouleurs.bordureMaboko : context.bordureMaboko,
+          // ✅ CORRECTION ICI : Utilisation de Colors.grey.shade300 pour le mode "autre a proposé"
+          color: autreAPropose ? Colors.grey.shade300 : context.bordureMaboko,
         ),
       ),
       child: Column(
