@@ -295,13 +295,37 @@ class _HomePageState extends State<HomePage> {
             ListTile(
               leading: const Icon(Icons.language_rounded, color: MabokoCouleurs.secondaire),
               title: const Text('Français'),
+              trailing: const Icon(Icons.check, color: MabokoCouleurs.succes, size: 20),
               onTap: () => Navigator.pop(ctx),
             ),
             const Divider(height: 1),
             ListTile(
               leading: const Icon(Icons.language_rounded, color: MabokoCouleurs.secondaire),
               title: const Text('Lingala'),
-              onTap: () => Navigator.pop(ctx),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: MabokoCouleurs.secondaire.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  'À venir',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: MabokoCouleurs.secondaire,
+                  ),
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Lingala : Fonctionnalité à venir (bientôt disponible)'),
+                    backgroundColor: MabokoCouleurs.secondaire,
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 12),
           ],
