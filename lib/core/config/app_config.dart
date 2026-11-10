@@ -5,7 +5,7 @@ class AppConfig {
   /// Adresse de base de l'API, prefixe de version compris.
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://maboko-api-4y2h.onrender.com',
+    defaultValue: 'https://maboko-api.onrender.com',
   );
 
   /// Identifiant client OAuth du projet Google Cloud (§5.1.3).
@@ -14,7 +14,7 @@ class AppConfig {
   static bool get googleDisponible => googleClientId.isNotEmpty;
 
   /// Serveur WebSocket Reverb, pour la messagerie en temps réel (§7.2).
-  static const String reverbHost = String.fromEnvironment('REVERB_HOST', defaultValue: 'maboko-api-4y2h.onrender.com');
+  static const String reverbHost = String.fromEnvironment('REVERB_HOST', defaultValue: 'maboko-api.onrender.com');
   static const int reverbPort = int.fromEnvironment('REVERB_PORT', defaultValue: 8080);
   static const String reverbKey = String.fromEnvironment('REVERB_KEY');
   static const bool reverbTls = bool.fromEnvironment('REVERB_TLS');

@@ -32,7 +32,7 @@ Future<void> ouvrirReglageAdresse(BuildContext context) async {
               autofocus: true,
               keyboardType: TextInputType.url,
               decoration: InputDecoration(
-                hintText: 'https://maboko-api-4y2h.onrender.com',
+                hintText: 'https://maboko-api.onrender.com',
                 errorText: erreur,
                 border: const OutlineInputBorder(),
               ),

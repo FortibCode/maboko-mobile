@@ -9,7 +9,7 @@ class AdresseApi {
   static const _cle = 'api_base_url';
 
   /// Adresse visée quand rien d'exploitable n'est configuré.
-  static const _domaineDeSecours = 'https://maboko-api-4y2h.onrender.com';
+  static const _domaineDeSecours = 'https://maboko-api.onrender.com';
   static const _replis = '$_domaineDeSecours/api/v1';
 
   /// Valeur en vigueur, lue une fois au démarrage puis gardée en mémoire :
