@@ -18,11 +18,6 @@ import 'a_propos_screen.dart';
 import 'portfolio_screen.dart';
 import 'settings_screen.dart';
 
-/// Tiroir de navigation du client.
-///
-/// Il dégage la barre du bas, qui portait dix entrées empilées dans l'onglet
-/// Profil. Les destinations secondaires vivent ici ; les quatre parcours
-/// quotidiens restent dans la barre.
 class TiroirNavigation extends StatelessWidget {
   const TiroirNavigation({
     super.key,
@@ -31,17 +26,15 @@ class TiroirNavigation extends StatelessWidget {
     required this.onDeconnexion,
     required this.estClient,
     this.onPhotoModifiee,
+    this.onAccountSwitch, // 👈 NOUVEAU
   });
 
   final ProfilUtilisateur? profil;
   final String nomSecours;
-
-  /// Les deux rôles partagent la coquille mais pas leurs destinations : un
-  /// artisan n'a que faire de « Mes courses », un client de « Mon portfolio ».
   final bool estClient;
-
   final VoidCallback onDeconnexion;
   final VoidCallback? onPhotoModifiee;
+  final VoidCallback? onAccountSwitch; // 👈 NOUVEAU
 
   String get _nom =>
       profil?.nomComplet.isNotEmpty == true ? profil!.nomComplet : nomSecours;
@@ -54,6 +47,20 @@ class TiroirNavigation extends StatelessWidget {
         child: Column(
           children: [
             _entete(context),
+            
+            // 👇 BOUTON CHANGER DE COMPTE 👇
+            if (onAccountSwitch != null)
+              ListTile(
+                leading: const Icon(Icons.swap_horiz_rounded, color: MabokoCouleurs.secondaire),
+                title: const Text('Changer de compte', style: TextStyle(fontWeight: FontWeight.bold, color: MabokoCouleurs.secondaire)),
+                onTap: () {
+                  Navigator.pop(context); // Ferme le tiroir
+                  onAccountSwitch!(); // Ouvre le BottomSheet
+                },
+              ),
+            const Divider(height: 1),
+            // 👆 FIN BOUTON 👆
+
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -186,8 +193,6 @@ class TiroirNavigation extends StatelessWidget {
       leading: Icon(icone, color: MabokoCouleurs.secondaire, size: 21),
       title: Text(libelle, style: const TextStyle(fontSize: 14)),
       onTap: () {
-        // Le tiroir se ferme avant la navigation, sinon il reste ouvert
-        // derrière l'écran appelé au retour.
         Navigator.pop(context);
         Navigator.push(context, MaterialPageRoute(builder: (_) => destination));
       },

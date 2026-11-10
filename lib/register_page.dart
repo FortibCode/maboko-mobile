@@ -28,7 +28,6 @@ class _RegisterPageState extends State<RegisterPage> {
   String _userRole = 'client';
   bool _argsRead = false;
 
-  // Palette marron & beige — alignée sur la page de connexion du web.
   static const Color terracotta = Color(0xFFB35B28);
   static const Color beigeFond = Color(0xFFFFFDF8);
   static const Color texteMarron = Color(0xFF4A2A18);
@@ -55,18 +54,10 @@ class _RegisterPageState extends State<RegisterPage> {
 
   String formatCongolesePhone(String input) {
     String cleaned = input.replaceAll(RegExp(r'\s+'), '').trim();
-    if (cleaned.startsWith('+242')) {
-      return cleaned;
-    }
-    if (cleaned.startsWith('242')) {
-      return '+$cleaned';
-    }
-    if (cleaned.startsWith('0')) {
-      return '+242$cleaned';
-    }
-    if (cleaned.isNotEmpty) {
-      return '+2420$cleaned';
-    }
+    if (cleaned.startsWith('+242')) return cleaned;
+    if (cleaned.startsWith('242')) return '+$cleaned';
+    if (cleaned.startsWith('0')) return '+242$cleaned';
+    if (cleaned.isNotEmpty) return '+2420$cleaned';
     return cleaned;
   }
 
@@ -80,8 +71,6 @@ class _RegisterPageState extends State<RegisterPage> {
     final String rawPhone = phoneController.text.trim();
     final String formattedPhone = formatCongolesePhone(rawPhone);
 
-    // ⚠️ Aucune complexité de mot de passe : on vérifie juste qu'il n'est
-    // pas vide. L'utilisateur est libre de choisir le mot de passe qu'il veut.
     if (nameController.text.trim().isEmpty ||
         emailController.text.trim().isEmpty ||
         rawPhone.isEmpty ||
@@ -284,6 +273,8 @@ class _RegisterPageState extends State<RegisterPage> {
       }
       await StorageService.saveOnboardingCompleted(true);
 
+      await StorageService.saveCurrentUserAsAccount(); // 👈 NOUVEAU
+
       setState(() => isLoading = false);
       if (!mounted) return;
 
@@ -470,7 +461,6 @@ class _RegisterPageState extends State<RegisterPage> {
                             style: const TextStyle(color: texteMarron, fontSize: 15),
                             controller: passwordController,
                             obscureText: _obscurePassword,
-                            // ⚠️ Aucune règle de complexité : l'utilisateur choisit librement.
                             decoration: _inputDecoration(
                               "Mot de passe",
                               Icons.lock_outline,

@@ -25,18 +25,16 @@ class _LoginPageState extends State<LoginPage> {
   bool _googleEnCours = false;
   bool _obscurePassword = true;
 
-  // Palette marron & beige — alignée sur les autres écrans d'authentification.
-  static const Color terracotta = Color(0xFFB35B28); // terracotta principal
+  static const Color terracotta = Color(0xFFB35B28);
   static const Color hintGrey = Color(0xFFB6B6B6);
-  static const Color beigeFond = Color(0xFFFFFDF8); // fond de carte beige
-  static const Color texteMarron = Color(0xFF4A2A18); // texte foncé marron
+  static const Color beigeFond = Color(0xFFFFFDF8);
+  static const Color texteMarron = Color(0xFF4A2A18);
 
   String _formatIdentifier(String input) {
     final String trimmed = input.trim();
-    // Si c'est un numéro de téléphone local, ajouter +242
     if (RegExp(r'^0[456]\d{7}$').hasMatch(trimmed)) return '+242$trimmed';
     if (RegExp(r'^[456]\d{7}$').hasMatch(trimmed)) return '+2420$trimmed';
-    return trimmed; // sinon e-mail ou numéro déjà complet
+    return trimmed;
   }
 
   Future<void> _connexionGoogle() async {
@@ -45,7 +43,6 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final session = await const GoogleAuth().connecter();
 
-      // Fenetre fermee par l'utilisateur : on ne signale rien.
       if (session == null) {
         if (mounted) setState(() => _googleEnCours = false);
         return;
@@ -64,6 +61,8 @@ class _LoginPageState extends State<LoginPage> {
         role: role,
         email: utilisateur['email'] as String? ?? '',
       );
+
+      await StorageService.saveCurrentUserAsAccount(); // 👈 NOUVEAU
 
       if (!mounted) return;
 
@@ -88,8 +87,6 @@ class _LoginPageState extends State<LoginPage> {
 
       final user = data['user'] as Map<String, dynamic>;
 
-      // L'API renvoie « nom », pas « name » : la lecture precedente
-      // retombait systematiquement sur « Utilisateur ».
       final String name = (user['nom'] as String?)?.trim().isNotEmpty == true
           ? user['nom'] as String
           : 'Utilisateur';
@@ -106,10 +103,10 @@ class _LoginPageState extends State<LoginPage> {
         email: email,
       );
 
+      await StorageService.saveCurrentUserAsAccount(); // 👈 NOUVEAU
+
       if (!mounted) return;
 
-      // L'espace ouvert est celui du role renvoye par l'API, jamais celui
-      // devine a partir de l'ecran d'ou vient l'utilisateur.
       ouvrirEspace(context, RoleMaboko.depuis(role), nom: name);
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -120,9 +117,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _showErrorSnackBar(String message) {
-    // Un echec reseau en developpement vient presque toujours de l'adresse du
-    // serveur, qui change a chaque bail DHCP. Le raccourci evite d'aller la
-    // chercher dans les parametres — ou d'attendre une recompilation.
     final reseau = !AppConfig.isRelease && message.contains('Impossible de joindre');
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -151,9 +145,9 @@ class _LoginPageState extends State<LoginPage> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF4A2A18), // marron foncé (haut)
-              Color(0xFF7A3F1D), // marron moyen (milieu)
-              Color(0xFFB35B28), // terracotta (bas)
+              Color(0xFF4A2A18),
+              Color(0xFF7A3F1D),
+              Color(0xFFB35B28),
             ],
             stops: [0.1, 0.4, 1.0],
           ),
@@ -165,7 +159,6 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo Circulaire
                   Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
@@ -195,7 +188,6 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Textes "Bon retour !"
                   const Text(
                     "Bon retour !",
                     style: TextStyle(
@@ -216,15 +208,9 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 22),
 
-                  // Bascule Connexion / Inscription (§5.1.3).
-                  // Le rôle voulu se choisit sur le formulaire d'inscription
-                  // lui-même : depuis cet écran, aucun parcours ne le porte,
-                  // et tous les comptes créés par cet onglet naissaient
-                  // clients quel qu'ait été le souhait de l'utilisateur.
                   const BasculeAcces(surConnexion: true, roleInscription: null),
                   const SizedBox(height: 22),
 
-                  // La Carte Beige Flottante
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -345,9 +331,6 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const SizedBox(height: 16),
 
-                          // Connexion Google (§5.1.3). Le serveur verifie le
-                          // jeton aupres de Google : l'identite n'est jamais
-                          // declaree par le telephone.
                           SizedBox(
                             height: 50,
                             child: OutlinedButton.icon(
@@ -358,11 +341,6 @@ class _LoginPageState extends State<LoginPage> {
                                       height: 18,
                                       child: CircularProgressIndicator(strokeWidth: 2),
                                     )
-                                  // Le logo officiel, pas l'icone Material
-                                  // « g_mobiledata » : Google demande son
-                                  // propre « G » sur les boutons de connexion,
-                                  // et un utilisateur reconnait ces quatre
-                                  // couleurs avant meme de lire le texte.
                                   : Image.asset(
                                       'assets/images/google_g.png',
                                       width: 20,
@@ -389,7 +367,6 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Footer Texte
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
