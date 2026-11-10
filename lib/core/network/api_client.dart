@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/adresse_api.dart';
@@ -73,7 +74,8 @@ class ApiClient {
         "Le serveur met trop de temps à répondre. Vérifiez votre connexion."
         '${_indiceDeveloppement()}',
       );
-    } catch (_) {
+    } catch (e, stack) {
+      debugPrint('[ApiClient] Échec requête $methode $uri : $e\n$stack');
       throw ApiException(
         "Impossible de joindre Maboko. Vérifiez votre connexion internet."
         '${_indiceDeveloppement()}',
