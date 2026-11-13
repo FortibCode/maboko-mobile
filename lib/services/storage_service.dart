@@ -4,11 +4,12 @@ import '../core/cache/cache_local.dart';
 
 class StorageService {
   static const String _tokenKey = "auth_token";
+  static const String _userIdKey = "user_id"; // 👈 NOUVEAU
   static const String _emailKey = "user_email";
   static const String _nameKey = "user_name";
   static const String _roleKey = "user_role";
   static const String _telephoneKey = "user_telephone";
-  static const String _accountsKey = "saved_accounts"; // 👈 NOUVEAU
+  static const String _accountsKey = "saved_accounts";
   
   static const String _profileCompletedKey = "profile_completed_";
   static const String _onboardingDoneKey = "onboarding_completed";
@@ -16,7 +17,7 @@ class StorageService {
   static const String _commentKeyPrefix = "user_comment_count_";
 
   // ----------------------------------------------------
-  // GESTION DU TOKEN
+  // GESTION DU TOKEN ET DE L'ID
   // ----------------------------------------------------
   static Future<bool> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
@@ -28,16 +29,26 @@ class StorageService {
     return prefs.getString(_tokenKey);
   }
 
+  // 👇 NOUVELLES MÉTHODES POUR L'ID UNIQUE
+  static Future<bool> saveUserId(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    return await prefs.setString(_userIdKey, id);
+  }
+
+  static Future<String?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userIdKey);
+  }
+
   static Future<bool> estConnecte() async {
     final token = await getToken();
     return token != null && token.isNotEmpty;
   }
 
   // ----------------------------------------------------
-  // GESTION MULTI-COMPTES (NOUVEAU)
+  // GESTION MULTI-COMPTES
   // ----------------------------------------------------
 
-  /// Récupère la liste des comptes enregistrés sur le téléphone.
   static Future<List<Map<String, dynamic>>> getSavedAccounts() async {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString(_accountsKey);
@@ -45,10 +56,10 @@ class StorageService {
     return List<Map<String, dynamic>>.from(jsonDecode(data));
   }
 
-  /// Ajoute ou met à jour un compte dans la liste.
   static Future<void> saveAccount(Map<String, dynamic> account) async {
     final accounts = await getSavedAccounts();
-    final index = accounts.indexWhere((a) => a['email'] == account['email'] || a['token'] == account['token']);
+    // 👇 On utilise l'ID unique pour éviter d'écraser un compte avec le même email
+    final index = accounts.indexWhere((a) => a['id'] == account['id']);
     if (index >= 0) {
       accounts[index] = account; // Mise à jour
     } else {
@@ -58,13 +69,13 @@ class StorageService {
     await prefs.setString(_accountsKey, jsonEncode(accounts));
   }
 
-  /// Sauvegarde le compte actuellement connecté dans la liste.
   static Future<void> saveCurrentUserAsAccount() async {
     final token = await getToken();
     if (token == null || token.isEmpty) return;
     
     final account = {
       'token': token,
+      'id': await getUserId(), // 👈 On sauvegarde l'ID
       'email': await getUserEmail(),
       'name': await getUserName(),
       'role': await getUserRole(),
@@ -73,10 +84,10 @@ class StorageService {
     await saveAccount(account);
   }
 
-  /// Bascule vers un autre compte.
   static Future<void> switchAccount(Map<String, dynamic> account) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, account['token']);
+    await prefs.setString(_userIdKey, account['id']); // 👈 On restaure l'ID
     await prefs.setString(_emailKey, account['email'] ?? '');
     await prefs.setString(_nameKey, account['name'] ?? '');
     await prefs.setString(_roleKey, account['role'] ?? 'client');
@@ -87,7 +98,7 @@ class StorageService {
   }
 
   // ----------------------------------------------------
-  // AUTRES MÉTHODES (Inchangées)
+  // AUTRES MÉTHODES
   // ----------------------------------------------------
   static Future<bool> saveUserEmail(String email) async {
     final prefs = await SharedPreferences.getInstance();
@@ -188,6 +199,7 @@ class StorageService {
     await prefs.remove(_nameKey);
     await prefs.remove(_roleKey);
     await prefs.remove(_telephoneKey);
+    await prefs.remove(_userIdKey); // 👈 Nettoyage de l'ID
     return await prefs.remove(_tokenKey);
   }
 

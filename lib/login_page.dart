@@ -53,6 +53,8 @@ class _LoginPageState extends State<LoginPage> {
       final role = utilisateur['role'] as String? ?? 'client';
 
       await StorageService.saveToken(session.jeton);
+      await StorageService.saveUserId(utilisateur['id'].toString()); // 👈 SAUVEGARDE DE L'ID
+      
       if (utilisateur['telephone'] is String) {
         await StorageService.saveUserTelephone(utilisateur['telephone'] as String);
       }
@@ -62,7 +64,7 @@ class _LoginPageState extends State<LoginPage> {
         email: utilisateur['email'] as String? ?? '',
       );
 
-      await StorageService.saveCurrentUserAsAccount(); // 👈 NOUVEAU
+      await StorageService.saveCurrentUserAsAccount(); // 👈 SAUVEGARDE DANS LA LISTE
 
       if (!mounted) return;
 
@@ -94,6 +96,8 @@ class _LoginPageState extends State<LoginPage> {
       final String email = user['email'] as String? ?? _emailController.text.trim();
 
       await StorageService.saveToken(data['token'] as String? ?? '');
+      await StorageService.saveUserId(user['id'].toString()); // 👈 SAUVEGARDE DE L'ID
+      
       if (user['telephone'] is String) {
         await StorageService.saveUserTelephone(user['telephone'] as String);
       }
@@ -103,7 +107,7 @@ class _LoginPageState extends State<LoginPage> {
         email: email,
       );
 
-      await StorageService.saveCurrentUserAsAccount(); // 👈 NOUVEAU
+      await StorageService.saveCurrentUserAsAccount(); // 👈 SAUVEGARDE DANS LA LISTE
 
       if (!mounted) return;
 

@@ -263,6 +263,8 @@ class _RegisterPageState extends State<RegisterPage> {
           : nameController.text.trim();
 
       await StorageService.saveToken(donnees['token'] as String? ?? '');
+      await StorageService.saveUserId(utilisateur['id'].toString()); // 👈 SAUVEGARDE DE L'ID
+      
       await StorageService.saveUserData(
         name: nom,
         role: role,
@@ -273,7 +275,7 @@ class _RegisterPageState extends State<RegisterPage> {
       }
       await StorageService.saveOnboardingCompleted(true);
 
-      await StorageService.saveCurrentUserAsAccount(); // 👈 NOUVEAU
+      await StorageService.saveCurrentUserAsAccount(); // 👈 SAUVEGARDE DANS LA LISTE
 
       setState(() => isLoading = false);
       if (!mounted) return;
