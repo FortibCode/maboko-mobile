@@ -102,7 +102,7 @@ class _HomePageState extends State<HomePage> {
   // 👇 FONCTION POUR LE BOTTOM SHEET INSTAGRAM 👇
   Future<void> _afficherSelecteurDeCompte() async {
     final accounts = await StorageService.getSavedAccounts();
-    final activeId = await StorageService.getUserId(); // 👈 MODIFICATION 1: On utilise l'ID unique
+    final activeId = await StorageService.getUserId();
 
     if (!mounted) return;
     showModalBottomSheet(
@@ -127,7 +127,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 12),
             ...accounts.map((account) {
-              final isActive = account['id'] == activeId; // 👈 MODIFICATION 2: On compare les ID
+              final isActive = account['id'] == activeId;
               final roleLabel = account['role'] == 'artisan' ? 'Artisan' : 'Client';
               
               return ListTile(
@@ -152,7 +152,6 @@ class _HomePageState extends State<HomePage> {
               );
             }),
             const Divider(),
-            // 👇 MODIFICATION 3 : Redirection vers l'inscription avec le drapeau
             ListTile(
               leading: const Icon(Icons.add_circle_outline, color: MabokoCouleurs.secondaire),
               title: const Text('Ajouter un compte', style: TextStyle(color: MabokoCouleurs.secondaire, fontWeight: FontWeight.bold)),
@@ -512,7 +511,6 @@ class _HomePageState extends State<HomePage> {
         nomSecours: widget.avatarName,
         onDeconnexion: _logout,
         onPhotoModifiee: _changerPhoto,
-        onAccountSwitch: _afficherSelecteurDeCompte, 
       ),
       floatingActionButton: (!isClient && _currentIndex == 0)
           ? FloatingActionButton.extended(
@@ -895,6 +893,13 @@ class _HomePageState extends State<HomePage> {
           "Supprimer mon compte",
           onTap: _supprimerMonCompte,
         ),
+        // 👇 AJOUT DU BOUTON CHANGER DE COMPTE (CLIENT) 👇
+        _buildMenuItem(
+          Icons.switch_account_rounded,
+          "Changer de compte",
+          onTap: _afficherSelecteurDeCompte,
+        ),
+        // 👆 FIN AJOUT 👆
         const Divider(height: 1),
         ListTile(
           leading: const Icon(Icons.logout_rounded, color: Colors.red),
@@ -1034,6 +1039,13 @@ class _HomePageState extends State<HomePage> {
           "Supprimer mon compte",
           onTap: _supprimerMonCompte,
         ),
+        // 👇 AJOUT DU BOUTON CHANGER DE COMPTE (ARTISAN) 👇
+        _buildMenuItem(
+          Icons.switch_account_rounded,
+          "Changer de compte",
+          onTap: _afficherSelecteurDeCompte,
+        ),
+        // 👆 FIN AJOUT 👆
         const Divider(height: 1),
         ListTile(
           leading: const Icon(Icons.logout_rounded, color: Colors.red),
