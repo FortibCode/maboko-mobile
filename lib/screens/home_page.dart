@@ -99,10 +99,10 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  // 👇 NOUVELLE FONCTION POUR LE BOTTOM SHEET INSTAGRAM 👇
+  // 👇 FONCTION POUR LE BOTTOM SHEET INSTAGRAM 👇
   Future<void> _afficherSelecteurDeCompte() async {
     final accounts = await StorageService.getSavedAccounts();
-    final activeEmail = await StorageService.getUserEmail();
+    final activeId = await StorageService.getUserId(); // 👈 MODIFICATION 1: On utilise l'ID unique
 
     if (!mounted) return;
     showModalBottomSheet(
@@ -127,7 +127,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 12),
             ...accounts.map((account) {
-              final isActive = account['email'] == activeEmail;
+              final isActive = account['id'] == activeId; // 👈 MODIFICATION 2: On compare les ID
               final roleLabel = account['role'] == 'artisan' ? 'Artisan' : 'Client';
               
               return ListTile(
@@ -147,18 +147,22 @@ class _HomePageState extends State<HomePage> {
                   await StorageService.switchAccount(account);
                   if (!mounted) return;
                   
-                  // Redémarre l'app pour charger le nouveau profil
                   Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false); 
                 },
               );
             }),
             const Divider(),
+            // 👇 MODIFICATION 3 : Redirection vers l'inscription avec le drapeau
             ListTile(
               leading: const Icon(Icons.add_circle_outline, color: MabokoCouleurs.secondaire),
               title: const Text('Ajouter un compte', style: TextStyle(color: MabokoCouleurs.secondaire, fontWeight: FontWeight.bold)),
               onTap: () {
                 Navigator.pop(ctx);
-                Navigator.pushNamed(context, '/login'); 
+                Navigator.pushNamed(
+                  context, 
+                  '/register', 
+                  arguments: {'userRole': 'artisan', 'ajoutCompte': true},
+                ); 
               },
             ),
             const SizedBox(height: 12),
@@ -167,7 +171,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-  // 👆 FIN DE LA NOUVELLE FONCTION 👆
+  // 👆 FIN DE LA FONCTION 👆
 
   Future<void> _chargerMetiers() async {
     try {
@@ -508,7 +512,7 @@ class _HomePageState extends State<HomePage> {
         nomSecours: widget.avatarName,
         onDeconnexion: _logout,
         onPhotoModifiee: _changerPhoto,
-        onAccountSwitch: _afficherSelecteurDeCompte, // 👈 On passe la fonction ici
+        onAccountSwitch: _afficherSelecteurDeCompte, 
       ),
       floatingActionButton: (!isClient && _currentIndex == 0)
           ? FloatingActionButton.extended(

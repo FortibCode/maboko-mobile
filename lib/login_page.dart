@@ -42,7 +42,6 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final session = await const GoogleAuth().connecter();
-
       if (session == null) {
         if (mounted) setState(() => _googleEnCours = false);
         return;
@@ -53,7 +52,7 @@ class _LoginPageState extends State<LoginPage> {
       final role = utilisateur['role'] as String? ?? 'client';
 
       await StorageService.saveToken(session.jeton);
-      await StorageService.saveUserId(utilisateur['id'].toString()); // 👈 SAUVEGARDE DE L'ID
+      await StorageService.saveUserId(utilisateur['id'].toString()); // 👈 SAUVEGARDE ID
       
       if (utilisateur['telephone'] is String) {
         await StorageService.saveUserTelephone(utilisateur['telephone'] as String);
@@ -64,10 +63,9 @@ class _LoginPageState extends State<LoginPage> {
         email: utilisateur['email'] as String? ?? '',
       );
 
-      await StorageService.saveCurrentUserAsAccount(); // 👈 SAUVEGARDE DANS LA LISTE
+      await StorageService.saveCurrentUserAsAccount();
 
       if (!mounted) return;
-
       ouvrirEspace(context, RoleMaboko.depuis(role), nom: nom ?? 'Utilisateur');
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -89,28 +87,21 @@ class _LoginPageState extends State<LoginPage> {
 
       final user = data['user'] as Map<String, dynamic>;
 
-      final String name = (user['nom'] as String?)?.trim().isNotEmpty == true
-          ? user['nom'] as String
-          : 'Utilisateur';
+      final String name = (user['nom'] as String?)?.trim().isNotEmpty == true ? user['nom'] as String : 'Utilisateur';
       final String role = user['role'] as String? ?? 'client';
       final String email = user['email'] as String? ?? _emailController.text.trim();
 
       await StorageService.saveToken(data['token'] as String? ?? '');
-      await StorageService.saveUserId(user['id'].toString()); // 👈 SAUVEGARDE DE L'ID
+      await StorageService.saveUserId(user['id'].toString()); // 👈 SAUVEGARDE ID
       
       if (user['telephone'] is String) {
         await StorageService.saveUserTelephone(user['telephone'] as String);
       }
-      await StorageService.saveUserData(
-        name: name,
-        role: role,
-        email: email,
-      );
+      await StorageService.saveUserData(name: name, role: role, email: email);
 
-      await StorageService.saveCurrentUserAsAccount(); // 👈 SAUVEGARDE DANS LA LISTE
+      await StorageService.saveCurrentUserAsAccount();
 
       if (!mounted) return;
-
       ouvrirEspace(context, RoleMaboko.depuis(role), nom: name);
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -122,20 +113,11 @@ class _LoginPageState extends State<LoginPage> {
 
   void _showErrorSnackBar(String message) {
     final reseau = !AppConfig.isRelease && message.contains('Impossible de joindre');
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
+        content: Text(message), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating,
         duration: Duration(seconds: reseau ? 8 : 4),
-        action: reseau
-            ? SnackBarAction(
-                label: 'Adresse',
-                textColor: Colors.white,
-                onPressed: () => ouvrirReglageAdresse(context),
-              )
-            : null,
+        action: reseau ? SnackBarAction(label: 'Adresse', textColor: Colors.white, onPressed: () => ouvrirReglageAdresse(context)) : null,
       ),
     );
   }
@@ -148,11 +130,7 @@ class _LoginPageState extends State<LoginPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF4A2A18),
-              Color(0xFF7A3F1D),
-              Color(0xFFB35B28),
-            ],
+            colors: [Color(0xFF4A2A18), Color(0xFF7A3F1D), Color(0xFFB35B28)],
             stops: [0.1, 0.4, 1.0],
           ),
         ),
@@ -165,51 +143,20 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: beigeFond,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
+                      shape: BoxShape.circle, color: beigeFond,
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 20, offset: const Offset(0, 10))],
                     ),
                     padding: const EdgeInsets.all(6),
                     child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/Maboko.jpeg',
-                        width: 90,
-                        height: 90,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => const Icon(
-                          Icons.handshake_outlined,
-                          size: 50,
-                          color: terracotta,
-                        ),
+                      child: Image.asset('assets/images/Maboko.jpeg', width: 90, height: 90, fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.handshake_outlined, size: 50, color: terracotta),
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  const Text(
-                    "Bon retour !",
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                  const Text("Bon retour !", style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white)),
                   const SizedBox(height: 6),
-                  const Text(
-                    "Connectez-vous pour accéder à votre espace.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w300,
-                    ),
-                  ),
+                  const Text("Connectez-vous pour accéder à votre espace.", textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w300)),
                   const SizedBox(height: 22),
 
                   const BasculeAcces(surConnexion: true, roleInscription: null),
@@ -217,17 +164,7 @@ class _LoginPageState extends State<LoginPage> {
 
                   Container(
                     padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: beigeFond,
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
-                          blurRadius: 30,
-                          offset: const Offset(0, 15),
-                        ),
-                      ],
-                    ),
+                    decoration: BoxDecoration(color: beigeFond, borderRadius: BorderRadius.circular(30), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30, offset: const Offset(0, 15))]),
                     child: Form(
                       key: _formKey,
                       child: Column(
@@ -237,77 +174,50 @@ class _LoginPageState extends State<LoginPage> {
                             style: const TextStyle(color: texteMarron, fontSize: 15),
                             controller: _emailController,
                             decoration: InputDecoration(
-                              labelText: "Email ou téléphone",
-                              labelStyle: const TextStyle(color: hintGrey),
+                              labelText: "Email ou téléphone", labelStyle: const TextStyle(color: hintGrey),
                               helperText: "Ex : 06 666 66 66 ou votre email",
                               helperStyle: TextStyle(color: hintGrey.withValues(alpha: 0.8), fontSize: 11),
                               prefixIcon: const Icon(Icons.person_outline, color: terracotta),
                               border: InputBorder.none,
-                              enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: hintGrey.withValues(alpha: 0.3)),
-                              ),
-                              focusedBorder: const UnderlineInputBorder(
-                                borderSide: BorderSide(color: terracotta),
-                              ),
+                              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: hintGrey.withValues(alpha: 0.3))),
+                              focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: terracotta)),
                             ),
-                            validator: (value) => (value == null || value.trim().isEmpty)
-                                ? "Veuillez entrer votre identifiant"
-                                : null,
+                            validator: (value) => (value == null || value.trim().isEmpty) ? "Veuillez entrer votre identifiant" : null,
                           ),
                           const SizedBox(height: 12),
-
                           TextFormField(
                             style: const TextStyle(color: texteMarron, fontSize: 15),
                             controller: _passwordController,
                             obscureText: _obscurePassword,
                             decoration: InputDecoration(
-                              labelText: "Mot de passe",
-                              labelStyle: const TextStyle(color: hintGrey),
+                              labelText: "Mot de passe", labelStyle: const TextStyle(color: hintGrey),
                               prefixIcon: const Icon(Icons.lock_outline, color: terracotta),
                               suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                  color: hintGrey,
-                                ),
+                                icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: hintGrey),
                                 onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                               ),
                               border: InputBorder.none,
-                              enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: hintGrey.withValues(alpha: 0.3)),
-                              ),
-                              focusedBorder: const UnderlineInputBorder(
-                                borderSide: BorderSide(color: terracotta),
-                              ),
+                              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: hintGrey.withValues(alpha: 0.3))),
+                              focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: terracotta)),
                             ),
-                            validator: (value) => (value == null || value.isEmpty)
-                                ? "Veuillez entrer votre mot de passe"
-                                : null,
+                            validator: (value) => (value == null || value.isEmpty) ? "Veuillez entrer votre mot de passe" : null,
                           ),
-
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
                               onPressed: () => Navigator.pushNamed(context, '/forgot'),
-                              style: TextButton.styleFrom(
-                                foregroundColor: terracotta,
-                                padding: const EdgeInsets.only(top: 8, bottom: 8),
-                              ),
+                              style: TextButton.styleFrom(foregroundColor: terracotta, padding: const EdgeInsets.only(top: 8, bottom: 8)),
                               child: const Text("Mot de passe oublié ?", style: TextStyle(fontWeight: FontWeight.w600)),
                             ),
                           ),
                           const SizedBox(height: 16),
-
                           SizedBox(
                             height: 50,
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _handleLogin,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: terracotta,
-                                elevation: 5,
-                                shadowColor: terracotta.withValues(alpha: 0.4),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
+                                backgroundColor: terracotta, elevation: 5, shadowColor: terracotta.withValues(alpha: 0.4),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                               ),
                               child: _isLoading
                                   ? const CircularProgressIndicator(color: Colors.white)
@@ -315,53 +225,32 @@ class _LoginPageState extends State<LoginPage> {
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Text("Se connecter", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                                        SizedBox(width: 8),
-                                        Icon(Icons.arrow_forward, size: 18, color: Colors.white),
+                                        SizedBox(width: 8), Icon(Icons.arrow_forward, size: 18, color: Colors.white),
                                       ],
                                     ),
                             ),
                           ),
                           const SizedBox(height: 16),
-
                           Row(
                             children: [
                               Expanded(child: Divider(color: hintGrey.withValues(alpha: 0.3))),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 8),
-                                child: Text("OU", style: TextStyle(color: hintGrey, fontWeight: FontWeight.w600)),
-                              ),
+                              const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text("OU", style: TextStyle(color: hintGrey, fontWeight: FontWeight.w600))),
                               Expanded(child: Divider(color: hintGrey.withValues(alpha: 0.3))),
                             ],
                           ),
                           const SizedBox(height: 16),
-
                           SizedBox(
                             height: 50,
                             child: OutlinedButton.icon(
                               onPressed: _googleEnCours ? null : _connexionGoogle,
                               icon: _googleEnCours
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                    )
-                                  : Image.asset(
-                                      'assets/images/google_g.png',
-                                      width: 20,
-                                      height: 20,
-                                      filterQuality: FilterQuality.medium,
-                                    ),
-                              label: const Text(
-                                'Continuer avec Google',
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                              ),
+                                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                                  : Image.asset('assets/images/google_g.png', width: 20, height: 20, filterQuality: FilterQuality.medium),
+                              label: const Text('Continuer avec Google', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF3C4043),
-                                backgroundColor: beigeFond,
+                                foregroundColor: const Color(0xFF3C4043), backgroundColor: beigeFond,
                                 side: BorderSide(color: hintGrey.withValues(alpha: 0.4)),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                               ),
                             ),
                           ),
@@ -370,7 +259,6 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -393,14 +281,7 @@ class _LoginPageState extends State<LoginPage> {
       children: [
         Icon(icon, size: 14, color: Colors.white.withValues(alpha: 0.8)),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 9,
-            color: Colors.white.withValues(alpha: 0.8),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        Text(text, style: TextStyle(fontSize: 9, color: Colors.white.withValues(alpha: 0.8), fontWeight: FontWeight.w500)),
       ],
     );
   }
