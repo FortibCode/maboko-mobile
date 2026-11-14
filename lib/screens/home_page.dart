@@ -57,6 +57,7 @@ import '../features/artisans/ui/boutique_materiaux_screen.dart';
 import '../features/artisans/ui/reseau_entraide_screen.dart';
 import '../features/artisans/ui/paiements_revenus_screen.dart';
 import '../features/artisans/ui/mes_stories_screen.dart';
+import '../features/compte/ui/selecteur_comptes.dart';
 // ⬆️⬆️ FIN IMPORTS ARTISAN ⬆️⬆️
 
 class HomePage extends StatefulWidget {
@@ -443,6 +444,8 @@ class _HomePageState extends State<HomePage> {
         nomSecours: widget.avatarName,
         onDeconnexion: _logout,
         onPhotoModifiee: _changerPhoto,
+        // Le multi-comptes est réservé aux artisans.
+        onChangerCompte: isClient ? null : () => ouvrirSelecteurComptes(context),
       ),
       floatingActionButton: (!isClient && _currentIndex == 0)
           ? FloatingActionButton.extended(
