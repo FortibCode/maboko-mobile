@@ -31,6 +31,7 @@ class TiroirNavigation extends StatelessWidget {
     required this.onDeconnexion,
     required this.estClient,
     this.onPhotoModifiee,
+    this.onChangerCompte,
   });
 
   final ProfilUtilisateur? profil;
@@ -42,6 +43,10 @@ class TiroirNavigation extends StatelessWidget {
 
   final VoidCallback onDeconnexion;
   final VoidCallback? onPhotoModifiee;
+
+  /// Multi-comptes artisan : ouvre le sélecteur de comptes. Absent, le
+  /// tiroir n'en montre pas l'entrée.
+  final VoidCallback? onChangerCompte;
 
   String get _nom =>
       profil?.nomComplet.isNotEmpty == true ? profil!.nomComplet : nomSecours;
@@ -79,6 +84,14 @@ class TiroirNavigation extends StatelessWidget {
 
                   const Divider(height: 20, indent: 16, endIndent: 16),
                   _rubrique(context, 'Mon compte'),
+                  if (onChangerCompte != null)
+                    ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.switch_account_outlined,
+                          color: MabokoCouleurs.secondaire, size: 21),
+                      title: const Text('Changer de compte', style: TextStyle(fontSize: 14)),
+                      onTap: _changerDeCompte(context),
+                    ),
                   _lien(context, Icons.person_outline_rounded, 'Modifier mon profil',
                       const ModifierProfilScreen()),
                   if (!estClient) ...[
@@ -147,11 +160,24 @@ class TiroirNavigation extends StatelessWidget {
                   },
           ),
           const SizedBox(height: 14),
-          Text(
-            _nom,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+          // Comme sur Instagram, toucher le nom ouvre la liste des comptes.
+          InkWell(
+            onTap: _changerDeCompte(context),
+            borderRadius: BorderRadius.circular(8),
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    _nom,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                if (onChangerCompte != null)
+                  const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white),
+              ],
+            ),
           ),
           const SizedBox(height: 3),
           Text(
@@ -163,6 +189,16 @@ class TiroirNavigation extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Le tiroir se ferme d'abord : le sélecteur s'ouvre sur l'écran d'accueil.
+  VoidCallback? _changerDeCompte(BuildContext context) {
+    if (onChangerCompte == null) return null;
+
+    return () {
+      Navigator.pop(context);
+      onChangerCompte!();
+    };
   }
 
   Widget _rubrique(BuildContext context, String titre) {
