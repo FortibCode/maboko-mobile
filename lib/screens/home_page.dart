@@ -34,6 +34,8 @@ import '../main.dart' show controleurTheme;
 import '../features/compte/ui/moyens_paiement_screen.dart';
 import '../core/widgets/carte_pressable.dart';
 
+
+
 // ⬇️⬇️ IMPORTS — Role CLIENT ⬇️⬇️
 import '../features/compte/ui/mes_avis_screen.dart';
 import 'parametres_data_screen.dart';
@@ -55,6 +57,7 @@ import '../features/artisans/ui/boutique_materiaux_screen.dart';
 import '../features/artisans/ui/reseau_entraide_screen.dart';
 import '../features/artisans/ui/paiements_revenus_screen.dart';
 import '../features/artisans/ui/mes_stories_screen.dart';
+import '../features/compte/ui/selecteur_comptes.dart';
 // ⬆️⬆️ FIN IMPORTS ARTISAN ⬆️⬆️
 
 class HomePage extends StatefulWidget {
@@ -82,6 +85,7 @@ class _HomePageState extends State<HomePage> {
 
   final GlobalKey<ScaffoldState> _cleEchafaudage = GlobalKey<ScaffoldState>();
 
+
   int _notificationsNonLues = 0;
   bool _envoiPhoto = false;
 
@@ -98,81 +102,6 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     super.dispose();
   }
-
-  // 👇 FONCTION POUR LE BOTTOM SHEET INSTAGRAM 👇
-  Future<void> _afficherSelecteurDeCompte() async {
-    final accounts = await StorageService.getSavedAccounts();
-    final activeId = await StorageService.getUserId(); // On utilise l'ID unique
-
-    if (!mounted) return;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: context.surfaceMaboko,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(color: context.bordureMaboko, borderRadius: BorderRadius.circular(2)),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Changer de compte',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.texteFortMaboko),
-            ),
-            const SizedBox(height: 12),
-            ...accounts.map((account) {
-              final isActive = account['id'] == activeId; // On compare les ID
-              final roleLabel = account['role'] == 'artisan' ? 'Artisan' : 'Client';
-              
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: MabokoCouleurs.principale,
-                  child: const Icon(Icons.person, color: Colors.white),
-                ),
-                title: Text(account['name'] ?? 'Utilisateur', style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(roleLabel),
-                trailing: isActive 
-                    ? const Icon(Icons.check_circle, color: MabokoCouleurs.succes) 
-                    : null,
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  if (isActive) return;
-
-                  await StorageService.switchAccount(account);
-                  if (!mounted) return;
-                  
-                  // Redémarre l'app pour charger le nouveau profil
-                  Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false); 
-                },
-              );
-            }),
-            const Divider(),
-            // Redirection vers l'inscription avec le drapeau pour le backend
-            ListTile(
-              leading: const Icon(Icons.add_circle_outline, color: MabokoCouleurs.secondaire),
-              title: const Text('Ajouter un compte', style: TextStyle(color: MabokoCouleurs.secondaire, fontWeight: FontWeight.bold)),
-              onTap: () {
-                Navigator.pop(ctx);
-                Navigator.pushNamed(
-                  context, 
-                  '/register', 
-                  arguments: {'userRole': 'artisan', 'ajoutCompte': true}, 
-                ); 
-              },
-            ),
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
-    );
-  }
-  // 👆 FIN DE LA FONCTION 👆
 
   Future<void> _chargerMetiers() async {
     try {
@@ -515,7 +444,8 @@ class _HomePageState extends State<HomePage> {
         nomSecours: widget.avatarName,
         onDeconnexion: _logout,
         onPhotoModifiee: _changerPhoto,
-        onAccountSwitch: _afficherSelecteurDeCompte, // <-- Lien vers le BottomSheet
+        // Le multi-comptes est réservé aux artisans.
+        onChangerCompte: isClient ? null : () => ouvrirSelecteurComptes(context),
       ),
       floatingActionButton: (!isClient && _currentIndex == 0)
           ? FloatingActionButton.extended(
@@ -646,7 +576,7 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   const SizedBox(height: 10),
                   
-                  // Le bouton "+" sur la photo (Story)
+                  // 👇 BOUTON STORY SUPERPOSÉ SUR LA PHOTO 👇
                   _envoiPhoto
                       ? const SizedBox(
                           width: 90,
@@ -666,10 +596,11 @@ class _HomePageState extends State<HomePage> {
                                   : widget.avatarName,
                               onModifier: _changerPhoto,
                             ),
+                            // Le bouton "+" style Instagram (seulement pour les artisans)
                             if (!isClient)
                               Positioned(
-                                bottom: -10, 
-                                right: 55,   
+                                bottom: -10, // 👈 Poussé vers le bas
+                                right: 55,   // 👈 Poussé vers la gauche
                                 child: GestureDetector(
                                   onTap: () {
                                     Navigator.push(
@@ -690,6 +621,7 @@ class _HomePageState extends State<HomePage> {
                               ),
                           ],
                         ),
+                  // 👆 FIN DU BOUTON STORY 👆
                   
                   const SizedBox(height: 15),
                   Text(
@@ -899,13 +831,6 @@ class _HomePageState extends State<HomePage> {
           "Supprimer mon compte",
           onTap: _supprimerMonCompte,
         ),
-        // 👇 LE BOUTON EST ICI POUR LE CLIENT 👇
-        _buildMenuItem(
-          Icons.switch_account_rounded,
-          "Changer de compte",
-          onTap: _afficherSelecteurDeCompte,
-        ),
-        // 👆 FIN BOUTON 👆
         const Divider(height: 1),
         ListTile(
           leading: const Icon(Icons.logout_rounded, color: Colors.red),
@@ -1040,18 +965,17 @@ class _HomePageState extends State<HomePage> {
           );
         }),
         const Divider(height: 1),
+        // Multi-comptes : même sélecteur que dans le tiroir.
+        _buildMenuItem(
+          Icons.switch_account_rounded,
+          "Changer de compte",
+          onTap: () => ouvrirSelecteurComptes(context),
+        ),
         _buildMenuItem(
           Icons.delete_forever,
           "Supprimer mon compte",
           onTap: _supprimerMonCompte,
         ),
-        // 👇 LE BOUTON EST ICI POUR L'ARTISAN 👇
-        _buildMenuItem(
-          Icons.switch_account_rounded,
-          "Changer de compte",
-          onTap: _afficherSelecteurDeCompte,
-        ),
-        // 👆 FIN BOUTON 👆
         const Divider(height: 1),
         ListTile(
           leading: const Icon(Icons.logout_rounded, color: Colors.red),
