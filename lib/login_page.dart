@@ -97,9 +97,6 @@ class _LoginPageState extends State<LoginPage> {
       final String email = user['email'] as String? ?? _emailController.text.trim();
 
       await StorageService.saveToken(data['token'] as String? ?? '');
-      if (user['id'] != null) {
-        await StorageService.saveUserId(user['id'].toString());
-      }
       if (user['telephone'] is String) {
         await StorageService.saveUserTelephone(user['telephone'] as String);
       }
@@ -108,7 +105,6 @@ class _LoginPageState extends State<LoginPage> {
         role: role,
         email: email,
       );
-      await StorageService.saveCurrentUserAsAccount();
 
       if (!mounted) return;
 

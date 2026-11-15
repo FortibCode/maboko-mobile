@@ -72,8 +72,9 @@ class _VerificationIdentiteScreenState extends State<VerificationIdentiteScreen>
   Future<void> _choisir(bool recto) async {
     final fichier = await ImagePicker().pickImage(
       source: ImageSource.camera,
-      maxWidth: 1800,
-      imageQuality: 85,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 70,
     );
 
     if (fichier == null) return;
