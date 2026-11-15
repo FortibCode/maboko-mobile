@@ -112,6 +112,28 @@ class StorageService {
     }
   }
 
+  /// Remplace la session par celle d'un autre compte de la même personne
+  /// (multi-comptes). Le cache part avec l'ancienne : photos et réponses
+  /// mises de côté appartiennent au compte quitté.
+  static Future<void> changerDeCompte({
+    required String jeton,
+    required Map<String, dynamic> utilisateur,
+  }) async {
+    await CacheLocal.viderTout();
+    await saveToken(jeton);
+
+    if (utilisateur['telephone'] is String) {
+      await saveUserTelephone(utilisateur['telephone'] as String);
+    }
+
+    final nom = (utilisateur['nom'] as String?)?.trim();
+    await saveUserData(
+      name: nom == null || nom.isEmpty ? 'Utilisateur' : nom,
+      role: utilisateur['role'] as String? ?? 'artisan',
+      email: utilisateur['email'] as String?,
+    );
+  }
+
   // ----------------------------------------------------
   // GESTION DE LA CONFIGURATION DU PROFIL PAR UTILISATEUR
   // ----------------------------------------------------
@@ -200,5 +222,25 @@ class StorageService {
   /// méthode se charge, s'il le souhaite, d'appeler `/logout` au préalable.
   static Future<void> deconnecter() async {
     await clearToken();
+  }
+
+  /// Change le compte connecté (multi-comptes artisan officiel).
+  static Future<void> changerDeCompte({
+    required String jeton,
+    required Map<String, dynamic> utilisateur,
+  }) async {
+    await clearToken();
+    await saveToken(jeton);
+    final nom = (utilisateur['nom'] as String?)?.trim();
+    final role = utilisateur['role'] as String? ?? 'artisan';
+    final email = utilisateur['email'] as String? ?? '';
+    await saveUserData(
+      name: nom == null || nom.isEmpty ? 'Utilisateur' : nom,
+      role: role,
+      email: email,
+    );
+    if (utilisateur['telephone'] is String) {
+      await saveUserTelephone(utilisateur['telephone'] as String);
+    }
   }
 }
