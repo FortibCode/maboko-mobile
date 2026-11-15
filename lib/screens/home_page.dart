@@ -965,6 +965,12 @@ class _HomePageState extends State<HomePage> {
           );
         }),
         const Divider(height: 1),
+        // Multi-comptes : même sélecteur que dans le tiroir.
+        _buildMenuItem(
+          Icons.switch_account_rounded,
+          "Changer de compte",
+          onTap: () => ouvrirSelecteurComptes(context),
+        ),
         _buildMenuItem(
           Icons.delete_forever,
           "Supprimer mon compte",
