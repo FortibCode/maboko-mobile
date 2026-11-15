@@ -109,8 +109,9 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
     try {
       final fichier = await ImagePicker().pickImage(
         source: source,
-        maxWidth: 1800,
-        imageQuality: 80,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 70,
       );
 
       if (fichier == null) {
