@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/cache/cache_local.dart';
@@ -5,12 +7,14 @@ import '../core/cache/cache_local.dart';
 class StorageService {
   // Clés statiques principales
   static const String _tokenKey = "auth_token";
+  static const String _userIdKey = "user_id";
   static const String _emailKey = "user_email";
   static const String _nameKey = "user_name";
   static const String _roleKey = "user_role";
   static const String _telephoneKey = "user_telephone";
   static const String _profileCompletedKey = "profile_completed_";
   static const String _onboardingDoneKey = "onboarding_completed";
+  static const String _savedAccountsKey = "saved_accounts_list";
 
   // Clés dynamiques pour isoler les likes et commentaires par utilisateur connecté
   static const String _likeKeyPrefix = "user_like_";
@@ -162,6 +166,80 @@ class StorageService {
   static Future<int> getUserCommentCount(String email, String postId) async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt("$_commentKeyPrefix${email}_$postId") ?? 0;
+  }
+
+  // ----------------------------------------------------
+  // GESTION DU MULTI-COMPTES (STYLE INSTAGRAM)
+  // ----------------------------------------------------
+
+  static Future<bool> saveUserId(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.setString(_userIdKey, id);
+  }
+
+  static Future<String?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userIdKey);
+  }
+
+  /// Sauvegarde le compte courant dans la liste des comptes enregistrés (max 3)
+  static Future<void> saveCurrentUserAsAccount() async {
+    final token = await getToken();
+    final id = await getUserId();
+    final name = await getUserName();
+    final role = await getUserRole();
+    final email = await getUserEmail();
+    final tel = await getUserTelephone();
+
+    if (token == null || token.isEmpty || id == null || id.isEmpty) return;
+
+    final accounts = await getSavedAccounts();
+    accounts.removeWhere((a) => a['id'].toString() == id.toString());
+
+    accounts.insert(0, {
+      'id': id,
+      'name': name ?? 'Utilisateur',
+      'role': role ?? 'artisan',
+      'email': email ?? '',
+      'telephone': tel ?? '',
+      'token': token,
+    });
+
+    if (accounts.length > 3) {
+      accounts.removeRange(3, accounts.length);
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_savedAccountsKey, jsonEncode(accounts));
+  }
+
+  /// Récupère la liste des comptes enregistrés sur cet appareil
+  static Future<List<Map<String, dynamic>>> getSavedAccounts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final brut = prefs.getString(_savedAccountsKey);
+    if (brut == null || brut.isEmpty) return [];
+
+    try {
+      final decoded = jsonDecode(brut);
+      if (decoded is List) {
+        return decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  /// Bascule activement vers un autre compte enregistré
+  static Future<void> switchAccount(Map<String, dynamic> account) async {
+    await saveToken(account['token'] ?? '');
+    await saveUserId(account['id']?.toString() ?? '');
+    await saveUserData(
+      name: account['name'] ?? '',
+      role: account['role'] ?? 'artisan',
+      email: account['email'] ?? '',
+    );
+    if (account['telephone'] != null && account['telephone'].toString().isNotEmpty) {
+      await saveUserTelephone(account['telephone'] ?? '');
+    }
   }
 
   // ----------------------------------------------------
