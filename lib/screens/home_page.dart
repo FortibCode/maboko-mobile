@@ -484,10 +484,15 @@ class _HomePageState extends State<HomePage> {
             tooltip: sombre ? 'Passer en clair' : 'Passer en sombre',
             onPressed: () => controleurTheme.basculer(context),
           ),
+          IconButton(
+            icon: const Icon(Icons.switch_account_rounded, color: MabokoCouleurs.secondaire, size: 24),
+            tooltip: 'Changer ou ajouter un compte',
+            onPressed: _afficherSelecteurDeCompte,
+          ),
           Padding(
             padding: const EdgeInsets.only(left: 2),
             child: GestureDetector(
-              onTap: () => _cleEchafaudage.currentState?.openDrawer(),
+              onTap: _afficherSelecteurDeCompte,
               child: PhotoProfil(
                 url: _profil?.avatarUrl,
                 nom: _profil?.nomComplet.isNotEmpty == true

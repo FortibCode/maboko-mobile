@@ -31,6 +31,7 @@ class TiroirNavigation extends StatelessWidget {
     required this.onDeconnexion,
     required this.estClient,
     this.onPhotoModifiee,
+    this.onAccountSwitch,
   });
 
   final ProfilUtilisateur? profil;
@@ -42,6 +43,7 @@ class TiroirNavigation extends StatelessWidget {
 
   final VoidCallback onDeconnexion;
   final VoidCallback? onPhotoModifiee;
+  final VoidCallback? onAccountSwitch;
 
   String get _nom =>
       profil?.nomComplet.isNotEmpty == true ? profil!.nomComplet : nomSecours;
@@ -79,6 +81,18 @@ class TiroirNavigation extends StatelessWidget {
 
                   const Divider(height: 20, indent: 16, endIndent: 16),
                   _rubrique(context, 'Mon compte'),
+                  if (onAccountSwitch != null)
+                    ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.switch_account_outlined,
+                          color: MabokoCouleurs.secondaire, size: 21),
+                      title: const Text('Changer / Ajouter un compte',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: MabokoCouleurs.secondaire)),
+                      onTap: () {
+                        Navigator.pop(context);
+                        onAccountSwitch!();
+                      },
+                    ),
                   _lien(context, Icons.person_outline_rounded, 'Modifier mon profil',
                       const ModifierProfilScreen()),
                   if (!estClient) ...[
