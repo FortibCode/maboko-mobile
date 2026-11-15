@@ -25,10 +25,10 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _obscurePassword = true;
   bool isOtpStep = false;
 
-  String _userRole = 'client';
+  String _userRole = 'artisan';
   bool _argsRead = false;
+  bool _ajoutCompte = false; // 👈 Drappeau pour le multi-compte
 
-  // Palette marron & beige — alignée sur la page de connexion du web.
   static const Color terracotta = Color(0xFFB35B28);
   static const Color beigeFond = Color(0xFFFFFDF8);
   static const Color texteMarron = Color(0xFF4A2A18);
@@ -39,6 +39,7 @@ class _RegisterPageState extends State<RegisterPage> {
     if (!_argsRead) {
       final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
       _userRole = args?['userRole'] ?? 'client';
+      _ajoutCompte = args?['ajoutCompte'] ?? false; // 👈 On récupère le drapeau
       _argsRead = true;
     }
   }
@@ -55,18 +56,10 @@ class _RegisterPageState extends State<RegisterPage> {
 
   String formatCongolesePhone(String input) {
     String cleaned = input.replaceAll(RegExp(r'\s+'), '').trim();
-    if (cleaned.startsWith('+242')) {
-      return cleaned;
-    }
-    if (cleaned.startsWith('242')) {
-      return '+$cleaned';
-    }
-    if (cleaned.startsWith('0')) {
-      return '+242$cleaned';
-    }
-    if (cleaned.isNotEmpty) {
-      return '+2420$cleaned';
-    }
+    if (cleaned.startsWith('+242')) return cleaned;
+    if (cleaned.startsWith('242')) return '+$cleaned';
+    if (cleaned.startsWith('0')) return '+242$cleaned';
+    if (cleaned.isNotEmpty) return '+2420$cleaned';
     return cleaned;
   }
 
@@ -80,27 +73,19 @@ class _RegisterPageState extends State<RegisterPage> {
     final String rawPhone = phoneController.text.trim();
     final String formattedPhone = formatCongolesePhone(rawPhone);
 
-    // ⚠️ Aucune complexité de mot de passe : on vérifie juste qu'il n'est
-    // pas vide. L'utilisateur est libre de choisir le mot de passe qu'il veut.
     if (nameController.text.trim().isEmpty ||
         emailController.text.trim().isEmpty ||
         rawPhone.isEmpty ||
         passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Erreur : tous les champs sont obligatoires"),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text("Erreur : tous les champs sont obligatoires"), backgroundColor: Colors.red),
       );
       return;
     }
 
     if (!_isValidCongolesePhone(rawPhone)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Format invalide. Ex : 06 666 66 66 (9 chiffres)"),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text("Format invalide. Ex : 06 666 66 66 (9 chiffres)"), backgroundColor: Colors.red),
       );
       return;
     }
@@ -114,6 +99,7 @@ class _RegisterPageState extends State<RegisterPage> {
         "telephone": formattedPhone,
         "password": passwordController.text,
         "role": _roleApi(),
+        "est_ajout_compte": _ajoutCompte, // 👈 On envoie le drapeau à l'API
       });
 
       setState(() => isLoading = false);
@@ -127,10 +113,7 @@ class _RegisterPageState extends State<RegisterPage> {
       setState(() => isOtpStep = true);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Code de validation envoyé par SMS"),
-          backgroundColor: terracotta,
-        ),
+        const SnackBar(content: Text("Code de validation envoyé par SMS"), backgroundColor: terracotta),
       );
     } on ApiException catch (e) {
       setState(() => isLoading = false);
@@ -156,17 +139,14 @@ class _RegisterPageState extends State<RegisterPage> {
           children: [
             Icon(Icons.sms_outlined, color: terracotta),
             SizedBox(width: 8),
-            Text("Code de développement",
-                style: TextStyle(color: terracotta, fontWeight: FontWeight.bold)),
+            Text("Code de développement", style: TextStyle(color: terracotta, fontWeight: FontWeight.bold)),
           ],
         ),
-        content: Text("Votre code de validation est : $code",
-            style: const TextStyle(fontSize: 16)),
+        content: Text("Votre code de validation est : $code", style: const TextStyle(fontSize: 16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("OK",
-                style: TextStyle(color: terracotta, fontWeight: FontWeight.bold)),
+            child: const Text("OK", style: TextStyle(color: terracotta, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -190,24 +170,15 @@ class _RegisterPageState extends State<RegisterPage> {
         decoration: BoxDecoration(
           color: choisi ? terracotta.withValues(alpha: 0.10) : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: choisi ? terracotta : const Color(0xFFE8DCC8),
-            width: choisi ? 1.6 : 1,
-          ),
+          border: Border.all(color: choisi ? terracotta : const Color(0xFFE8DCC8), width: choisi ? 1.6 : 1),
         ),
         child: Column(
           children: [
-            Icon(icone,
-                size: 22,
-                color: choisi ? terracotta : const Color(0xFF7A6A5C)),
+            Icon(icone, size: 22, color: choisi ? terracotta : const Color(0xFF7A6A5C)),
             const SizedBox(height: 6),
             Text(
               role.libelle,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: choisi ? FontWeight.bold : FontWeight.normal,
-                color: choisi ? terracotta : const Color(0xFF7A6A5C),
-              ),
+              style: TextStyle(fontSize: 12, fontWeight: choisi ? FontWeight.bold : FontWeight.normal, color: choisi ? terracotta : const Color(0xFF7A6A5C)),
             ),
           ],
         ),
@@ -218,31 +189,28 @@ class _RegisterPageState extends State<RegisterPage> {
   Future<void> _apresInscription(String role, String nom) async {
     final reel = RoleMaboko.depuis(role);
 
-    if (reel.estArtisan) {
-      await Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ArtisanExperienceScreen(nomComplet: nom),
-        ),
+    // 👇 Si on ajoute un compte, on retourne juste à l'accueil
+    if (_ajoutCompte) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Nouveau compte ajouté avec succès !"), backgroundColor: MabokoCouleurs.succes),
       );
+      Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+      return;
+    }
+
+    if (reel.estArtisan) {
+      await Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => ArtisanExperienceScreen(nomComplet: nom)));
       return;
     }
 
     if (reel.estChauffeur) {
-      await Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const FicheChauffeurScreen(premiereFois: true),
-        ),
-      );
+      await Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const FicheChauffeurScreen(premiereFois: true)));
       return;
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Bienvenue sur Maboko !"),
-        backgroundColor: terracotta,
-      ),
+      const SnackBar(content: Text("Bienvenue sur Maboko !"), backgroundColor: terracotta),
     );
 
     ouvrirEspace(context, reel, nom: nom);
@@ -251,10 +219,7 @@ class _RegisterPageState extends State<RegisterPage> {
   Future<void> verifyAndRegister() async {
     if (codeController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Veuillez entrer le code de validation"),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text("Veuillez entrer le code de validation"), backgroundColor: Colors.red),
       );
       return;
     }
@@ -269,11 +234,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
       final utilisateur = (donnees['user'] as Map<String, dynamic>?) ?? const {};
       final String role = utilisateur['role'] as String? ?? _userRole;
-      final String nom = (utilisateur['nom'] as String?)?.trim().isNotEmpty == true
-          ? utilisateur['nom'] as String
-          : nameController.text.trim();
+      final String nom = (utilisateur['nom'] as String?)?.trim().isNotEmpty == true ? utilisateur['nom'] as String : nameController.text.trim();
 
       await StorageService.saveToken(donnees['token'] as String? ?? '');
+      await StorageService.saveUserId(utilisateur['id'].toString()); // 👈 Sauvegarde de l'ID
+      
       await StorageService.saveUserData(
         name: nom,
         role: role,
@@ -283,6 +248,8 @@ class _RegisterPageState extends State<RegisterPage> {
         await StorageService.saveUserTelephone(utilisateur['telephone'] as String);
       }
       await StorageService.saveOnboardingCompleted(true);
+
+      await StorageService.saveCurrentUserAsAccount(); // 👈 Ajout à la liste locale
 
       setState(() => isLoading = false);
       if (!mounted) return;
@@ -297,8 +264,7 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  InputDecoration _inputDecoration(String label, IconData icon,
-      {String? helperText, Widget? suffixIcon, String? prefixText}) {
+  InputDecoration _inputDecoration(String label, IconData icon, {String? helperText, Widget? suffixIcon, String? prefixText}) {
     return InputDecoration(
       labelText: label,
       labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
@@ -310,18 +276,9 @@ class _RegisterPageState extends State<RegisterPage> {
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: beigeFond,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: terracotta, width: 1.2),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: terracotta, width: 1.2)),
       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
     );
   }
@@ -334,11 +291,7 @@ class _RegisterPageState extends State<RegisterPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF4A2A18),
-              Color(0xFF7A3F1D),
-              Color(0xFFB35B28),
-            ],
+            colors: [Color(0xFF4A2A18), Color(0xFF7A3F1D), Color(0xFFB35B28)],
             stops: [0.0, 0.5, 1.0],
           ),
         ),
@@ -351,29 +304,13 @@ class _RegisterPageState extends State<RegisterPage> {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: beigeFond,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          blurRadius: 25,
-                          spreadRadius: 5,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
+                      shape: BoxShape.circle, color: beigeFond,
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 25, spreadRadius: 5, offset: const Offset(0, 10))],
                     ),
                     padding: const EdgeInsets.all(12),
                     child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/Maboko.jpeg',
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => const Icon(
-                          Icons.handshake,
-                          size: 60,
-                          color: terracotta,
-                        ),
+                      child: Image.asset('assets/images/Maboko.jpeg', width: 100, height: 100, fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.handshake, size: 60, color: terracotta),
                       ),
                     ),
                   ),
@@ -381,22 +318,13 @@ class _RegisterPageState extends State<RegisterPage> {
                   Text(
                     isOtpStep ? "Validation du code" : _titreSelonRole(),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                    style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    isOtpStep
-                        ? "Entrez le code reçu par SMS au ${phoneController.text}"
-                        : "Remplissez les informations pour créer votre compte.",
+                    isOtpStep ? "Entrez le code reçu par SMS au ${phoneController.text}" : "Remplissez les informations pour créer votre compte.",
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.85),
-                    ),
+                    style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.85)),
                   ),
                   const SizedBox(height: 22),
 
@@ -408,28 +336,14 @@ class _RegisterPageState extends State<RegisterPage> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: beigeFond,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
+                      color: beigeFond, borderRadius: BorderRadius.circular(24),
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 20, offset: const Offset(0, 10))],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (!isOtpStep) ...[
-                          const Text(
-                            'Je crée un compte en tant que',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF7A6A5C),
-                            ),
-                          ),
+                          const Text('Je crée un compte en tant que', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF7A6A5C))),
                           const SizedBox(height: 8),
                           Row(
                             children: [
@@ -458,33 +372,17 @@ class _RegisterPageState extends State<RegisterPage> {
                             style: const TextStyle(color: texteMarron, fontSize: 15),
                             controller: phoneController,
                             keyboardType: TextInputType.phone,
-                            decoration: _inputDecoration(
-                              "Téléphone",
-                              Icons.phone_outlined,
-                              prefixText: "+242 ",
-                              helperText: "Ex : 06 666 66 66 (9 chiffres)",
-                            ),
+                            decoration: _inputDecoration("Téléphone", Icons.phone_outlined, prefixText: "+242 ", helperText: "Ex : 06 666 66 66 (9 chiffres)"),
                           ),
                           const SizedBox(height: 14),
                           TextField(
                             style: const TextStyle(color: texteMarron, fontSize: 15),
                             controller: passwordController,
                             obscureText: _obscurePassword,
-                            // ⚠️ Aucune règle de complexité : l'utilisateur choisit librement.
-                            decoration: _inputDecoration(
-                              "Mot de passe",
-                              Icons.lock_outline,
+                            decoration: _inputDecoration("Mot de passe", Icons.lock_outline,
                               suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                                  color: terracotta,
-                                  size: 20,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
-                                },
+                                icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: terracotta, size: 20),
+                                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                               ),
                             ),
                           ),
@@ -496,24 +394,13 @@ class _RegisterPageState extends State<RegisterPage> {
                                   child: ElevatedButton(
                                     onPressed: sendRegisterOtp,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: terracotta,
-                                      foregroundColor: Colors.white,
-                                      elevation: 5,
+                                      backgroundColor: terracotta, foregroundColor: Colors.white, elevation: 5,
                                       shadowColor: terracotta.withValues(alpha: 0.4),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(25),
-                                      ),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                                     ),
                                     child: const Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          "Continuer",
-                                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                        ),
-                                        SizedBox(width: 8),
-                                        Icon(Icons.arrow_forward_rounded, size: 18),
-                                      ],
+                                      children: [Text("Continuer", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)), SizedBox(width: 8), Icon(Icons.arrow_forward_rounded, size: 18)],
                                     ),
                                   ),
                                 ),
@@ -532,24 +419,13 @@ class _RegisterPageState extends State<RegisterPage> {
                                   child: ElevatedButton(
                                     onPressed: verifyAndRegister,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: terracotta,
-                                      foregroundColor: Colors.white,
-                                      elevation: 5,
+                                      backgroundColor: terracotta, foregroundColor: Colors.white, elevation: 5,
                                       shadowColor: terracotta.withValues(alpha: 0.4),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(25),
-                                      ),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                                     ),
                                     child: const Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          "Valider le compte",
-                                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                        ),
-                                        SizedBox(width: 8),
-                                        Icon(Icons.check_circle_outline_rounded, size: 18),
-                                      ],
+                                      children: [Text("Valider le compte", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)), SizedBox(width: 8), Icon(Icons.check_circle_outline_rounded, size: 18)],
                                     ),
                                   ),
                                 ),
@@ -559,33 +435,17 @@ class _RegisterPageState extends State<RegisterPage> {
                             child: OutlinedButton(
                               onPressed: resendOtp,
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: terracotta,
-                                side: const BorderSide(color: terracotta, width: 1.2),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(25),
-                                ),
+                                foregroundColor: terracotta, side: const BorderSide(color: terracotta, width: 1.2),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                               ),
-                              child: const Text(
-                                "Renvoyer le code",
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                              ),
+                              child: const Text("Renvoyer le code", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                             ),
                           ),
                           const SizedBox(height: 10),
                           Center(
                             child: TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  isOtpStep = false;
-                                });
-                              },
-                              child: const Text(
-                                "Modifier mes informations",
-                                style: TextStyle(
-                                    color: terracotta,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13),
-                              ),
+                              onPressed: () => setState(() => isOtpStep = false),
+                              child: const Text("Modifier mes informations", style: TextStyle(color: terracotta, fontWeight: FontWeight.w600, fontSize: 13)),
                             ),
                           ),
                         ],
