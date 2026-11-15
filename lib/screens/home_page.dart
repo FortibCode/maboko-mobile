@@ -408,6 +408,13 @@ class _HomePageState extends State<HomePage> {
                 ),
             ],
           ),
+          // Multi-comptes : accès direct depuis la barre, réservé aux artisans.
+          if (RoleMaboko.depuis(widget.userRole).estArtisan)
+            IconButton(
+              icon: const Icon(Icons.switch_account_rounded, color: MabokoCouleurs.secondaire),
+              tooltip: 'Changer ou ajouter un compte',
+              onPressed: () => ouvrirSelecteurComptes(context),
+            ),
           IconButton(
             icon: Icon(sombre ? Icons.light_mode_rounded : Icons.dark_mode_outlined),
             tooltip: sombre ? 'Passer en clair' : 'Passer en sombre',
@@ -416,7 +423,10 @@ class _HomePageState extends State<HomePage> {
           Padding(
             padding: const EdgeInsets.only(left: 2),
             child: GestureDetector(
-              onTap: () => _cleEchafaudage.currentState?.openDrawer(),
+              // Comme sur Instagram, la photo ouvre la liste des comptes.
+              onTap: RoleMaboko.depuis(widget.userRole).estArtisan
+                  ? () => ouvrirSelecteurComptes(context)
+                  : () => _cleEchafaudage.currentState?.openDrawer(),
               child: PhotoProfil(
                 url: _profil?.avatarUrl,
                 nom: _profil?.nomComplet.isNotEmpty == true
@@ -965,6 +975,12 @@ class _HomePageState extends State<HomePage> {
           );
         }),
         const Divider(height: 1),
+        // Multi-comptes : même sélecteur que dans le tiroir.
+        _buildMenuItem(
+          Icons.switch_account_rounded,
+          "Changer de compte",
+          onTap: () => ouvrirSelecteurComptes(context),
+        ),
         _buildMenuItem(
           Icons.delete_forever,
           "Supprimer mon compte",
