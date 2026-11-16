@@ -13,6 +13,7 @@ class ProfilUtilisateur {
     this.quartier,
     this.email,
     this.telephone,
+    this.matricule,
   });
 
   final int id;
@@ -25,6 +26,9 @@ class ProfilUtilisateur {
   final String? quartier;
   final String? email;
   final String? telephone;
+
+  /// Identifiant Maboko du compte (MBK-ART-00042), affiché sur sa carte.
+  final String? matricule;
 
   /// Localisation réelle du compte, ou `null`.
   ///
@@ -51,6 +55,7 @@ class ProfilUtilisateur {
       quartier: json['quartier'] as String?,
       email: json['email'] as String?,
       telephone: json['telephone'] as String?,
+      matricule: json['matricule'] as String?,
     );
   }
 }

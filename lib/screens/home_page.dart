@@ -651,6 +651,8 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 25),
 
+                  _carteMatricule(),
+
                   if (isClient) ...[
                     Row(
                       children: [
@@ -995,6 +997,78 @@ class _HomePageState extends State<HomePage> {
           onTap: _logout,
         ),
       ],
+    );
+  }
+
+  /// Carte Maboko : le matricule du compte ouvert. Rien tant que l'API ne
+  /// l'a pas renvoyé (profil en cours de chargement).
+  Widget _carteMatricule() {
+    final profil = _profil;
+    final matricule = profil?.matricule;
+    if (profil == null || matricule == null) return const SizedBox.shrink();
+
+    final role = RoleMaboko.depuis(profil.role);
+    final libelleRole = role.estArtisan
+        ? 'Artisan Maboko'
+        : role.estChauffeur
+            ? 'Chauffeur Maboko'
+            : 'Client Maboko';
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [MabokoCouleurs.principale, MabokoCouleurs.secondaire],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: MabokoCouleurs.principale.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'CARTE MABOKO',
+                style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 2),
+              ),
+              Icon(Icons.verified_user_rounded, color: MabokoCouleurs.accent, size: 24),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            profil.nomComplet.isEmpty ? widget.avatarName : profil.nomComplet,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(libelleRole, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+          const SizedBox(height: 24),
+          // Sélectionnable : l'artisan peut le copier pour le communiquer.
+          SelectableText(
+            matricule,
+            style: const TextStyle(
+              color: MabokoCouleurs.accent,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 3,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ],
+      ),
     );
   }
 
