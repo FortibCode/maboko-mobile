@@ -223,24 +223,4 @@ class StorageService {
   static Future<void> deconnecter() async {
     await clearToken();
   }
-
-  /// Change le compte connecté (multi-comptes artisan officiel).
-  static Future<void> changerDeCompte({
-    required String jeton,
-    required Map<String, dynamic> utilisateur,
-  }) async {
-    await clearToken();
-    await saveToken(jeton);
-    final nom = (utilisateur['nom'] as String?)?.trim();
-    final role = utilisateur['role'] as String? ?? 'artisan';
-    final email = utilisateur['email'] as String? ?? '';
-    await saveUserData(
-      name: nom == null || nom.isEmpty ? 'Utilisateur' : nom,
-      role: role,
-      email: email,
-    );
-    if (utilisateur['telephone'] is String) {
-      await saveUserTelephone(utilisateur['telephone'] as String);
-    }
-  }
 }

@@ -34,6 +34,8 @@ import '../main.dart' show controleurTheme;
 import '../features/compte/ui/moyens_paiement_screen.dart';
 import '../core/widgets/carte_pressable.dart';
 
+
+
 // ⬇️⬇️ IMPORTS — Role CLIENT ⬇️⬇️
 import '../features/compte/ui/mes_avis_screen.dart';
 import 'parametres_data_screen.dart';
@@ -83,6 +85,7 @@ class _HomePageState extends State<HomePage> {
 
   final GlobalKey<ScaffoldState> _cleEchafaudage = GlobalKey<ScaffoldState>();
 
+
   int _notificationsNonLues = 0;
   bool _envoiPhoto = false;
 
@@ -98,77 +101,6 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     super.dispose();
-  }
-
-  Future<void> _afficherSelecteurDeCompte() async {
-    final accounts = await StorageService.getSavedAccounts();
-    final activeId = await StorageService.getUserId();
-
-    if (!mounted) return;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: context.surfaceMaboko,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(color: context.bordureMaboko, borderRadius: BorderRadius.circular(2)),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Changer de compte',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.texteFortMaboko),
-            ),
-            const SizedBox(height: 12),
-            ...accounts.map((account) {
-              final isActive = account['id'] == activeId;
-              final roleLabel = account['role'] == 'artisan' ? 'Artisan' : 'Client';
-              
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: MabokoCouleurs.principale,
-                  child: const Icon(Icons.person, color: Colors.white),
-                ),
-                title: Text(account['name'] ?? 'Utilisateur', style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(roleLabel),
-                trailing: isActive 
-                    ? const Icon(Icons.check_circle, color: MabokoCouleurs.succes) 
-                    : null,
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  if (isActive) return;
-
-                  await StorageService.switchAccount(account);
-                  if (!mounted) return;
-                  
-                  Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false); 
-                },
-              );
-            }),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.add_circle_outline, color: MabokoCouleurs.secondaire),
-              title: const Text('Ajouter un compte', style: TextStyle(color: MabokoCouleurs.secondaire, fontWeight: FontWeight.bold)),
-              onTap: () {
-                Navigator.pop(ctx);
-                Navigator.pushNamed(
-                  context, 
-                  '/register', 
-                  arguments: {'userRole': 'artisan', 'ajoutCompte': true}, 
-                ); 
-              },
-            ),
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
-    );
   }
 
   Future<void> _chargerMetiers() async {
@@ -221,7 +153,6 @@ class _HomePageState extends State<HomePage> {
             : ProfilUtilisateur(
                 id: _profil!.id,
                 nomComplet: _profil!.nomComplet,
-                matricule: _profil!.matricule,
                 role: _profil!.role,
                 avatarUrl: url,
                 ville: _profil!.ville,
@@ -261,6 +192,7 @@ class _HomePageState extends State<HomePage> {
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
+  // 👇 MÉTHODE : SUPPRESSION DÉFINITIVE DU COMPTE 👇
   Future<void> _supprimerMonCompte() async {
     final mdpController = TextEditingController();
 
@@ -329,6 +261,7 @@ class _HomePageState extends State<HomePage> {
       );
     }
   }
+  // 👆 FIN MÉTHODE 👆
 
   Future<void> _choisirLangue() async {
     await showModalBottomSheet<void>(
@@ -408,80 +341,6 @@ class _HomePageState extends State<HomePage> {
     if (rawTrade.isEmpty) return "Artisan";
     return rawTrade[0].toUpperCase() + rawTrade.substring(1);
   }
-
-  // 👇 CARTE MABOKO AVEC MATRICULE 👇
-  Widget _buildCarteMatricule() {
-    if (_profil?.matricule == null) return const SizedBox.shrink();
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4A2A18), Color(0xFFB35B28)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: MabokoCouleurs.principale.withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'CARTE MABOKO',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2,
-                ),
-              ),
-              const Icon(Icons.verified_user_rounded, color: MabokoCouleurs.succes, size: 24),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Text(
-            _profil!.nomComplet,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _profil!.role == 'artisan' ? 'Artisan Maboko' : 'Client Maboko',
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            _profil!.matricule!,
-            style: const TextStyle(
-              color: MabokoCouleurs.accent,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 3,
-              fontFamily: 'monospace',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  // 👆 FIN CARTE 👆
 
   Widget _barreHaut() {
     final sombre = controleurTheme.estSombre(context);
@@ -595,6 +454,7 @@ class _HomePageState extends State<HomePage> {
         nomSecours: widget.avatarName,
         onDeconnexion: _logout,
         onPhotoModifiee: _changerPhoto,
+        // Le multi-comptes est réservé aux artisans.
         onChangerCompte: isClient ? null : () => ouvrirSelecteurComptes(context),
       ),
       floatingActionButton: (!isClient && _currentIndex == 0)
@@ -726,6 +586,7 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   const SizedBox(height: 10),
                   
+                  // 👇 BOUTON STORY SUPERPOSÉ SUR LA PHOTO 👇
                   _envoiPhoto
                       ? const SizedBox(
                           width: 90,
@@ -745,10 +606,11 @@ class _HomePageState extends State<HomePage> {
                                   : widget.avatarName,
                               onModifier: _changerPhoto,
                             ),
+                            // Le bouton "+" style Instagram (seulement pour les artisans)
                             if (!isClient)
                               Positioned(
-                                bottom: -10, 
-                                right: 55,   
+                                bottom: -10, // 👈 Poussé vers le bas
+                                right: 55,   // 👈 Poussé vers la gauche
                                 child: GestureDetector(
                                   onTap: () {
                                     Navigator.push(
@@ -769,6 +631,7 @@ class _HomePageState extends State<HomePage> {
                               ),
                           ],
                         ),
+                  // 👆 FIN DU BOUTON STORY 👆
                   
                   const SizedBox(height: 15),
                   Text(
@@ -788,9 +651,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 25),
 
-                  // 👇 LA CARTE MATRICULE EST ICI 👇
-                  _buildCarteMatricule(),
-                  // 👆 FIN CARTE 👆
+                  _carteMatricule(),
 
                   if (isClient) ...[
                     Row(
@@ -982,11 +843,6 @@ class _HomePageState extends State<HomePage> {
           "Supprimer mon compte",
           onTap: _supprimerMonCompte,
         ),
-        _buildMenuItem(
-          Icons.switch_account_rounded,
-          "Changer de compte",
-          onTap: () => ouvrirSelecteurComptes(context),
-        ),
         const Divider(height: 1),
         ListTile(
           leading: const Icon(Icons.logout_rounded, color: Colors.red),
@@ -1132,11 +988,6 @@ class _HomePageState extends State<HomePage> {
           "Supprimer mon compte",
           onTap: _supprimerMonCompte,
         ),
-        _buildMenuItem(
-          Icons.switch_account_rounded,
-          "Changer de compte",
-          onTap: () => ouvrirSelecteurComptes(context),
-        ),
         const Divider(height: 1),
         ListTile(
           leading: const Icon(Icons.logout_rounded, color: Colors.red),
@@ -1146,6 +997,78 @@ class _HomePageState extends State<HomePage> {
           onTap: _logout,
         ),
       ],
+    );
+  }
+
+  /// Carte Maboko : le matricule du compte ouvert. Rien tant que l'API ne
+  /// l'a pas renvoyé (profil en cours de chargement).
+  Widget _carteMatricule() {
+    final profil = _profil;
+    final matricule = profil?.matricule;
+    if (profil == null || matricule == null) return const SizedBox.shrink();
+
+    final role = RoleMaboko.depuis(profil.role);
+    final libelleRole = role.estArtisan
+        ? 'Artisan Maboko'
+        : role.estChauffeur
+            ? 'Chauffeur Maboko'
+            : 'Client Maboko';
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [MabokoCouleurs.principale, MabokoCouleurs.secondaire],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: MabokoCouleurs.principale.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'CARTE MABOKO',
+                style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 2),
+              ),
+              Icon(Icons.verified_user_rounded, color: MabokoCouleurs.accent, size: 24),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            profil.nomComplet.isEmpty ? widget.avatarName : profil.nomComplet,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(libelleRole, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+          const SizedBox(height: 24),
+          // Sélectionnable : l'artisan peut le copier pour le communiquer.
+          SelectableText(
+            matricule,
+            style: const TextStyle(
+              color: MabokoCouleurs.accent,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 3,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ],
+      ),
     );
   }
 

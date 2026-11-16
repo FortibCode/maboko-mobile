@@ -6,7 +6,6 @@ class ProfilUtilisateur {
     required this.id,
     required this.nomComplet,
     required this.role,
-    this.matricule, // 👈 AJOUT
     this.nom,
     this.prenom,
     this.avatarUrl,
@@ -14,11 +13,11 @@ class ProfilUtilisateur {
     this.quartier,
     this.email,
     this.telephone,
+    this.matricule,
   });
 
   final int id;
   final String nomComplet;
-  final String? matricule; // 👈 AJOUT
   final String? nom;
   final String? prenom;
   final String role;
@@ -28,8 +27,16 @@ class ProfilUtilisateur {
   final String? email;
   final String? telephone;
 
+  /// Identifiant Maboko du compte (MBK-ART-00042), affiché sur sa carte.
+  final String? matricule;
+
+  /// Localisation réelle du compte, ou `null`.
+  ///
+  /// L'écran affichait « Bacongo, Brazzaville » pour tout le monde : une
+  /// adresse inventée, identique pour chaque client.
   String? get localisation {
     final morceaux = [quartier, ville].where((m) => m != null && m.trim().isNotEmpty);
+
     return morceaux.isEmpty ? null : morceaux.join(', ');
   }
 
@@ -40,7 +47,6 @@ class ProfilUtilisateur {
     return ProfilUtilisateur(
       id: json['id'] as int? ?? 0,
       nomComplet: [prenom, nom].where((m) => m.isNotEmpty).join(' '),
-      matricule: json['matricule'] as String?, // 👈 AJOUT
       nom: nom.isEmpty ? null : nom,
       prenom: prenom.isEmpty ? null : prenom,
       role: json['role'] as String? ?? 'client',
@@ -49,6 +55,7 @@ class ProfilUtilisateur {
       quartier: json['quartier'] as String?,
       email: json['email'] as String?,
       telephone: json['telephone'] as String?,
+      matricule: json['matricule'] as String?,
     );
   }
 }
@@ -58,16 +65,21 @@ class ProfilRepository {
 
   Future<ProfilUtilisateur> moi() async {
     final reponse = await api.get('/user');
+
     return ProfilUtilisateur.depuisJson(reponse as Map<String, dynamic>);
   }
 
+  /// Dépose une vraie photo de profil. [photoBase64] au format `data:image/...`.
   Future<String?> enregistrerPhoto(String photoBase64) async {
     final reponse = await api.post('/compte/avatar', corps: {'photo': photoBase64});
+
     return (reponse as Map<String, dynamic>)['avatarUrl'] as String?;
   }
 
   Future<void> retirerPhoto() => api.delete('/compte/avatar');
 
+  /// Met à jour les informations du compte. Les champs vides sont ignorés
+  /// plutôt qu'envoyés : effacer un nom par inadvertance n'a aucun intérêt.
   Future<void> modifier({
     required String nom,
     String? prenom,
