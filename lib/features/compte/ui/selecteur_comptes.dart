@@ -6,6 +6,7 @@ import '../../../core/theme/maboko_theme.dart';
 import '../../../core/widgets/photo_profil.dart';
 import '../../../services/storage_service.dart';
 import '../data/comptes_repository.dart';
+import 'gerer_comptes_screen.dart';
 import 'nouveau_profil_screen.dart';
 
 /// Ouvre le sélecteur de comptes, sur le modèle d'Instagram.
@@ -16,6 +17,7 @@ Future<void> ouvrirSelecteurComptes(BuildContext context) async {
   final choix = await showModalBottomSheet<_Choix>(
     context: context,
     showDragHandle: true,
+    isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
     ),
@@ -24,32 +26,45 @@ Future<void> ouvrirSelecteurComptes(BuildContext context) async {
 
   if (choix == null || !context.mounted) return;
 
-  if (choix.ajouter) {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const NouveauProfilScreen()),
-    );
-    return;
+  switch (choix) {
+    case _ChoixCompte(:final compte):
+      await basculerVersCompte(context, compte);
+    case _ChoixAjouter():
+      await Navigator.push(context, MaterialPageRoute(builder: (_) => const NouveauProfilScreen()));
+    case _ChoixGerer():
+      await Navigator.push(context, MaterialPageRoute(builder: (_) => const GererComptesScreen()));
   }
-
-  await basculerVersCompte(context, choix.compte!);
 }
 
 /// Passe sur un autre compte et rouvre l'application sur son espace.
+///
+/// Un voile bloque l'écran pendant la transition : un second toucher ne doit
+/// pas lancer un autre changement avant que le premier soit terminé.
 Future<void> basculerVersCompte(BuildContext context, CompteFamille compte) async {
   final messager = ScaffoldMessenger.of(context);
+  final navigateur = Navigator.of(context, rootNavigator: true);
+
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const PopScope(canPop: false, child: _VoileChangement()),
+  );
 
   try {
     final session = await const ComptesRepository().basculer(compte.id);
+    if (!context.mounted) return;
+    navigateur.pop();
     await ouvrirSessionCompte(context, session);
   } on ApiException catch (e) {
+    navigateur.pop();
     messager.showSnackBar(
       SnackBar(content: Text(e.message), backgroundColor: MabokoCouleurs.danger),
     );
   }
 }
 
-/// Enregistre la session du compte et repart de son écran d'accueil.
+/// Enregistre la session du compte et repart de son écran d'accueil : tout
+/// l'espace se recharge, rien du compte précédent ne reste affiché.
 Future<void> ouvrirSessionCompte(BuildContext context, SessionCompte session) async {
   await StorageService.changerDeCompte(jeton: session.jeton, utilisateur: session.utilisateur);
 
@@ -63,14 +78,89 @@ Future<void> ouvrirSessionCompte(BuildContext context, SessionCompte session) as
   );
 }
 
-class _Choix {
-  const _Choix.compte(CompteFamille this.compte) : ajouter = false;
-  const _Choix.ajouter()
-      : compte = null,
-        ajouter = true;
+/// Photo, nom, spécialité et notifications d'un compte : même ligne dans le
+/// sélecteur et dans « Gérer mes comptes ».
+class LigneCompte extends StatelessWidget {
+  const LigneCompte({super.key, required this.compte, this.onTap, this.trailing});
 
-  final CompteFamille? compte;
-  final bool ajouter;
+  final CompteFamille compte;
+  final VoidCallback? onTap;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final nom = compte.nomComplet.isEmpty ? 'Compte Maboko' : compte.nomComplet;
+    final details = [
+      if (compte.estPrincipal) 'Compte principal',
+      if (compte.specialiteAffichable != null) compte.specialiteAffichable!,
+    ].join(' · ');
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          PhotoProfil(url: compte.avatarUrl, nom: nom, taille: 48),
+          if (compte.notificationsNonLues > 0)
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: MabokoCouleurs.danger,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 2),
+                ),
+              ),
+            ),
+        ],
+      ),
+      title: Text(
+        nom,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontWeight: compte.estActif ? FontWeight.bold : FontWeight.w600),
+      ),
+      subtitle: compte.suspendu
+          ? const Text('Compte suspendu', style: TextStyle(color: MabokoCouleurs.danger, fontSize: 12.5))
+          : Text.rich(
+              TextSpan(children: [
+                if (details.isNotEmpty) TextSpan(text: details),
+                if (compte.notificationsNonLues > 0)
+                  TextSpan(
+                    text: '${details.isNotEmpty ? ' · ' : ''}${compte.notificationsNonLues} '
+                        'notification${compte.notificationsNonLues > 1 ? 's' : ''}',
+                    style: const TextStyle(color: MabokoCouleurs.danger),
+                  ),
+              ]),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: context.texteSecondaireMaboko, fontSize: 12.5),
+            ),
+      trailing: trailing ??
+          (compte.estActif ? const Icon(Icons.check_circle_rounded, color: MabokoCouleurs.secondaire) : null),
+      onTap: onTap,
+    );
+  }
+}
+
+sealed class _Choix {
+  const _Choix();
+}
+
+class _ChoixCompte extends _Choix {
+  const _ChoixCompte(this.compte);
+  final CompteFamille compte;
+}
+
+class _ChoixAjouter extends _Choix {
+  const _ChoixAjouter();
+}
+
+class _ChoixGerer extends _Choix {
+  const _ChoixGerer();
 }
 
 class _FeuilleComptes extends StatefulWidget {
@@ -81,7 +171,7 @@ class _FeuilleComptes extends StatefulWidget {
 }
 
 class _FeuilleComptesState extends State<_FeuilleComptes> {
-  late final Future<ListeComptes> _liste = const ComptesRepository().lister();
+  late Future<ListeComptes> _liste = const ComptesRepository().lister();
 
   @override
   Widget build(BuildContext context) {
@@ -92,82 +182,109 @@ class _FeuilleComptesState extends State<_FeuilleComptes> {
           future: _liste,
           builder: (context, instantane) {
             if (instantane.connectionState != ConnectionState.done) {
-              return const SizedBox(
-                height: 140,
-                child: Center(child: CircularProgressIndicator()),
-              );
+              return const SizedBox(height: 160, child: Center(child: CircularProgressIndicator()));
             }
 
             if (instantane.hasError) {
               final erreur = instantane.error;
               return SizedBox(
-                height: 140,
-                child: Center(
-                  child: Text(
-                    erreur is ApiException ? erreur.message : 'Comptes indisponibles.',
-                    textAlign: TextAlign.center,
-                  ),
+                height: 160,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      erreur is ApiException ? erreur.message : 'Comptes indisponibles.',
+                      textAlign: TextAlign.center,
+                    ),
+                    TextButton(
+                      onPressed: () => setState(() => _liste = const ComptesRepository().lister()),
+                      child: const Text('Réessayer'),
+                    ),
+                  ],
                 ),
               );
             }
 
             final liste = instantane.data!;
 
-            return Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: context.bordureMaboko),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final compte in liste.comptes) _ligneCompte(context, compte),
-                  if (liste.peutAjouter)
-                    ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      leading: CircleAvatar(
-                        radius: 24,
-                        backgroundColor: context.bordureMaboko,
-                        child: const Icon(Icons.add_rounded, color: MabokoCouleurs.secondaire),
-                      ),
-                      title: const Text('Ajouter un compte'),
-                      subtitle: Text(
-                        '${liste.comptes.length} sur ${liste.maximum}',
-                        style: TextStyle(color: context.texteSecondaireMaboko, fontSize: 12.5),
-                      ),
-                      onTap: () => Navigator.pop(context, const _Choix.ajouter()),
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: context.bordureMaboko),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final compte in liste.comptes)
+                        LigneCompte(
+                          compte: compte,
+                          // Le compte actif est déjà ouvert ; un compte suspendu ne s'ouvre pas.
+                          onTap: compte.estActif || compte.suspendu
+                              ? null
+                              : () => Navigator.pop(context, _ChoixCompte(compte)),
+                        ),
+                      if (liste.peutAjouter)
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          leading: CircleAvatar(
+                            radius: 24,
+                            backgroundColor: context.bordureMaboko,
+                            child: const Icon(Icons.add_rounded, color: MabokoCouleurs.secondaire),
+                          ),
+                          title: const Text('Ajouter un compte'),
+                          subtitle: Text(
+                            '${liste.comptes.length} sur ${liste.maximum}',
+                            style: TextStyle(color: context.texteSecondaireMaboko, fontSize: 12.5),
+                          ),
+                          onTap: () => Navigator.pop(context, const _ChoixAjouter()),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: () => Navigator.pop(context, const _ChoixGerer()),
+                    icon: const Icon(Icons.manage_accounts_outlined),
+                    label: const Text('Gérer mes comptes'),
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                     ),
-                ],
-              ),
+                  ),
+                ),
+              ],
             );
           },
         ),
       ),
     );
   }
+}
 
-  Widget _ligneCompte(BuildContext context, CompteFamille compte) {
-    final nom = compte.nomComplet.isEmpty ? 'Compte Maboko' : compte.nomComplet;
+class _VoileChangement extends StatelessWidget {
+  const _VoileChangement();
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: PhotoProfil(url: compte.avatarUrl, nom: nom, taille: 48),
-      title: Text(nom, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: compte.suspendu
-          ? const Text('Compte suspendu', style: TextStyle(color: MabokoCouleurs.danger, fontSize: 12.5))
-          : compte.notificationsNonLues > 0
-              ? Text(
-                  '● ${compte.notificationsNonLues} notification${compte.notificationsNonLues > 1 ? 's' : ''}',
-                  style: const TextStyle(color: MabokoCouleurs.danger, fontSize: 12.5),
-                )
-              : null,
-      trailing: compte.estActif
-          ? const Icon(Icons.check_circle_rounded, color: MabokoCouleurs.secondaire)
-          : null,
-      // Le compte actif est déjà ouvert ; un compte suspendu ne s'ouvre pas.
-      onTap: compte.estActif || compte.suspendu
-          ? null
-          : () => Navigator.pop(context, _Choix.compte(compte)),
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Card(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 28, vertical: 22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 14),
+              Text('Changement de compte…'),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

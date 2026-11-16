@@ -82,7 +82,7 @@ class ApiClient {
       );
     }
 
-    return _interpreter(reponse);
+    return _interpreter(reponse, jetonEnvoye: jeton);
   }
 
   /// En développement, nomme l'adresse tentée.
@@ -98,7 +98,7 @@ class ApiClient {
     return '\n(API visée : ${AdresseApi.valeur})';
   }
 
-  dynamic _interpreter(http.Response reponse) {
+  Future<dynamic> _interpreter(http.Response reponse, {String? jetonEnvoye}) async {
     final code = reponse.statusCode;
 
     dynamic donnees;
@@ -117,8 +117,15 @@ class ApiClient {
     if (code == 401) {
       // Le jeton est expire ou revoque : on nettoie la session locale pour
       // eviter que l'application reste bloquee sur un ecran authentifie.
-      StorageService.clearToken();
-      onSessionExpiree?.call();
+      //
+      // Sauf si la session a change pendant la requete : un changement de
+      // compte revoque l'ancien jeton, et une requete partie avec lui ne
+      // doit pas effacer la session qui vient de s'ouvrir.
+      final jetonActuel = await StorageService.getToken();
+      if (jetonActuel == jetonEnvoye) {
+        await StorageService.clearToken();
+        onSessionExpiree?.call();
+      }
 
       throw ApiException(
         _message(donnees) ?? 'Votre session a expire. Reconnectez-vous.',

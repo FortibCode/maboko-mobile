@@ -89,7 +89,7 @@ class TiroirNavigation extends StatelessWidget {
                       dense: true,
                       leading: const Icon(Icons.switch_account_outlined,
                           color: MabokoCouleurs.secondaire, size: 21),
-                      title: const Text('Changer de compte', style: TextStyle(fontSize: 14)),
+                      title: const Text('Changer / Ajouter un compte', style: TextStyle(fontSize: 14)),
                       onTap: _changerDeCompte(context),
                     ),
                   _lien(context, Icons.person_outline_rounded, 'Modifier mon profil',
