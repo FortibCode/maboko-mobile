@@ -100,10 +100,9 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  // 👇 FONCTION POUR LE BOTTOM SHEET INSTAGRAM 👇
   Future<void> _afficherSelecteurDeCompte() async {
     final accounts = await StorageService.getSavedAccounts();
-    final activeId = await StorageService.getUserId(); // On utilise l'ID unique
+    final activeId = await StorageService.getUserId();
 
     if (!mounted) return;
     showModalBottomSheet(
@@ -128,7 +127,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 12),
             ...accounts.map((account) {
-              final isActive = account['id'] == activeId; // On compare les ID
+              final isActive = account['id'] == activeId;
               final roleLabel = account['role'] == 'artisan' ? 'Artisan' : 'Client';
               
               return ListTile(
@@ -148,13 +147,11 @@ class _HomePageState extends State<HomePage> {
                   await StorageService.switchAccount(account);
                   if (!mounted) return;
                   
-                  // Redémarre l'app pour charger le nouveau profil
                   Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false); 
                 },
               );
             }),
             const Divider(),
-            // Redirection vers l'inscription avec le drapeau pour le backend
             ListTile(
               leading: const Icon(Icons.add_circle_outline, color: MabokoCouleurs.secondaire),
               title: const Text('Ajouter un compte', style: TextStyle(color: MabokoCouleurs.secondaire, fontWeight: FontWeight.bold)),
@@ -173,7 +170,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-  // 👆 FIN DE LA FONCTION 👆
 
   Future<void> _chargerMetiers() async {
     try {
@@ -225,6 +221,7 @@ class _HomePageState extends State<HomePage> {
             : ProfilUtilisateur(
                 id: _profil!.id,
                 nomComplet: _profil!.nomComplet,
+                matricule: _profil!.matricule,
                 role: _profil!.role,
                 avatarUrl: url,
                 ville: _profil!.ville,
@@ -264,7 +261,6 @@ class _HomePageState extends State<HomePage> {
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
-  // 👇 MÉTHODE : SUPPRESSION DÉFINITIVE DU COMPTE 👇
   Future<void> _supprimerMonCompte() async {
     final mdpController = TextEditingController();
 
@@ -333,7 +329,6 @@ class _HomePageState extends State<HomePage> {
       );
     }
   }
-  // 👆 FIN MÉTHODE 👆
 
   Future<void> _choisirLangue() async {
     await showModalBottomSheet<void>(
@@ -413,6 +408,80 @@ class _HomePageState extends State<HomePage> {
     if (rawTrade.isEmpty) return "Artisan";
     return rawTrade[0].toUpperCase() + rawTrade.substring(1);
   }
+
+  // 👇 CARTE MABOKO AVEC MATRICULE 👇
+  Widget _buildCarteMatricule() {
+    if (_profil?.matricule == null) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF4A2A18), Color(0xFFB35B28)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: MabokoCouleurs.principale.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'CARTE MABOKO',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+              const Icon(Icons.verified_user_rounded, color: MabokoCouleurs.succes, size: 24),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            _profil!.nomComplet,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _profil!.role == 'artisan' ? 'Artisan Maboko' : 'Client Maboko',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            _profil!.matricule!,
+            style: const TextStyle(
+              color: MabokoCouleurs.accent,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 3,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  // 👆 FIN CARTE 👆
 
   Widget _barreHaut() {
     final sombre = controleurTheme.estSombre(context);
@@ -516,7 +585,6 @@ class _HomePageState extends State<HomePage> {
         nomSecours: widget.avatarName,
         onDeconnexion: _logout,
         onPhotoModifiee: _changerPhoto,
-        // Le multi-comptes est réservé aux artisans.
         onChangerCompte: isClient ? null : () => ouvrirSelecteurComptes(context),
       ),
       floatingActionButton: (!isClient && _currentIndex == 0)
@@ -648,7 +716,6 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   const SizedBox(height: 10),
                   
-                  // Le bouton "+" sur la photo (Story)
                   _envoiPhoto
                       ? const SizedBox(
                           width: 90,
@@ -710,6 +777,10 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(height: 25),
+
+                  // 👇 LA CARTE MATRICULE EST ICI 👇
+                  _buildCarteMatricule(),
+                  // 👆 FIN CARTE 👆
 
                   if (isClient) ...[
                     Row(
@@ -901,13 +972,11 @@ class _HomePageState extends State<HomePage> {
           "Supprimer mon compte",
           onTap: _supprimerMonCompte,
         ),
-        // 👇 LE BOUTON EST ICI POUR LE CLIENT 👇
         _buildMenuItem(
           Icons.switch_account_rounded,
           "Changer de compte",
           onTap: () => ouvrirSelecteurComptes(context),
         ),
-        // 👆 FIN BOUTON 👆
         const Divider(height: 1),
         ListTile(
           leading: const Icon(Icons.logout_rounded, color: Colors.red),
@@ -1047,13 +1116,11 @@ class _HomePageState extends State<HomePage> {
           "Supprimer mon compte",
           onTap: _supprimerMonCompte,
         ),
-        // 👇 LE BOUTON EST ICI POUR L'ARTISAN 👇
         _buildMenuItem(
           Icons.switch_account_rounded,
           "Changer de compte",
           onTap: () => ouvrirSelecteurComptes(context),
         ),
-        // 👆 FIN BOUTON 👆
         const Divider(height: 1),
         ListTile(
           leading: const Icon(Icons.logout_rounded, color: Colors.red),
