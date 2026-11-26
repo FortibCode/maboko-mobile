@@ -29,6 +29,7 @@ import 'portfolio_screen.dart';
 import '../services/storage_service.dart';
 import '../features/compte/data/google_auth.dart';
 import '../features/notifications/data/notification_repository.dart';
+import '../features/publicite/ui/dialog_publicite_active.dart';
 import 'tiroir_navigation.dart';
 import '../main.dart' show controleurTheme;
 import '../features/compte/ui/moyens_paiement_screen.dart';
@@ -96,6 +97,11 @@ class _HomePageState extends State<HomePage> {
     _chargerProfil();
     _chargerMetiers();
     _chargerNotifications();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        DialogPubliciteActive.verifierEtAfficher(context);
+      }
+    });
   }
 
   @override
@@ -182,7 +188,9 @@ class _HomePageState extends State<HomePage> {
       final bord = await _tableauBord.charger();
       if (!mounted) return;
       setState(() => _bord = bord);
-    } on ApiException {}
+    } on ApiException {
+      // Ignoré : le tableau de bord est optionnel au chargement initial
+    }
   }
 
   Future<void> _logout() async {

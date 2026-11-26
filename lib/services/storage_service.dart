@@ -223,4 +223,21 @@ class StorageService {
   static Future<void> deconnecter() async {
     await clearToken();
   }
+
+  // ----------------------------------------------------
+  // PUBLICITÉ DU JOUR
+  // ----------------------------------------------------
+
+  static Future<bool> pubAfficheeAujourdhui() async {
+    final prefs = await SharedPreferences.getInstance();
+    final derniere = prefs.getString('derniere_date_pub_affichee');
+    final aujourdhui = DateTime.now().toIso8601String().split('T').first;
+    return derniere == aujourdhui;
+  }
+
+  static Future<void> marquerPubAfficheeAujourdhui() async {
+    final prefs = await SharedPreferences.getInstance();
+    final aujourdhui = DateTime.now().toIso8601String().split('T').first;
+    await prefs.setString('derniere_date_pub_affichee', aujourdhui);
+  }
 }

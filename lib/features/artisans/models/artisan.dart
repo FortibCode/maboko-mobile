@@ -67,6 +67,7 @@ class Artisan {
     this.avis = const [],
     this.plan,
     this.distanceKm,
+    this.estSponsorise = false,
   });
 
   /// Identifiant de la fiche artisan.
@@ -99,8 +100,9 @@ class Artisan {
   final List<Avis> avis;
   final String? plan;
   final double? distanceKm;
+  final bool estSponsorise;
 
-  bool get estMisEnAvant => plan != null && plan != 'gratuit';
+  bool get estMisEnAvant => estSponsorise || (plan != null && plan != 'gratuit');
 
   factory Artisan.depuisJson(Map<String, dynamic> json) {
     final utilisateur = json['utilisateur'] as Map<String, dynamic>?;
@@ -135,6 +137,7 @@ class Artisan {
           .toList(),
       plan: json['plan'] as String?,
       distanceKm: (json['distanceKm'] as num?)?.toDouble(),
+      estSponsorise: json['estSponsorise'] as bool? ?? false,
     );
   }
 }

@@ -89,9 +89,10 @@ class _DemandesChauffeurScreenState extends State<DemandesChauffeurScreen> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () async {
+                      final nav = Navigator.of(context);
                       await const CourseRepository().refuserCourse(widget.courseData['id']);
                       if (!mounted) return;
-                      Navigator.pop(context);
+                      nav.pop();
                     },
                     style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
                     child: const Text('Refuser'),

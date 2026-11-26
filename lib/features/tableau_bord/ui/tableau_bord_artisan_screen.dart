@@ -7,6 +7,7 @@ import '../../artisans/ui/fiche_artisan_screen.dart';
 import '../../demandes/models/demande.dart';
 import '../../demandes/ui/demande_detail_screen.dart';
 import '../../demandes/ui/demandes_screen.dart';
+import '../../publicite/ui/booster_profil_screen.dart';
 import '../data/tableau_bord_repository.dart';
 import '../models/tableau_bord.dart';
 import 'graphique_revenus.dart';
@@ -132,6 +133,8 @@ class _TableauBordArtisanScreenState extends State<TableauBordArtisanScreen> {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
           _carteRevenus(bord),
+          const SizedBox(height: 12),
+          _banniereBooster(),
           const SizedBox(height: 16),
 
           // Suivi graphique des revenus mensuels (§5.2.4). Le cahier le
@@ -381,6 +384,61 @@ class _TableauBordArtisanScreenState extends State<TableauBordArtisanScreen> {
           const SizedBox(height: 10),
           enfant,
         ],
+      ),
+    );
+  }
+
+  Widget _banniereBooster() {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const BoosterProfilScreen()),
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.amber.shade50.withValues(alpha: 0.8),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.amber.shade300),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade400,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.rocket_launch_rounded, color: Colors.white, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Booster mon profil & mes missions',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14.5,
+                      color: Colors.brown.shade900,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Passez en tête des recherches et affichez votre pub',
+                    style: TextStyle(fontSize: 12, color: Colors.brown.shade700),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.brown.shade800),
+          ],
+        ),
       ),
     );
   }
