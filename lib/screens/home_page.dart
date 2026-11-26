@@ -188,7 +188,9 @@ class _HomePageState extends State<HomePage> {
       final bord = await _tableauBord.charger();
       if (!mounted) return;
       setState(() => _bord = bord);
-    } on ApiException {}
+    } on ApiException {
+      // Ignoré : le tableau de bord est optionnel au chargement initial
+    }
   }
 
   Future<void> _logout() async {

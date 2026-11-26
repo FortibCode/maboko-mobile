@@ -191,21 +191,32 @@ class _ParametresDataScreenState extends State<ParametresDataScreen> {
         children: choix.map((c) {
           final actif = _qualiteImages == c.$1;
 
-          return RadioListTile<String>(
-            value: c.$1,
-            groupValue: _qualiteImages,
-            onChanged: (v) {
-              if (v == null) return;
-              setState(() => _qualiteImages = v);
-              _enregistrer(_cleQualiteImages, v);
+          return InkWell(
+            onTap: () {
+              setState(() => _qualiteImages = c.$1);
+              _enregistrer(_cleQualiteImages, c.$1);
             },
-            activeColor: MabokoCouleurs.secondaire,
-            title: Text(c.$2, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-            subtitle: Text(c.$3, style: const TextStyle(fontSize: 12)),
-            secondary: Icon(
-              actif ? Icons.check_circle_rounded : Icons.circle_outlined,
-              color: actif ? MabokoCouleurs.secondaire : context.bordureMaboko,
-              size: 20,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    actif ? Icons.check_circle_rounded : Icons.circle_outlined,
+                    color: actif ? MabokoCouleurs.secondaire : context.bordureMaboko,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(c.$2, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                        Text(c.$3, style: const TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         }).toList(),
@@ -242,7 +253,7 @@ class _ParametresDataScreenState extends State<ParametresDataScreen> {
           Switch(
             value: valeur,
             onChanged: onChanged,
-            activeColor: MabokoCouleurs.secondaire,
+            activeThumbColor: MabokoCouleurs.secondaire,
           ),
         ],
       ),

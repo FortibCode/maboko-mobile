@@ -119,9 +119,9 @@ class _NouveauProfilScreenState extends State<NouveauProfilScreen> {
                     valeur == null || valeur.trim().isEmpty ? 'Choisissez un nom pour ce compte.' : null,
               ),
               const SizedBox(height: 8),
-              Text(
+              const Text(
                 'Métiers (${NouveauProfilScreen.maxMetiers} au plus)',
-                style: const TextStyle(fontWeight: FontWeight.w600),
+                style: TextStyle(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               _choixMetiers(),

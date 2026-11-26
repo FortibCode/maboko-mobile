@@ -93,7 +93,7 @@ class _BoosterProfilScreenState extends State<BoosterProfilScreen> {
       body: _chargement
           ? const ChargementEnCours()
           : _erreur != null
-              ? ErreurChargement(message: _erreur!, onReessayer: _charger)
+              ? EtatErreur(message: _erreur!, onReessayer: _charger)
               : _corps(),
     );
   }
@@ -674,21 +674,60 @@ class _FormulaireCampagneSheetState extends State<_FormulaireCampagneSheet> {
               Row(
                 children: [
                   Expanded(
-                    child: RadioListTile<String>(
-                      title: const Text('MTN MoMo', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                      value: 'mtn',
-                      groupValue: _operateur,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (v) => setState(() => _operateur = v!),
+                    child: GestureDetector(
+                      onTap: () => setState(() => _operateur = 'mtn'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: _operateur == 'mtn' ? Colors.amber.shade100 : context.fondMaboko,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: _operateur == 'mtn' ? Colors.amber.shade800 : context.bordureMaboko,
+                            width: _operateur == 'mtn' ? 1.8 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _operateur == 'mtn' ? Icons.radio_button_checked : Icons.radio_button_off,
+                              size: 18,
+                              color: _operateur == 'mtn' ? Colors.amber.shade900 : context.texteSecondaireMaboko,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('MTN MoMo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: RadioListTile<String>(
-                      title: const Text('Airtel Money', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                      value: 'airtel',
-                      groupValue: _operateur,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (v) => setState(() => _operateur = v!),
+                    child: GestureDetector(
+                      onTap: () => setState(() => _operateur = 'airtel'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: _operateur == 'airtel' ? Colors.red.shade50 : context.fondMaboko,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: _operateur == 'airtel' ? Colors.red.shade700 : context.bordureMaboko,
+                            width: _operateur == 'airtel' ? 1.8 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _operateur == 'airtel' ? Icons.radio_button_checked : Icons.radio_button_off,
+                              size: 18,
+                              color: _operateur == 'airtel' ? Colors.red.shade700 : context.texteSecondaireMaboko,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('Airtel Money', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],

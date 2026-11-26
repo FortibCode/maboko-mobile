@@ -322,7 +322,7 @@ class _FicheChauffeurScreenState extends State<FicheChauffeurScreen> {
                   ),
                   Switch(
                     value: _estClimatise,
-                    activeColor: MabokoCouleurs.secondaire,
+                    activeThumbColor: MabokoCouleurs.secondaire,
                     onChanged: (val) => setState(() => _estClimatise = val),
                   ),
                 ],
