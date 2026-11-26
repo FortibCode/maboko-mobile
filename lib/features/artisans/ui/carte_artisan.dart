@@ -66,7 +66,40 @@ class CarteArtisan extends StatelessWidget {
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15.5),
                             ),
                           ),
-                          if (artisan.estMisEnAvant)
+                          if (artisan.estSponsorise)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFFEAA023), Color(0xFFD67D00)],
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.amber.withValues(alpha: 0.3),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.star_rounded, size: 10, color: Colors.white),
+                                  SizedBox(width: 3),
+                                  Text(
+                                    'SPONSORISÉ',
+                                    style: TextStyle(
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                      letterSpacing: .5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else if (artisan.plan != null && artisan.plan != 'gratuit')
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                               decoration: BoxDecoration(

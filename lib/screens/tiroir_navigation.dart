@@ -12,6 +12,7 @@ import '../features/demandes/ui/demandes_screen.dart';
 import '../features/messagerie/ui/conversations_screen.dart';
 import '../features/notifications/ui/notifications_screen.dart';
 import '../features/abonnement/ui/abonnement_screen.dart';
+import '../features/publicite/ui/booster_profil_screen.dart';
 import '../features/identite/ui/verification_identite_screen.dart';
 import '../features/tableau_bord/ui/tableau_bord_artisan_screen.dart';
 import 'a_propos_screen.dart';
@@ -97,6 +98,8 @@ class TiroirNavigation extends StatelessWidget {
                   if (!estClient) ...[
                     _lien(context, Icons.workspace_premium_outlined, 'Mon abonnement',
                         const AbonnementScreen()),
+                    _lien(context, Icons.rocket_launch_outlined, 'Booster mon profil (Pub)',
+                        const BoosterProfilScreen()),
                     _lien(context, Icons.verified_user_outlined, 'Vérifier mon identité',
                         const VerificationIdentiteScreen()),
                   ],
